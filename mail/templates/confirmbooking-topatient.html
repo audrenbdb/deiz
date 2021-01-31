@@ -1,0 +1,302 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Confirmation de RDV</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+        body {
+            font-family: "Google Sans", Helvetica, Arial, sans-serif;
+        }
+    </style>
+</head>
+
+<body style="margin: 0; padding: 0;font-family: 'Google Sans', Helvetica, Arial, sans-serif">
+
+    <div bgcolor="#EEF2F6" marginheight="0" marginwidth="0">
+        <table align="center" bgcolor="#EEF2F6" border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tbody>
+                <tr height="14">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td width="14"></td>
+                    <td align="center">
+                        <table width="100%" border="0" cellpadding="0" cellspacing="0" style="max-width:650px">
+                            <tbody>
+                                <tr>
+                                    <td>
+                                        <table bgcolor="#FFFFFF" border="0" cellpadding="0" cellspacing="0"
+                                            style="border-radius:8px 8px 4px 4px;background-color:#ffffff" width="100%">
+                                            <tbody>
+                                                <tr height="50">
+                                                    <td>
+                                                        <table bgcolor="#007634" border="0" cellpadding="14"
+                                                            cellspacing="0"
+                                                            style="border-radius:8px 8px 0 0;background-color:#007634;background: linear-gradient(306deg,#007634 0%,#008f3f 70%);"
+                                                            width="100%">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td>
+                                                                        <table border="0" cellpadding="0"
+                                                                            cellspacing="0" width="100%">
+                                                                            <tbody>
+                                                                                <tr>
+                                                                                    <td valign="middle"
+                                                                                        style="font-size:16px;line-height:35px;color:#ffffff;font-weight: 800;">
+                                                                                        Deiz</td>
+                                                                                    <td align="right"
+                                                                                        style="font-size:16px;line-height:35px;color:#ffffff">
+                                                                                        RDV confirmé</td>
+
+                                                                                </tr>
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <table border="0" cellpadding="0" cellspacing="0" height="10"
+                                                            width="100%">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td>
+                                                                        <table border="0" cellpadding="0"
+                                                                            cellspacing="14" width="100%">
+                                                                            <tbody>
+                                                                                <tr>
+                                                                                    <td
+                                                                                        style="font-size:16px;color:#435f71">
+                                                                                        Avec {{.Name}}</td>
+                                                                                </tr>
+                                                                                <tr>
+                                                                                    <td
+                                                                                        style="font-size:14px;color:#8e9faa">
+                                                                                        {{.Phone}}</td>
+                                                                                </tr>
+
+                                                                                <tr>
+                                                                                    <td
+                                                                                        style="font-size:14px;color:#435f71;font-weight:bold">
+                                                                                        {{.BookingDateStr}}
+                                                                                    </td>
+                                                                                </tr>
+                                                                                <tr>
+                                                                                    <td align="center">
+                                                                                        <table border="0"
+                                                                                            cellpadding="0"
+                                                                                            cellspacing="0"
+                                                                                            style="display:inline-block;margin:7px"
+                                                                                            width="264">
+                                                                                            <tbody>
+                                                                                                <tr align="center">
+                                                                                                    <td align="center"
+                                                                                                        bgcolor="#fff"
+                                                                                                        height="44"
+                                                                                                        style="border-radius:4px;background-color:#fff;border:1px solid #007634;"
+                                                                                                        valign="center"
+                                                                                                        width="264"><a
+                                                                                                            target="_blank"
+                                                                                                            href="{{.GCalendarLink}}"
+                                                                                                            style="display:block;text-decoration:none;line-height:44px;color:#435f71">Ajouter
+                                                                                                            à Google
+                                                                                                            Calendar</a>
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                        <table border="0"
+                                                                                            cellpadding="0"
+                                                                                            cellspacing="0"
+                                                                                            style="display:inline-block;margin:7px"
+                                                                                            width="264">
+                                                                                            <tbody>
+                                                                                                <tr align="center">
+                                                                                                    <td align="center"
+                                                                                                        bgcolor="#fff"
+                                                                                                        height="44"
+                                                                                                        style="border-radius:4px;background-color:#fff;border:1px solid #FF7E00;"
+                                                                                                        valign="center"
+                                                                                                        width="264"><a
+                                                                                                            target="_blank"
+                                                                                                            href="{{.CancelLink}}"
+                                                                                                            style="display:block;text-decoration:none;line-height:44px;color:#435f71">Annuler</a>
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            </tbody>
+                                                                                        </table>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr height="14"></tr>
+                                <tr>
+                                    <td></td>
+                                </tr>
+
+
+
+
+
+
+
+                                <tr>
+                                    <td>
+                                        <table width="100%" bgcolor="#FFFFFF" border="0" cellpadding="0"
+                                            cellspacing="14" style="border-radius:4px;background-color:#ffffff">
+                                            <tbody>
+                                                <tr>
+                                                    <td align="center"
+                                                        style="color:#435f71;font-size:15px;font-weight:bold">Accès</td>
+                                                </tr>
+                                                {{if not .Remote}}
+                                                <tr>
+                                                    <td>
+                                                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td
+                                                                        style="color:#435f71;font-size:14px;line-height:24px">
+                                                                        <p>{{.AddressLine}}<br>{{.AddressCity}}</p>
+
+                                                                    </td>
+                                                                </tr>
+                                                                <tr height="14">
+                                                                    <td align="center">
+
+                                                                        <table border="0" cellpadding="0"
+                                                                            cellspacing="0"
+                                                                            style="display:inline-block;margin:7px"
+                                                                            width="264">
+                                                                            <tbody>
+                                                                                <tr align="center">
+                                                                                    <td align="center" bgcolor="#fff"
+                                                                                        height="44"
+                                                                                        style="border-radius:4px;background-color:#fff; border:1px solid #007634"
+                                                                                        valign="center" width="264"><a
+                                                                                            style="display:block;text-decoration:none;line-height:44px;color:#435f71"
+                                                                                            href="{{.GMapsLink}}"
+                                                                                            target="_blank">Itinéraire</a>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </td>
+                                                                </tr>
+
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                                {{else}}
+                                                <tr>
+                                                    <td>
+                                                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                                            <tbody>
+                                                            <tr>
+                                                                <td
+                                                                        style="color:#435f71;font-size:14px;line-height:24px">
+                                                                    <p>La consultation sera en visioconférence. Contactez le clinician pour en déterminer les modalités.</p>
+
+                                                                </td>
+                                                            </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                                {{end}}
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr height="14"></tr>
+
+                                <tr>
+                                    <td>
+                                        <table width="100%" bgcolor="#FFFFFF" border="0" cellpadding="0"
+                                            cellspacing="14" style="border-radius:4px;background-color:#ffffff">
+                                            <tbody>
+                                                <tr>
+                                                    <td align="center"
+                                                        style="color:#435f71;font-size:15px;font-weight:bold">Informations Covid-19</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td
+                                                                        style="color:#435f71;font-size:14px;line-height:24px">
+                                                                        <p>Les derniers arrêtés en date imposent désormais le port du masque.</p>
+                                                                        <p>Pour contribuer à juguler l'épidémie, vous pouvez installer et activer l'application <strong>TousAntiCovid</strong> avant les consultations.</p>
+                                                                    </td>
+                                                                </tr>
+                                                            
+
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr height="14"></tr>
+
+                                <tr>
+                                    <td>
+                                        <table width="100%" bgcolor="#007634" border="0" cellpadding="0"
+                                            cellspacing="14"
+                                            style="border-radius:4px;background: linear-gradient(306deg,#007634 0%,#008f3f 70%);color:#fff;font-size:16px">
+                                            <tbody>
+                                                <tr>
+                                                    <td align="center" style="font-weight:800">Deiz</td>
+                                                </tr>
+                                                <tr height="14"></tr>
+                                                <tr>
+
+                                                    <td align="center">
+                                                        <p>Agenda pour thérapeutes</p>
+                                                        <a href="https://deiz.fr"
+                                                            style="text-decoration:none;color:#FF7E00">deiz.fr</a>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                    <td width="14"></td>
+                </tr>
+                <tr height="14">
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+</body>
+
+</html>

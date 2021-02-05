@@ -35,7 +35,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	psqlDB, err := pgxpool.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	psqlDB, err := pgxpool.Connect(context.Background(), os.Getenv("TEST_DATABASE_URL"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start database pool : %v\n", err)
 		os.Exit(1)
@@ -48,7 +48,8 @@ func main() {
 	crypt := crypt.NewService()
 	v := validator.New()
 	core := deiz.NewCore(repo, pdf, mail, crypt, stripe)
-	err = http.StartEchoServer(http.FirebaseCredentialsGetter(fbClient), core, v)
+	//err = http.StartEchoServer(http.FirebaseCredentialsGetter(fbClient), core, v)
+	err = http.StartEchoServer(http.FakeCredentialsGetter, core, v)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start echo server: %v\n", err)
 		os.Exit(1)
@@ -56,7 +57,7 @@ func main() {
 }
 
 func parseEmailTemplates(path string) *template.Template {
-	return template.Must(template.ParseGlob(path + "/mail/templates/*.html"))
+	return template.Must(template.ParseGlob(path + "/../../mail/templates/*.html"))
 }
 
 func newFireBaseClient(ctx context.Context, path string) (*firebaseAuth.Client, error) {

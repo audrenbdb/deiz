@@ -7,7 +7,7 @@ import (
 
 func getCalendarSettingsByPersonID(ctx context.Context, db db, personID int) (deiz.CalendarSettings, error) {
 	const query = `SELECT s.id, s.step,
-	COALESCE(m.id, 0), COALESCE(m.duration, 0), COALESCE(m.price, 0), COALESCE(m.name, ''), COALESCE(m.public, false),
+	COALESCE(m.id, 0), COALESCE(m.duration, 30), COALESCE(m.price, 5000), COALESCE(m.name, 'défaut'), COALESCE(m.public, false),
 	t.id, t.name
 	FROM calendar_settings s
 	LEFT JOIN booking_motive m ON s.default_booking_motive_id = m.id

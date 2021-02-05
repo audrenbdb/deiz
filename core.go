@@ -147,7 +147,7 @@ func NewCore(repo repo, pdf pdf, mail mail, crypt crypt, stripe stripe) Core {
 
 		FillFreeBookingSlot:         fillFreeBookingSlotFunc(repo),
 		FreeBookingSlot:             freeBookingSlotFunc(repo),
-		GetAllBookingSlotsFromWeek:  getAllBookingSlotsFromWeekFunc(repo, repo, repo),
+		GetAllBookingSlotsFromWeek:  getAllBookingSlotsFromWeekFunc(repo, repo),
 		GetFreeBookingSlotsFromWeek: getFreeBookingSlotsFromWeekFunc(repo, repo, repo),
 		MailBooking:                 mailBookingFunc(mail, repo),
 		MailCancelBooking:           mailCancelBookingFunc(mail, repo),

@@ -8,7 +8,6 @@ import (
 
 func handlePostClinicianAddress(
 	addPersonalAddress deiz.AddClinicianPersonalAddress, addOfficeAddress deiz.AddClinicianOfficeAddress,
-	validate validater,
 ) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var err error
@@ -18,8 +17,7 @@ func handlePostClinicianAddress(
 		if err = c.Bind(&a); err != nil {
 			return c.JSON(http.StatusBadRequest, errBind.Error())
 		}
-		err = validate.StructExceptCtx(ctx, "ID")
-		if err != nil {
+		if !a.IsValid() {
 			return c.JSON(http.StatusBadRequest, errValidating.Error())
 		}
 

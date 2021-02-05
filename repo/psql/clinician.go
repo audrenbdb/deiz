@@ -6,8 +6,8 @@ import (
 )
 
 func getClinicianByID(ctx context.Context, db db, clinicianID int) (deiz.Clinician, error) {
-	const query = `SELECT p.id, p.name, p.surname, p.email, p.phone, p.profession,
-	COALESCE(a.id, 0), COALESCE(a.line, ''), a.post_code, a.city,
+	const query = `SELECT p.id, p.name, p.surname, p.email, p.phone, COALESCE(p.profession, ''),
+	COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, ''),
 	COALESCE(adeli.id, 0), COALESCE(adeli.identifier, '')
 	FROM person p
 	LEFT JOIN address a ON a.id = p.address_id

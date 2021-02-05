@@ -16,7 +16,7 @@ func insertBusiness(ctx context.Context, db db, b *deiz.Business, personID int) 
 }
 
 func getBusinessByPersonID(ctx context.Context, db db, personID int) (deiz.Business, error) {
-	const query = `SELECT b.id, COALESCE(b.name, ''), COALESCE(b.identifier),
+	const query = `SELECT b.id, COALESCE(b.name, ''), COALESCE(b.identifier, ''),
 	COALESCE(t.id, 0), COALESCE(t.code, '')
 	FROM business b
 	LEFT JOIN tax_exemption t ON b.tax_exemption_id = t.id

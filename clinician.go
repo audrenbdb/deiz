@@ -11,7 +11,7 @@ type Clinician struct {
 	Surname    string  `json:"surname" validate:"required"`
 	Phone      string  `json:"phone" validate:"required,min=10"`
 	Email      string  `json:"email" validate:"required,email"`
-	Address    Address `json:"personalAddress" validate:"required"`
+	Address    Address `json:"address" validate:"required"`
 	Profession string  `json:"profession"`
 	Adeli      Adeli   `json:"adeli"`
 }

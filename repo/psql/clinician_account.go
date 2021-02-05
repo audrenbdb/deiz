@@ -3,7 +3,6 @@ package psql
 import (
 	"context"
 	"github.com/audrenbdb/deiz"
-	"time"
 )
 
 //AddClinicianAccount creates a clinician and its default settings for the application to run
@@ -56,8 +55,10 @@ func (r *repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.C
 		return deiz.ClinicianAccount{}, err
 	}
 	keys, err := getStripeKeysByPersonID(ctx, r.conn, clinicianID)
+	if err != nil {
+		return deiz.ClinicianAccount{}, err
+	}
 	acc.StripePublicKey = keys.public
-
 	acc.OfficeHours, err = getOfficeHoursByPersonID(ctx, r.conn, clinicianID)
 	if err != nil {
 		return deiz.ClinicianAccount{}, err

@@ -55,7 +55,7 @@ type (
 	//FreeBookingSlot marks a blocked / booked booking slot as free
 	FreeBookingSlot func(ctx context.Context, s *Booking, clinicianID int) error
 	//GetAllBookingSlotsFromWeek returns all booking slots of a given week for a given clinician
-	GetAllBookingSlotsFromWeek func(ctx context.Context, from time.Time, clinicianID int) ([]Booking, error)
+	GetAllBookingSlotsFromWeek func(ctx context.Context, start time.Time, tzName string, motiveID int, motiveDuration int, clinicianID int) ([]Booking, error)
 	//GetFreeBookingSlotsFromWeek returns free slots for a given week and a given clinician
 	GetFreeBookingSlotsFromWeek func(ctx context.Context, from time.Time, clinicianID int) ([]Booking, error)
 	//MailBooking send an email with booking details
@@ -137,30 +137,47 @@ func freeBookingSlotFunc(remover bookingSlotRemover) FreeBookingSlot {
 	}
 }
 
-func getAllBookingSlotsFromWeekFunc(getter bookingsInTimeRangeGetter, settings calendarSettingsGetter, officeHours officeHoursGetter) GetAllBookingSlotsFromWeek {
-	return func(ctx context.Context, start time.Time, clinicianID int) ([]Booking, error) {
+func getAllBookingSlotsFromWeekFunc(getter bookingsInTimeRangeGetter, officeHours officeHoursGetter) GetAllBookingSlotsFromWeek {
+	return func(ctx context.Context, start time.Time, tzName string, motiveID int, motiveDuration int, clinicianID int) ([]Booking, error) {
 		const daysToFetch = 6
 		var bookings []Booking
 		end := start.AddDate(0, 0, daysToFetch)
-		s, err := settings.GetCalendarSettings(ctx, clinicianID)
-		if err != nil {
-			return nil, err
-		}
+
 		h, err := officeHours.GetOfficeHours(ctx, clinicianID)
 		if err != nil {
 			return nil, err
 		}
-		loc, err := time.LoadLocation(s.Timezone.Name)
+		loc, err := time.LoadLocation(tzName)
 		if err != nil {
 			return nil, err
 		}
-		freeBookings := fillOfficeHoursWithFreeSlots(start.In(loc), end.In(loc), Clinician{ID: clinicianID}, h, []Booking{}, s.DefaultMotive, loc)
+		freeBookings := fillOfficeHoursWithFreeSlots(start.In(loc), end.In(loc),
+			Clinician{ID: clinicianID}, h, []Booking{}, BookingMotive{ID: motiveID, Duration: motiveDuration}, loc)
 		bookedSlots, err := getter.GetBookingsInTimeRange(ctx, start, end, clinicianID)
-		for _, b := range bookedSlots {
-			bookings = append(bookings, removeOverlappingFreeSlots(b, []Booking{b}, freeBookings)...)
+		if err != nil {
+			return nil, err
 		}
+		bookings = removeOverlappingFreeSlots(freeBookings, bookedSlots, []Booking{})
+		bookings = append(bookings, bookedSlots...)
 		return bookings, nil
 	}
+}
+
+func removeOverlappingFreeSlots(freeSlots, bookedSlots, slotsToKeep []Booking) []Booking {
+	if freeSlots == nil || len(freeSlots) == 0 {
+		return slotsToKeep
+	}
+	slot := freeSlots[0]
+	overlaps := false
+	for _, b := range bookedSlots {
+		if timeRangesOverlaps(slot.Start, slot.End, b.Start, b.End) {
+			overlaps = true
+		}
+	}
+	if !overlaps {
+		slotsToKeep = append(slotsToKeep, slot)
+	}
+	return removeOverlappingFreeSlots(freeSlots[1:], bookedSlots, slotsToKeep)
 }
 
 func getFreeBookingSlotsFromWeekFunc(getter bookingsInTimeRangeGetter, settings calendarSettingsGetter, officeHours officeHoursGetter) GetFreeBookingSlotsFromWeek {
@@ -182,21 +199,12 @@ func getFreeBookingSlotsFromWeekFunc(getter bookingsInTimeRangeGetter, settings 
 		}
 		freeBookings := fillOfficeHoursWithFreeSlots(start.In(loc), end.In(loc), Clinician{ID: clinicianID}, h, []Booking{}, s.DefaultMotive, loc)
 		bookedSlots, err := getter.GetBookingsInTimeRange(ctx, start, end, clinicianID)
-		for _, b := range bookedSlots {
-			bookings = append(bookings, removeOverlappingFreeSlots(b, []Booking{}, freeBookings)...)
+		if err != nil {
+			return nil, err
 		}
+		bookings = removeOverlappingFreeSlots(freeBookings, bookedSlots, []Booking{})
 		return bookings, nil
 	}
-}
-
-func removeOverlappingFreeSlots(b Booking, bookings []Booking, freeSlots []Booking) []Booking {
-	if freeSlots == nil || len(freeSlots) == 0 {
-		return bookings
-	}
-	if !timeRangesOverlaps(b.Start, b.End, freeSlots[0].Start, freeSlots[0].End) {
-		bookings = append(bookings, freeSlots[0])
-	}
-	return removeOverlappingFreeSlots(b, bookings, freeSlots[1:])
 }
 
 //fillTimeRangeWithFreeSlots fills a time range with free booking slots available with UTC timezone

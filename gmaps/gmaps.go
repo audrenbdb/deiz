@@ -5,8 +5,10 @@ import (
 	"net/url"
 )
 
+type GMapsService struct{}
+
 //NewQueryAddressURL generates a google maps search query
-func NewQueryAddressURL(address string) string {
+func (s *GMapsService) MakeGoogleMapsLink(address string) string {
 	baseURL, _ := url.Parse("https://www.google.com")
 	baseURL.Path += "maps/search/"
 	params := url.Values{}

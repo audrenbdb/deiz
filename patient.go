@@ -1,6 +1,9 @@
 package deiz
 
-import "context"
+import (
+	"context"
+	"regexp"
+)
 
 //Patient uses the application to book clinician appointment
 type Patient struct {
@@ -10,6 +13,23 @@ type Patient struct {
 	Phone   string  `json:"phone" validator:"required,min=10"`
 	Email   string  `json:"email" validator:"required,email"`
 	Address Address `json:"address" validator:"required"`
+}
+
+func (p *Patient) IsValid() bool {
+	if len(p.Name) < 2 {
+		return false
+	}
+	if len(p.Surname) < 2 {
+		return false
+	}
+	if len(p.Phone) < 10 {
+		return false
+	}
+	r := regexp.MustCompile("^\\S+@\\S+$")
+	if !r.MatchString(p.Email) {
+		return false
+	}
+	return true
 }
 
 type (
@@ -24,6 +44,9 @@ type (
 	}
 	patientRemover interface {
 		RemovePatient(ctx context.Context, p *Patient, clinicianID int) error
+	}
+	patientCreater interface {
+		CreatePatient(ctx context.Context, p *Patient, clinicianID int) error
 	}
 	patientAddressEditer interface {
 		EditPatientAddress(ctx context.Context, p *Patient, clinicianID int) error

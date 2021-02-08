@@ -7,7 +7,8 @@ CREATE TABLE office_hours (
                                   CONSTRAINT end_mn_val CHECK(end_mn <= 1440),
                               week_day INT NOT NULL
                                     CONSTRAINT day_of_week_min_max CHECK(week_day >= 0 AND week_day < 7),
-                              address_id INT NOT NULL REFERENCES address(id) ON DELETE CASCADE,
+                              address_id INT REFERENCES address(id) ON DELETE SET NULL,
+                              remote_allowed BOOL NOT NULL DEFAULT FALSE,
                               EXCLUDE using gist (person_id WITH =, week_day WITH =, (array[start_mn, end_mn]) WITH &&)
 );
 CREATE EXTENSION IF NOT EXISTS intarray;

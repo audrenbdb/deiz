@@ -1,152 +1,106 @@
-package deiz
+package deiz_test
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"github.com/audrenbdb/deiz"
 	"github.com/stretchr/testify/assert"
-	"log"
 	"testing"
-	"time"
 )
 
-func TestFillTimeRangeWithBookings(t *testing.T) {
-	start := time.Now()
-	end := start.Add(time.Hour * time.Duration(1))
-
-	motive := BookingMotive{
-		Duration: 15,
+type (
+	mockBookingStorer struct {
+		err error
 	}
+)
 
-	//should fit 4 slot
-	b := fillTimeRangeWithFreeSlots(end, start, Clinician{}, []Booking{}, Address{}, motive)
-	assert.Equal(t, 4, len(b))
+func (r *mockBookingStorer) StoreBooking(ctx context.Context, b *deiz.Booking) error {
+	return r.err
 }
 
-func TestGetOfficeHoursTimeRange(t *testing.T) {
-	loc, _ := time.LoadLocation("Europe/Paris")
-	start := time.Date(2021, 1, 1, 12, 0, 0, 0, loc)
-	end := start.Add(time.Hour * time.Duration(24*6))
+func TestRegisterBooking(t *testing.T) {
+	var tests = []struct {
+		description string
 
-	h := OfficeHours{
-		StartMn: 800,
-		EndMn:   900,
-		WeekDay: 2,
-	}
-	expectedOfficeHoursStart := time.Date(2021, 1, 5, 800/60, 800%60, 0, 0, loc)
-	expectedOfficeHoursEnd := time.Date(2021, 1, 5, 900/60, 900%60, 0, 0, loc)
+		bookingStorer            deiz.BookingStorer
+		bookingToClinicianMailer deiz.BookingToClinicianMailer
+		bookingToPatientMailer   deiz.BookingToPatientMailer
+		googleCalendarLinkMaker  deiz.GoogleCalendarLinkMaker
+		googleMapsLinkMaker      deiz.GoogleMapsLinkMaker
 
-	r1, r2 := getOfficeHoursTimeRange(start, end, h, loc)
-	assert.Equal(t, expectedOfficeHoursStart, r1)
-	assert.Equal(t, expectedOfficeHoursEnd, r2)
-}
+		inBooking         *deiz.Booking
+		inClinicianID     int
+		inClinicianTz     string
+		inNotifyClinician bool
+		inNotifyPatient   bool
 
-func TestFillOfficeHoursWithFreeSlots(t *testing.T) {
-	loc, _ := time.LoadLocation("Europe/Paris")
-	start := time.Date(2021, 1, 1, 12, 0, 0, 0, loc)
-	end := start.Add(time.Hour * time.Duration(24*6))
-
-	h := []OfficeHours{{
-		StartMn: 800,
-		EndMn:   860,
-		WeekDay: 2,
-	}}
-
-	b := fillOfficeHoursWithFreeSlots(start, end, Clinician{}, h, []Booking{}, BookingMotive{
-		Duration: 15,
-	}, loc)
-	assert.Len(t, b, 4)
-}
-
-func TestLimitRange(t *testing.T) {
-	lowerLimit := time.Date(2021, 1, 1, 12, 0, 0, 0, time.UTC)
-	upperLimit := time.Date(2021, 1, 1, 18, 0, 0, 0, time.UTC)
-
-	rangeStart := time.Date(2021, 1, 1, 11, 0, 0, 0, time.UTC)
-	rangeEnd := time.Date(2021, 1, 1, 19, 0, 0, 0, time.UTC)
-
-	//should bound to limits
-	start, end := limitTimeRange(lowerLimit, upperLimit, rangeStart, rangeEnd)
-	assert.Equal(t, lowerLimit, start)
-	assert.Equal(t, upperLimit, end)
-
-	//should bound to upper limits
-	rangeStart = time.Date(2021, 1, 1, 13, 0, 0, 0, time.UTC)
-	start, end = limitTimeRange(lowerLimit, upperLimit, rangeStart, rangeEnd)
-	assert.Equal(t, rangeStart, start)
-	assert.Equal(t, upperLimit, end)
-
-	//should not change range
-	rangeEnd = time.Date(2021, 1, 1, 15, 0, 0, 0, time.UTC)
-	start, end = limitTimeRange(lowerLimit, upperLimit, rangeStart, rangeEnd)
-	assert.Equal(t, rangeStart, start)
-	assert.Equal(t, rangeEnd, end)
-}
-
-func TestRemoveOverlappingFreeSlots(t *testing.T) {
-	b := Booking{
-		Start: time.Date(2021, 1, 1, 12, 0, 0, 0, time.UTC),
-		End:   time.Date(2021, 1, 1, 13, 0, 0, 0, time.UTC),
-	}
-
-	freeSlots := []Booking{
+		outError error
+	}{
 		{
-			Start: time.Date(2021, 1, 1, 11, 0, 0, 0, time.UTC),
-			End:   time.Date(2021, 1, 1, 13, 0, 0, 0, time.UTC),
+			description:   "should fail to authenticate request as emitted from same clinician",
+			inBooking:     &deiz.Booking{Clinician: deiz.Clinician{ID: 0}},
+			inClinicianID: 1,
+			outError:      deiz.ErrorUnauthorized,
+		},
+		{
+			description:   "should fail to store booking into database",
+			bookingStorer: &mockBookingStorer{err: errors.New("fail to store booking into db")},
+			inBooking:     &deiz.Booking{Clinician: deiz.Clinician{ID: 1}},
+			inClinicianID: 1,
+			outError:      errors.New("fail to store booking into db"),
+		},
+		{
+			description:   "should fail to load timezone location",
+			bookingStorer: &mockBookingStorer{},
+			inBooking:     &deiz.Booking{Clinician: deiz.Clinician{ID: 1}},
+			inClinicianID: 1,
+			inClinicianTz: "fail",
+			outError:      errors.New("unknown time zone fail"),
+		},
+		{
+			description:              "should fail to notify clinician of the booking registration through email",
+			bookingStorer:            &mockBookingStorer{},
+			bookingToClinicianMailer: &mockBookingToClinicianMailer{err: errors.New("fail to mail to clinician")},
+			googleCalendarLinkMaker:  &mockGCalendarLinkMaker{},
+			inBooking:                &deiz.Booking{Clinician: deiz.Clinician{ID: 1}},
+			inNotifyClinician:        true,
+			inClinicianID:            1,
+			outError:                 errors.New("fail to mail to clinician"),
+		},
+		{
+			description:             "should fail to notify patient of the booking registration through email",
+			bookingStorer:           &mockBookingStorer{},
+			bookingToPatientMailer:  &mockBookingToPatientMailer{err: errors.New("fail to mail to patient")},
+			googleCalendarLinkMaker: &mockGCalendarLinkMaker{},
+			googleMapsLinkMaker:     &mockGMapsLinkMaker{},
+			inBooking:               &deiz.Booking{Clinician: deiz.Clinician{ID: 1}},
+			inNotifyPatient:         true,
+			inClinicianID:           1,
+			outError:                errors.New("fail to mail to patient"),
 		},
 	}
-	bookings := removeOverlappingFreeSlots(b, []Booking{b}, freeSlots)
-	//should remove booking slot
-	assert.Len(t, bookings, 1)
 
-	//should remove only one free slot
-	freeSlots = append(freeSlots, Booking{
-		Start: time.Date(2021, 1, 1, 9, 0, 0, 0, time.UTC),
-		End:   time.Date(2021, 1, 1, 10, 0, 0, 0, time.UTC),
-	})
-	bookings = removeOverlappingFreeSlots(b, []Booking{b}, freeSlots)
-	assert.Len(t, bookings, 2)
-}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			r := deiz.Repo{
+				Booking: deiz.BookingRepo{
+					Storer: test.bookingStorer,
+				},
+				Mailing: deiz.MailingService{
+					BookingToClinicianMailer: test.bookingToClinicianMailer,
+					BookingToPatientMailer:   test.bookingToPatientMailer,
+				},
+				GoogleCalendar: deiz.GoogleCalendarService{
+					LinkMaker: test.googleCalendarLinkMaker,
+				},
+				GoogleMaps: deiz.GoogleMapsService{
+					GoogleMapsLinkMaker: test.googleMapsLinkMaker,
+				},
+			}
+			err := r.RegisterBooking(context.Background(), test.inBooking, test.inClinicianID, test.inClinicianTz, test.inNotifyClinician, test.inNotifyPatient)
+			assert.Equal(t, test.outError, err, fmt.Sprintf("got %s, want %s", err, test.outError))
 
-type fakeBookingGetter struct{}
-
-func (r *fakeBookingGetter) GetBookingsInTimeRange(ctx context.Context, from, to time.Time, clinicianID int) ([]Booking, error) {
-	return []Booking{
-		{
-			Start: time.Date(2021, 1, 1, 12, 0, 0, 0, time.UTC),
-			End:   time.Date(2021, 1, 1, 13, 0, 0, 0, time.UTC),
-		},
-	}, nil
-}
-
-func (r *fakeBookingGetter) GetOfficeHours(ctx context.Context, clinicianID int) ([]OfficeHours, error) {
-	return []OfficeHours{
-		{
-			WeekDay: 2,
-			StartMn: 200,
-			EndMn:   1200,
-		},
-	}, nil
-}
-
-func (r *fakeBookingGetter) GetCalendarSettings(ctx context.Context, clinicianID int) (CalendarSettings, error) {
-	return CalendarSettings{
-		Timezone:      Timezone{Name: "Europe/Paris"},
-		DefaultMotive: BookingMotive{Duration: 30},
-	}, nil
-}
-
-func TestGetAllBookingSlotsFromWeekFunc(t *testing.T) {
-	r := &fakeBookingGetter{}
-	start := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
-	getBookingsFunc := getAllBookingSlotsFromWeekFunc(r, r, r)
-	_, err := getBookingsFunc(context.Background(), start, 1)
-	assert.NoError(t, err)
-}
-
-func TestGetFreeBookingSlotsFromWeekFunc(t *testing.T) {
-	r := &fakeBookingGetter{}
-	start := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
-	getBookingsFunc := getFreeBookingSlotsFromWeekFunc(r, r, r)
-	b, err := getBookingsFunc(context.Background(), start, 1)
-	assert.NoError(t, err)
-	log.Println(b)
+		})
+	}
 }

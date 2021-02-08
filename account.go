@@ -11,8 +11,22 @@ type ClinicianAccount struct {
 	OfficeAddresses  []Address        `json:"officeAddresses"`
 	StripePublicKey  string           `json:"stripePublicKey"`
 	OfficeHours      []OfficeHours    `json:"officeHours"`
-	BookingMotives   []BookingMotive  `json:"bookingMotive"`
+	BookingMotives   []BookingMotive  `json:"bookingMotives"`
 	CalendarSettings CalendarSettings `json:"calendarSettings"`
+}
+
+type ClinicianAccountRepo struct {
+	Getter ClinicianAccountGetter
+}
+
+type (
+	ClinicianAccountGetter interface {
+		GetClinicianAccount(ctx context.Context, clinicianID int) (ClinicianAccount, error)
+	}
+)
+
+func (r *Repo) GetClinicianAccount(ctx context.Context, clinicianID int) (ClinicianAccount, error) {
+	return ClinicianAccount{}, nil
 }
 
 //repo functions

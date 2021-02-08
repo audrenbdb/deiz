@@ -8,6 +8,40 @@ import (
 	"time"
 )
 
+func handlePostBookingBlocked(post deiz.FillFreeBookingSlot) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		var b *deiz.Booking
+		if err := c.Bind(&b); err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		if !b.IsValid() {
+			return c.JSON(http.StatusBadRequest, errValidating.Error())
+		}
+		err := post(ctx, b, clinicianID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, b)
+	}
+}
+
+func handleDeleteBookingBlocked(remove deiz.FreeBookingSlot) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		bookingID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		if err := remove(ctx, &deiz.Booking{ID: bookingID}, clinicianID); err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return nil
+	}
+}
+
 func handleGetBookingsPendingPayment(getBookingsPendingPayments deiz.ListBookingsPendingPayment) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()

@@ -5,13 +5,6 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-func insertPatient(ctx context.Context, db db, p *deiz.Patient, clinicianID int) error {
-	const query = `INSERT INTO patient(clinician_person_id, email, name, surname, phone, address_id)
-	VALUES($1, $2, $3, $4, $5, NULLIF($6, 0)) RETURNING id`
-	row := db.QueryRow(ctx, query, clinicianID, p.Email, p.Name, p.Surname, p.Phone, p.Address.ID)
-	return row.Scan(&p.ID)
-}
-
 //isPatientTiedToClinician checks if a given patient is in clinician patient list
 func isPatientTiedToClinician(ctx context.Context, db db, p *deiz.Patient, clinicianID int) (bool, error) {
 	const query = `SELECT EXISTS(SELECT 1 FROM patient WHERE clinician_person_id = $1 AND id = $2)`
@@ -21,6 +14,13 @@ func isPatientTiedToClinician(ctx context.Context, db db, p *deiz.Patient, clini
 		return false, err
 	}
 	return tied, nil
+}
+
+func (r *repo) CreatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
+	const query = `INSERT INTO patient(clinician_person_id, email, name, surname, phone, address_id)
+	VALUES($1, $2, $3, $4, $5, NULLIF($6, 0)) RETURNING id`
+	row := r.conn.QueryRow(ctx, query, clinicianID, p.Email, p.Name, p.Surname, p.Phone, p.Address.ID)
+	return row.Scan(&p.ID)
 }
 
 func (r *repo) SearchPatients(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error) {

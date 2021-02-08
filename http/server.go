@@ -30,6 +30,8 @@ func StartEchoServer(credentialsGetter credentialsGetter, core deiz.Core, v vali
 
 	e.GET("/api/bookings/pending-payment", handleGetBookingsPendingPayment(core.ListBookingsPendingPayment), clinicianMW)
 	e.GET("/api/bookings", handleGetAllBookingsSlot(core.GetAllBookingSlotsFromWeek), clinicianMW)
+	e.POST("/api/bookings/blocked", handlePostBookingBlocked(core.FillFreeBookingSlot), clinicianMW)
+	e.DELETE("/api/bookings/:id/blocked", handleDeleteBookingBlocked(core.FreeBookingSlot), clinicianMW)
 
 	e.GET("/api/booking-invoices/:id/pdf", handleGetBookingInvoicePDF(core.SeeInvoicePDF, v), clinicianMW)
 	e.POST("/api/booking-invoices", handlePostBookingInvoice(core.CreateBookingInvoice, core.MailBookingInvoice, v), clinicianMW)

@@ -8,7 +8,7 @@ import (
 
 func insertBooking(ctx context.Context, db db, b *deiz.Booking) error {
 	const query = `INSERT INTO clinician_booking(address_id, blocked, remote, clinician_person_id, patient_id, booking_motive_id, during, paid, note)
-	VALUES(NULLIF($1, 0), $2, $3, $4, $5, NULLIF($6, 0), tsrange($7, $8, '()'), $9, NULLIF($10, ''))
+	VALUES(NULLIF($1, 0), $2, $3, $4, NULLIF($5, 0), NULLIF($6, 0), tsrange($7, $8, '()'), $9, NULLIF($10, ''))
 	RETURNING id, delete_id`
 	row := db.QueryRow(ctx, query, b.Address.ID, b.Blocked, b.Remote, b.Clinician.ID, b.Patient.ID, b.Motive.ID, b.Start, b.End, b.Paid, b.Note)
 	err := row.Scan(&b.ID, &b.DeleteID)
@@ -44,24 +44,7 @@ func updateBookingPaidStatus(ctx context.Context, db db, paid bool, bookingID in
 
 //Create a booking slot and a patient if he does not exist
 func (r *repo) FillFreeBookingSlot(ctx context.Context, b *deiz.Booking) error {
-	tx, err := r.conn.Begin(ctx)
-	defer tx.Rollback(ctx)
-	if err != nil {
-		return err
-	}
-	//create patient if not exist
-	if b.Patient.ID == 0 {
-		err := insertPatient(ctx, tx, &b.Patient, b.Clinician.ID)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = insertBooking(ctx, tx, b)
-	if err != nil {
-		return err
-	}
-	return tx.Commit(ctx)
+	return insertBooking(ctx, r.conn, b)
 }
 
 func (r *repo) RemoveBookingSlot(ctx context.Context, s *deiz.Booking) error {

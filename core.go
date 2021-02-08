@@ -22,6 +22,14 @@ type mail interface {
 	bookingCancelMailer
 }
 
+type Repo struct {
+	Booking          BookingRepo
+	ClinicianAccount ClinicianAccountRepo
+	Mailing          MailingService
+	GoogleCalendar   GoogleCalendarService
+	GoogleMaps       GoogleMapsService
+}
+
 //repo is a driven actor called BY the core to manage storage and persistence
 type repo interface {
 	logger
@@ -54,6 +62,7 @@ type repo interface {
 	patientEditer
 	patientAddressEditer
 	patientRemover
+	patientCreater
 
 	freeBookingSlotFiller
 	bookingSlotRemover
@@ -145,7 +154,7 @@ func NewCore(repo repo, pdf pdf, mail mail, crypt crypt, stripe stripe) Core {
 		EditPatientAddress: editPatientAddressFunc(repo),
 		RemovePatient:      removePatientFunc(repo),
 
-		FillFreeBookingSlot:         fillFreeBookingSlotFunc(repo),
+		FillFreeBookingSlot:         fillFreeBookingSlotFunc(repo, repo),
 		FreeBookingSlot:             freeBookingSlotFunc(repo),
 		GetAllBookingSlotsFromWeek:  getAllBookingSlotsFromWeekFunc(repo, repo),
 		GetFreeBookingSlotsFromWeek: getFreeBookingSlotsFromWeekFunc(repo, repo, repo),

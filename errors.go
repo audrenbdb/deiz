@@ -1,6 +1,7 @@
 package deiz
 
 const ErrorUnauthorized Error = "unauthorized"
+const ErrorStructValidation Error = "unable to validate struct"
 
 type Error string
 

@@ -6,12 +6,12 @@ import (
 )
 
 type Clinician struct {
-	ID         int     `json:"id" validate:"required"`
-	Name       string  `json:"name" validate:"required"`
-	Surname    string  `json:"surname" validate:"required"`
-	Phone      string  `json:"phone" validate:"required,min=10"`
-	Email      string  `json:"email" validate:"required,email"`
-	Address    Address `json:"address" validate:"required"`
+	ID         int     `json:"id"`
+	Name       string  `json:"name"`
+	Surname    string  `json:"surname"`
+	Phone      string  `json:"phone"`
+	Email      string  `json:"email"`
+	Address    Address `json:"address"`
 	Profession string  `json:"profession"`
 	Adeli      Adeli   `json:"adeli"`
 }
@@ -20,6 +20,8 @@ type Adeli struct {
 	ID         int    `json:"id" validate:"required"`
 	Identifier string `json:"identifier" validate:"required,min=8"`
 }
+
+type ()
 
 type (
 	clinicianRoleUpdater interface {

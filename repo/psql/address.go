@@ -105,7 +105,7 @@ func (r *repo) AddClinicianPersonalAddress(ctx context.Context, a *deiz.Address,
 	return nil
 }
 
-func (r *repo) AddClinicianOfficeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
+func (r *repo) CreateClinicianOfficeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {

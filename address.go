@@ -9,7 +9,7 @@ type Address struct {
 	City     string `json:"city"`
 }
 
-func (a *Address) IsValid() bool {
+func (a *Address) isValid() bool {
 	if len(a.Line) < 2 {
 		return false
 	}
@@ -22,11 +22,17 @@ func (a *Address) IsValid() bool {
 	return true
 }
 
+type (
+	AddressUpdater interface {
+		UpdateAddress(ctx context.Context, address *Address) error
+	}
+)
+
 //repo functions
 type (
 	clinicianAddressAdder interface {
 		AddClinicianPersonalAddress(ctx context.Context, address *Address, clinicianID int) error
-		AddClinicianOfficeAddress(ctx context.Context, address *Address, clinicianID int) error
+		CreateClinicianOfficeAddress(ctx context.Context, address *Address, clinicianID int) error
 	}
 	clinicianAddressEditer interface {
 		EditClinicianAddress(ctx context.Context, address *Address, clinicianID int) error
@@ -45,7 +51,7 @@ type (
 
 func addClinicianOfficeAddressFunc(adder clinicianAddressAdder) AddClinicianOfficeAddress {
 	return func(ctx context.Context, address *Address, clinicianID int) error {
-		return adder.AddClinicianOfficeAddress(ctx, address, clinicianID)
+		return adder.CreateClinicianOfficeAddress(ctx, address, clinicianID)
 	}
 }
 

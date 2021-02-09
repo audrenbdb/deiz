@@ -16,17 +16,69 @@ type ClinicianAccount struct {
 }
 
 type ClinicianAccountRepo struct {
-	Getter ClinicianAccountGetter
+	AccountCreater           ClinicianAccountCreater
+	AccountGetter            ClinicianAccountGetter
+	ClinicianAddressCreater  ClinicianAddressCreater
+	OfficeAddressCreater     ClinicianOfficeAddressCreater
+	AddressOwnershipVerifier ClinicianAddressOwnershipVerifier
+	AddressUpdater           AddressUpdater
 }
 
 type (
+	ClinicianAccountCreater interface {
+		CreateClinicianAccount(ctx context.Context, account *ClinicianAccount) error
+	}
 	ClinicianAccountGetter interface {
 		GetClinicianAccount(ctx context.Context, clinicianID int) (ClinicianAccount, error)
 	}
+	ClinicianOfficeAddressCreater interface {
+		CreateClinicianOfficeAddress(ctx context.Context, a *Address, clinicianID int) error
+	}
+	ClinicianAddressCreater interface {
+		CreateClinicianAddress(ctx context.Context, a *Address, clinicianID int) error
+	}
+	ClinicianAddressOwnershipVerifier interface {
+		IsAddressToClinician(ctx context.Context, a *Address, clinicianID int) (bool, error)
+	}
 )
 
-func (r *Repo) GetClinicianAccount(ctx context.Context, clinicianID int) (ClinicianAccount, error) {
-	return ClinicianAccount{}, nil
+func (c *Repo) AddClinicianAccount(ctx context.Context, account *ClinicianAccount) error {
+	return c.ClinicianAccount.AccountCreater.CreateClinicianAccount(ctx, account)
+}
+
+func (c *Repo) GetClinicianAccount(ctx context.Context, clinicianID int) (ClinicianAccount, error) {
+	return c.ClinicianAccount.AccountGetter.GetClinicianAccount(ctx, clinicianID)
+}
+
+func (c *Repo) AddClinicianOfficeAddress(ctx context.Context, address *Address, clinicianID int) error {
+	if !address.isValid() {
+		return ErrorStructValidation
+	}
+	return c.ClinicianAccount.OfficeAddressCreater.CreateClinicianOfficeAddress(ctx, address, clinicianID)
+}
+
+func (c *Repo) AddClinicianAddress(ctx context.Context, address *Address, clinicianID int) error {
+	if !address.isValid() {
+		return ErrorStructValidation
+	}
+	return c.ClinicianAccount.ClinicianAddressCreater.CreateClinicianAddress(ctx, address, clinicianID)
+}
+
+func (c *Repo) UpdateClinicianAddress(ctx context.Context, address *Address, clinicianID int) error {
+	if !address.isValid() {
+		return ErrorStructValidation
+	}
+	ownsAddress, err := c.ClinicianAccount.AddressOwnershipVerifier.IsAddressToClinician(ctx, address, clinicianID)
+	if err != nil {
+		return err
+	}
+	if !ownsAddress {
+		return ErrorUnauthorized
+	}
+	if err := c.ClinicianAccount.AddressUpdater.UpdateAddress(ctx, address); err != nil {
+		return err
+	}
+	return nil
 }
 
 //repo functions

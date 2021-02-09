@@ -23,11 +23,11 @@ func TestRegisterBooking(t *testing.T) {
 	var tests = []struct {
 		description string
 
-		bookingStorer            deiz.BookingStorer
-		bookingToClinicianMailer deiz.BookingToClinicianMailer
-		bookingToPatientMailer   deiz.BookingToPatientMailer
-		googleCalendarLinkMaker  deiz.GoogleCalendarLinkMaker
-		googleMapsLinkMaker      deiz.GoogleMapsLinkMaker
+		bookingStorer            *mockBookingStorer
+		bookingToClinicianMailer *mockBookingToClinicianMailer
+		bookingToPatientMailer   *mockBookingToPatientMailer
+		googleCalendarLinkMaker  *mockGCalendarLinkMaker
+		googleMapsLinkMaker      *mockGMapsLinkMaker
 
 		inBooking         *deiz.Booking
 		inClinicianID     int
@@ -78,6 +78,19 @@ func TestRegisterBooking(t *testing.T) {
 			inNotifyPatient:         true,
 			inClinicianID:           1,
 			outError:                errors.New("fail to mail to patient"),
+		},
+		{
+			description:              "should succeed to register and send emails to both patient and clinician",
+			bookingStorer:            &mockBookingStorer{},
+			bookingToPatientMailer:   &mockBookingToPatientMailer{},
+			bookingToClinicianMailer: &mockBookingToClinicianMailer{},
+			googleCalendarLinkMaker:  &mockGCalendarLinkMaker{},
+			googleMapsLinkMaker:      &mockGMapsLinkMaker{},
+			inBooking:                &deiz.Booking{Clinician: deiz.Clinician{ID: 1}},
+			inNotifyPatient:          true,
+			inNotifyClinician:        true,
+			inClinicianID:            1,
+			outError:                 nil,
 		},
 	}
 

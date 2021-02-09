@@ -36,7 +36,7 @@ func createHash(key string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (d *service) EncryptString(ctx context.Context, str string) ([]byte, error) {
+func (d *service) CryptStringToBytes(ctx context.Context, str string) ([]byte, error) {
 	var b []byte
 
 	hashedPhrase, err := getHashedPassphrase()

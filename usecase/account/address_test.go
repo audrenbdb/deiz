@@ -1,18 +1,15 @@
-package deiz_test
+package account_test
 
 import (
 	"context"
 	"errors"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/usecase/account"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 type (
-	mockAccountGetter struct {
-		account deiz.ClinicianAccount
-		err     error
-	}
 	mockClinicianOfficeAddressCreater struct {
 		err error
 	}
@@ -23,7 +20,7 @@ type (
 		own bool
 		err error
 	}
-	mockClinicianAccountCreater struct {
+	mockAddressUpdater struct {
 		err error
 	}
 )
@@ -33,14 +30,6 @@ var validAddress = deiz.Address{
 	Line:     "Test",
 	PostCode: 10000,
 	City:     "Test",
-}
-
-func (c *mockClinicianAccountCreater) CreateClinicianAccount(ctx context.Context, account *deiz.ClinicianAccount) error {
-	return c.err
-}
-
-func (c *mockAccountGetter) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
-	return c.account, c.err
 }
 
 func (a *mockClinicianOfficeAddressCreater) CreateClinicianOfficeAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
@@ -55,39 +44,41 @@ func (m *mockAddressOwnershipVerifier) IsAddressToClinician(ctx context.Context,
 	return m.own, m.err
 }
 
-func TestGetClinicianAccount(t *testing.T) {
+func (c *mockAddressUpdater) UpdateAddress(ctx context.Context, address *deiz.Address) error {
+	return c.err
+}
+
+func TestAddressIsValid(t *testing.T) {
 	var tests = []struct {
 		description string
 
-		accountGetter *mockAccountGetter
+		inAddress *deiz.Address
 
-		inClinicianID int
-
-		outAccount deiz.ClinicianAccount
-		outError   error
+		isValid bool
 	}{
 		{
-			description:   "should fail to get clinician account from the repo",
-			accountGetter: &mockAccountGetter{err: errors.New("fail")},
-			outError:      errors.New("fail"),
+			description: "should fail with too low line",
+			inAddress:   &deiz.Address{},
 		},
 		{
-			description:   "should succeed to get clinician account",
-			accountGetter: &mockAccountGetter{account: deiz.ClinicianAccount{Clinician: deiz.Clinician{ID: 1}}},
-			outAccount:    deiz.ClinicianAccount{Clinician: deiz.Clinician{ID: 1}},
-			outError:      nil,
+			description: "should fail with incorrect post code",
+			inAddress:   &deiz.Address{Line: "test", PostCode: 0},
+		},
+		{
+			description: "should succeed with correct address",
+			inAddress:   &deiz.Address{Line: "test", PostCode: 10000, City: "TEST"},
+			isValid:     true,
+		},
+		{
+			description: "should return false with wrong city",
+			inAddress:   &deiz.Address{Line: "test", PostCode: 10000},
 		},
 	}
+
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			r := deiz.Repo{
-				ClinicianAccount: deiz.ClinicianAccountRepo{
-					AccountGetter: test.accountGetter,
-				},
-			}
-			acc, err := r.GetClinicianAccount(context.Background(), test.inClinicianID)
-			assert.Equal(t, test.outError, err)
-			assert.Equal(t, test.outAccount, acc)
+			valid := account.IsAddressValid(test.inAddress)
+			assert.Equal(t, test.isValid, valid)
 		})
 	}
 }
@@ -122,10 +113,8 @@ func TestAddClinianOfficeAddress(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			r := deiz.Repo{
-				ClinicianAccount: deiz.ClinicianAccountRepo{
-					OfficeAddressCreater: test.adder,
-				},
+			r := account.Usecase{
+				OfficeAddressCreater: test.adder,
 			}
 			err := r.AddClinicianOfficeAddress(context.Background(), test.inAddress, test.inClinicianID)
 			assert.Equal(t, test.outError, err)
@@ -162,12 +151,10 @@ func TestAddClinianAddress(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			r := deiz.Repo{
-				ClinicianAccount: deiz.ClinicianAccountRepo{
-					ClinicianAddressCreater: test.adder,
-				},
+			u := account.Usecase{
+				HomeAddressCreater: test.adder,
 			}
-			err := r.AddClinicianAddress(context.Background(), test.inAddress, test.inClinicianID)
+			err := u.AddClinicianHomeAddress(context.Background(), test.inAddress, test.inClinicianID)
 			assert.Equal(t, test.outError, err)
 		})
 	}
@@ -218,45 +205,11 @@ func TestUpdateClinicianAddress(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			r := deiz.Repo{
-				ClinicianAccount: deiz.ClinicianAccountRepo{
-					AddressUpdater:           test.addressUpdater,
-					AddressOwnershipVerifier: test.verifier,
-				},
+			u := account.Usecase{
+				AddressUpdater:           test.addressUpdater,
+				AddressOwnerShipVerifier: test.verifier,
 			}
-			err := r.UpdateClinicianAddress(context.Background(), test.inAddress, test.inClinicianID)
-			assert.Equal(t, test.outError, err)
-		})
-	}
-}
-
-func TestAddClinicianAccount(t *testing.T) {
-	var tests = []struct {
-		description string
-
-		creater *mockClinicianAccountCreater
-
-		inClinicianAccount *deiz.ClinicianAccount
-		outError           error
-	}{
-		{
-			description: "should fail to create clinician account",
-			creater:     &mockClinicianAccountCreater{err: errors.New("failed to create")},
-			outError:    errors.New("failed to create"),
-		},
-		{
-			description: "should succeed",
-			creater:     &mockClinicianAccountCreater{},
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			r := deiz.Repo{
-				ClinicianAccount: deiz.ClinicianAccountRepo{
-					AccountCreater: test.creater,
-				},
-			}
-			err := r.AddClinicianAccount(context.Background(), test.inClinicianAccount)
+			err := u.UpdateClinicianAddress(context.Background(), test.inAddress, test.inClinicianID)
 			assert.Equal(t, test.outError, err)
 		})
 	}

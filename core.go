@@ -8,7 +8,6 @@ type pdf interface {
 
 type crypt interface {
 	bytesDecrypter
-	stringEncrypter
 }
 
 type stripe interface {
@@ -28,23 +27,16 @@ type Repo struct {
 	Mailing          MailingService
 	GoogleCalendar   GoogleCalendarService
 	GoogleMaps       GoogleMapsService
+	Crypt            CryptService
 }
 
 //repo is a driven actor called BY the core to manage storage and persistence
 type repo interface {
-	logger
-
-	clinicianAccountAdder
-	clinicianAccountGetter
-	clinicianAddressAdder
-	clinicianAddressEditer
 	clinicianEmailEditer
 	clinicianPhoneEditer
 	clinicianRoleUpdater
 	clinicianInvoicesCounter
-	clinicianBusinessEditer
 	clinicianStripeSecretKeyGetter
-	clinicianStripeKeysEditer
 	clinicianTimezoneGetter
 
 	calendarSettingsEditer
@@ -76,19 +68,10 @@ type repo interface {
 //Core methods exposed to primary actors
 //Core methods to be called FROM external package
 type Core struct {
-	Login Login
-
-	AddClinicianAccount         AddClinicianAccount
-	GetClinicianAccount         GetClinicianAccount
-	AddClinicianPersonalAddress AddClinicianPersonalAddress
-	AddClinicianOfficeAddress   AddClinicianOfficeAddress
-	EditClinicianAddress        EditClinicianAddress
-	EditClinicianEmail          EditClinicianEmail
-	EditClinicianPhone          EditClinicianPhone
-	EditClinicianBusiness       EditClinicianBusiness
-	EnableClinicianAccess       EnableClinicianAccess
-	DisableClinicianAccess      DisableClinicianAccess
-	EditClinicianStripeKeys     EditClinicianStripeKeys
+	EditClinicianEmail     EditClinicianEmail
+	EditClinicianPhone     EditClinicianPhone
+	EnableClinicianAccess  EnableClinicianAccess
+	DisableClinicianAccess DisableClinicianAccess
 
 	EditCalendarSettings EditCalendarSettings
 
@@ -122,19 +105,10 @@ type Core struct {
 //Implements core function with driven actors
 func NewCore(repo repo, pdf pdf, mail mail, crypt crypt, stripe stripe) Core {
 	return Core{
-		Login: login(repo),
-
-		AddClinicianAccount:         addClinicianAccountFunc(repo),
-		GetClinicianAccount:         getClinicianAccountFunc(repo),
-		AddClinicianPersonalAddress: addClinicianPersonalAddressFunc(repo),
-		AddClinicianOfficeAddress:   addClinicianOfficeAddressFunc(repo),
-		EditClinicianAddress:        editClinicianAddressFunc(repo),
-		EditClinicianPhone:          editClinicianPhoneFunc(repo),
-		EditClinicianEmail:          editClinicianEmailFunc(repo),
-		EditClinicianBusiness:       editClinicianBusinessFunc(repo),
-		EnableClinicianAccess:       enableClinicianAccessFunc(repo),
-		DisableClinicianAccess:      disableClinicianAccessFunc(repo),
-		EditClinicianStripeKeys:     editClinicianStripeKeysFunc(repo, crypt),
+		EditClinicianPhone:     editClinicianPhoneFunc(repo),
+		EditClinicianEmail:     editClinicianEmailFunc(repo),
+		EnableClinicianAccess:  enableClinicianAccessFunc(repo),
+		DisableClinicianAccess: disableClinicianAccessFunc(repo),
 
 		EditCalendarSettings: editCalendarSettingsFunc(repo),
 

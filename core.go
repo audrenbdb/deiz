@@ -22,12 +22,11 @@ type mail interface {
 }
 
 type Repo struct {
-	Booking          BookingRepo
-	ClinicianAccount ClinicianAccountRepo
-	Mailing          MailingService
-	GoogleCalendar   GoogleCalendarService
-	GoogleMaps       GoogleMapsService
-	Crypt            CryptService
+	Booking        BookingRepo
+	Mailing        MailingService
+	GoogleCalendar GoogleCalendarService
+	GoogleMaps     GoogleMapsService
+	Crypt          CryptService
 }
 
 //repo is a driven actor called BY the core to manage storage and persistence

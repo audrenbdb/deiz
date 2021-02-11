@@ -31,10 +31,6 @@ func (b *Booking) IsValid() bool {
 	return true
 }
 
-const (
-	ErrBookingSlotAlreadyFilled Error = "booking slot already filled"
-)
-
 //BookingRepo is the interface that deals with booking actions
 //StoreBooking stores a new booking in the database
 type BookingRepo struct {

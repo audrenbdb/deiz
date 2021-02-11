@@ -3,7 +3,6 @@ package http
 import (
 	"context"
 	firebaseAuth "firebase.google.com/go/auth"
-	"github.com/audrenbdb/deiz"
 	"github.com/labstack/echo"
 	"net/http"
 	"strings"
@@ -89,6 +88,7 @@ func FirebaseCredentialsGetter(client *firebaseAuth.Client) credentialsGetter {
 	}
 }
 
+/*
 func handleLogin(log deiz.Login) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		type logForm struct {
@@ -106,3 +106,4 @@ func handleLogin(log deiz.Login) echo.HandlerFunc {
 		return nil
 	}
 }
+*/

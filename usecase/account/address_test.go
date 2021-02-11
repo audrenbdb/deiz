@@ -23,6 +23,9 @@ type (
 	mockAddressUpdater struct {
 		err error
 	}
+	mockClinicianHomeAddressSetter struct {
+		err error
+	}
 )
 
 var validAddress = deiz.Address{
@@ -36,7 +39,7 @@ func (a *mockClinicianOfficeAddressCreater) CreateClinicianOfficeAddress(ctx con
 	return a.err
 }
 
-func (a *mockClinicianAddressCreater) CreateClinicianAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
+func (a *mockClinicianAddressCreater) CreateClinicianHomeAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
 	return a.err
 }
 
@@ -45,6 +48,10 @@ func (m *mockAddressOwnershipVerifier) IsAddressToClinician(ctx context.Context,
 }
 
 func (c *mockAddressUpdater) UpdateAddress(ctx context.Context, address *deiz.Address) error {
+	return c.err
+}
+
+func (c *mockClinicianHomeAddressSetter) SetClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
 	return c.err
 }
 
@@ -121,11 +128,12 @@ func TestAddClinianOfficeAddress(t *testing.T) {
 		})
 	}
 }
-func TestAddClinianAddress(t *testing.T) {
+func TestAddClinianHomeAddress(t *testing.T) {
 	var tests = []struct {
 		description string
 
-		adder *mockClinicianAddressCreater
+		adder  *mockClinicianAddressCreater
+		setter *mockClinicianHomeAddressSetter
 
 		inAddress     *deiz.Address
 		inClinicianID int
@@ -135,24 +143,42 @@ func TestAddClinianAddress(t *testing.T) {
 		{
 			description: "should fail to verify the address struct",
 			inAddress:   &deiz.Address{PostCode: 0},
+			adder:       &mockClinicianAddressCreater{},
+			setter:      &mockClinicianHomeAddressSetter{},
 			outError:    deiz.ErrorStructValidation,
 		},
 		{
 			description: "should fail to save office address in repo",
 			adder:       &mockClinicianAddressCreater{err: errors.New("failed")},
+			setter:      &mockClinicianHomeAddressSetter{},
 			inAddress:   &deiz.Address{Line: "Test", PostCode: 10000, City: "Test"},
 			outError:    errors.New("failed"),
 		},
 		{
 			description: "should succeed in adding address",
 			adder:       &mockClinicianAddressCreater{},
+			setter:      &mockClinicianHomeAddressSetter{},
 			inAddress:   &deiz.Address{Line: "Test", PostCode: 10000, City: "Test"},
+		},
+		{
+			description: "should fail to set existing clinician address",
+			adder:       &mockClinicianAddressCreater{},
+			setter:      &mockClinicianHomeAddressSetter{err: errors.New("failed to set")},
+			inAddress:   &deiz.Address{ID: 1, Line: "Test", PostCode: 10000, City: "Test"},
+			outError:    errors.New("failed to set"),
+		},
+		{
+			description: "should successfuly update clinician address",
+			adder:       &mockClinicianAddressCreater{},
+			setter:      &mockClinicianHomeAddressSetter{},
+			inAddress:   &deiz.Address{ID: 1, Line: "Test", PostCode: 10000, City: "Test"},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			u := account.Usecase{
 				HomeAddressCreater: test.adder,
+				HomeAddressSetter:  test.setter,
 			}
 			err := u.AddClinicianHomeAddress(context.Background(), test.inAddress, test.inClinicianID)
 			assert.Equal(t, test.outError, err)

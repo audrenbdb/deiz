@@ -5,30 +5,6 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-func updateAddress(ctx context.Context, db db, a *deiz.Address) error {
-	const query = `UPDATE address SET line = $1, post_code = $2, city = $3 WHERE id = $4`
-	tag, err := db.Exec(ctx, query, a.Line, a.PostCode, a.City, a.ID)
-	if err != nil {
-		return err
-	}
-	if tag.RowsAffected() == 0 {
-		return errNoRowsUpdated
-	}
-	return nil
-}
-
-func personOwnsAddress(ctx context.Context, db db, a *deiz.Address, personID int) (bool, error) {
-	const query = `SELECT EXISTS(SELECT 1 FROM address a
-			LEFT JOIN person p ON p.address_id = a.id LEFT JOIN office_address o ON o.address_id = a.id 
-			WHERE (p.id = $1 OR o.person_id = $1) AND a.id = $2)`
-	var owns bool
-	row := db.QueryRow(ctx, query, personID, a.ID)
-	if err := row.Scan(&owns); err != nil {
-		return false, err
-	}
-	return owns, nil
-}
-
 func getOfficeAddressesByPersonID(ctx context.Context, db db, personID int) ([]deiz.Address, error) {
 	const query = `SELECT a.id, a.line, a.post_code, a.city
 	FROM office_address o INNER JOIN address a ON o.address_id = a.id
@@ -84,7 +60,23 @@ func insertOfficeAddress(ctx context.Context, db db, a *deiz.Address, personID i
 	return nil
 }
 
-func (r *repo) AddClinicianPersonalAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
+func (r *repo) UpdateAddress(ctx context.Context, a *deiz.Address) error {
+	const query = `UPDATE address SET line = $1, post_code = $2, city = $3 WHERE id = $4`
+	tag, err := r.conn.Exec(ctx, query, a.Line, a.PostCode, a.City, a.ID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return errNoRowsUpdated
+	}
+	return nil
+}
+
+func (r *repo) SetClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
+	return updatePersonAddress(ctx, r.conn, a, clinicianID)
+}
+
+func (r *repo) CreateClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
@@ -103,6 +95,18 @@ func (r *repo) AddClinicianPersonalAddress(ctx context.Context, a *deiz.Address,
 		return err
 	}
 	return nil
+}
+
+func (r *repo) IsAddressToClinician(ctx context.Context, a *deiz.Address, clinicianID int) (bool, error) {
+	const query = `SELECT EXISTS(SELECT 1 FROM address a
+			LEFT JOIN person p ON p.address_id = a.id LEFT JOIN office_address o ON o.address_id = a.id 
+			WHERE (p.id = $1 OR o.person_id = $1) AND a.id = $2)`
+	var owns bool
+	row := r.conn.QueryRow(ctx, query, clinicianID, a.ID)
+	if err := row.Scan(&owns); err != nil {
+		return false, err
+	}
+	return owns, nil
 }
 
 func (r *repo) CreateClinicianOfficeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
@@ -124,15 +128,4 @@ func (r *repo) CreateClinicianOfficeAddress(ctx context.Context, a *deiz.Address
 		return err
 	}
 	return nil
-}
-
-func (r *repo) EditClinicianAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
-	owns, err := personOwnsAddress(ctx, r.conn, a, clinicianID)
-	if err != nil {
-		return err
-	}
-	if !owns {
-		return errUnauthorized
-	}
-	return updateAddress(ctx, r.conn, a)
 }

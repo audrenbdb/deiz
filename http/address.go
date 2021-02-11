@@ -1,10 +1,6 @@
 package http
 
-import (
-	"github.com/audrenbdb/deiz"
-	"github.com/labstack/echo"
-	"net/http"
-)
+/*
 
 func handlePostClinicianAddress(
 	addPersonalAddress deiz.AddClinicianPersonalAddress, addOfficeAddress deiz.AddClinicianOfficeAddress,
@@ -57,3 +53,4 @@ func handlePatchClinicianAddress(updateAddress deiz.EditClinicianAddress, valida
 		return nil
 	}
 }
+*/

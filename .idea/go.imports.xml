@@ -3,7 +3,7 @@
   <component name="GoImports">
     <option name="excludedPackages">
       <array>
-        <option value="github.com" />
+        <option value="github.com/go-playground/assert/v2" />
         <option value="github.com/pkg/errors" />
         <option value="golang.org/x/net/context" />
         <option value="golang.org/x/tools/go/ssa/interp/testdata/src/errors" />

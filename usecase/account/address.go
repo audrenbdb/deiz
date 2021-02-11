@@ -9,8 +9,11 @@ type (
 	ClinicianOfficeAddressCreater interface {
 		CreateClinicianOfficeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error
 	}
-	ClinicianAddressCreater interface {
-		CreateClinicianAddress(ctx context.Context, a *deiz.Address, clinicianID int) error
+	ClinicianHomeAddressCreater interface {
+		CreateClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error
+	}
+	ClinicianHomeAddressSetter interface {
+		SetClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error
 	}
 	ClinicianAddressOwnershipVerifier interface {
 		IsAddressToClinician(ctx context.Context, a *deiz.Address, clinicianID int) (bool, error)
@@ -38,7 +41,10 @@ func (u *Usecase) AddClinicianHomeAddress(ctx context.Context, address *deiz.Add
 	if !IsAddressValid(address) {
 		return deiz.ErrorStructValidation
 	}
-	return u.HomeAddressCreater.CreateClinicianAddress(ctx, address, clinicianID)
+	if address.ID == 0 {
+		return u.HomeAddressCreater.CreateClinicianHomeAddress(ctx, address, clinicianID)
+	}
+	return u.HomeAddressSetter.SetClinicianHomeAddress(ctx, address, clinicianID)
 }
 
 func (u *Usecase) UpdateClinicianAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {

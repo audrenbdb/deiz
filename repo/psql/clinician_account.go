@@ -5,32 +5,50 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
+func (r *repo) IsClinicianRegistrationComplete(ctx context.Context, email string) (bool, error) {
+	_, err := r.firebaseAuth.GetUserByEmail(ctx, email)
+	if err != nil {
+		if err.Error() != firebaseUserNotFound {
+			return false, err
+		}
+	}
+	return true, nil
+}
+
+func (r *repo) CompleteClinicianRegistration(ctx context.Context, clinician *deiz.Clinician, password string, clinicianID int) error {
+	firebaseUser, err := createFirebaseUser(ctx, r.firebaseAuth, clinician.Email, password)
+	if err != nil {
+		return err
+	}
+	return setFirebasePersonClaims(ctx, r.firebaseAuth, clinician.ID, 2, firebaseUser.UID)
+}
+
 //AddClinicianAccount creates a clinician and its default settings for the application to run
-func (r *repo) AddClinicianAccount(ctx context.Context, c *deiz.Clinician) error {
+func (r *repo) CreateClinicianAccount(ctx context.Context, acc *deiz.ClinicianAccount) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
 		return err
 	}
-	err = insertClinicianPerson(ctx, tx, c)
+	err = insertClinicianPerson(ctx, tx, &acc.Clinician)
 	if err != nil {
 		return err
 	}
-	err = insertAdeli(ctx, tx, &deiz.Adeli{}, c.ID)
+	err = insertAdeli(ctx, tx, &acc.Clinician.Adeli, acc.Clinician.ID)
 	if err != nil {
 		return err
 	}
-	err = insertCalendarSettings(ctx, tx, &deiz.CalendarSettings{}, c.ID)
-	if err != nil {
-		return err
-	}
-
-	err = insertBusiness(ctx, tx, &deiz.Business{}, c.ID)
+	err = insertCalendarSettings(ctx, tx, &acc.CalendarSettings, acc.Clinician.ID)
 	if err != nil {
 		return err
 	}
 
-	err = insertStripeKeys(ctx, tx, &stripeKeys{}, c.ID)
+	err = insertBusiness(ctx, tx, &acc.Business, acc.Clinician.ID)
+	if err != nil {
+		return err
+	}
+
+	err = insertStripeKeys(ctx, tx, &stripeKeys{}, acc.Clinician.ID)
 	if err != nil {
 		return err
 	}
@@ -59,7 +77,7 @@ func (r *repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.C
 		return deiz.ClinicianAccount{}, err
 	}
 	acc.StripePublicKey = keys.public
-	acc.OfficeHours, err = getOfficeHoursByPersonID(ctx, r.conn, clinicianID)
+	acc.OfficeHours, err = r.GetClinicianOfficeHours(ctx, clinicianID)
 	if err != nil {
 		return deiz.ClinicianAccount{}, err
 	}
@@ -72,4 +90,12 @@ func (r *repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.C
 		return deiz.ClinicianAccount{}, err
 	}
 	return acc, nil
+}
+
+func (r *repo) UpdateClinicianStripeKeys(ctx context.Context, pk string, sk []byte, clinicianID int) error {
+	k := stripeKeys{
+		public: pk,
+		secret: sk,
+	}
+	return updatePersonStripeKeys(ctx, r.conn, k, clinicianID)
 }

@@ -1,11 +1,6 @@
 package http
 
-import (
-	"github.com/audrenbdb/deiz"
-	"github.com/labstack/echo"
-	"net/http"
-)
-
+/*
 func handlePatchCalendarSettings(update deiz.EditCalendarSettings, validate validater) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -24,3 +19,4 @@ func handlePatchCalendarSettings(update deiz.EditCalendarSettings, validate vali
 		return nil
 	}
 }
+*/

@@ -6,30 +6,6 @@ import (
 	"time"
 )
 
-func insertBooking(ctx context.Context, db db, b *deiz.Booking) error {
-	const query = `INSERT INTO clinician_booking(address_id, blocked, remote, clinician_person_id, patient_id, booking_motive_id, during, paid, note)
-	VALUES(NULLIF($1, 0), $2, $3, $4, NULLIF($5, 0), NULLIF($6, 0), tsrange($7, $8, '()'), $9, NULLIF($10, ''))
-	RETURNING id, delete_id`
-	row := db.QueryRow(ctx, query, b.Address.ID, b.Blocked, b.Remote, b.Clinician.ID, b.Patient.ID, b.Motive.ID, b.Start, b.End, b.Paid, b.Note)
-	err := row.Scan(&b.ID, &b.DeleteID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func deleteBooking(ctx context.Context, db db, bookingID, clinicianID int) error {
-	const query = `DELETE FROM clinician_booking WHERE clinician_person_id = $1 AND id = $2`
-	cmdTag, err := db.Exec(ctx, query, clinicianID, bookingID)
-	if err != nil {
-		return err
-	}
-	if cmdTag.RowsAffected() == 0 {
-		return errNothingDeleted
-	}
-	return nil
-}
-
 func updateBookingPaidStatus(ctx context.Context, db db, paid bool, bookingID int, clinicianID int) error {
 	const query = `UPDATE clinician_booking SET paid = $1 WHERE clinician_person_id = $2 AND id = $3`
 	cmdTag, err := db.Exec(ctx, query, paid, clinicianID, bookingID)
@@ -42,13 +18,28 @@ func updateBookingPaidStatus(ctx context.Context, db db, paid bool, bookingID in
 	return nil
 }
 
-//Create a booking slot and a patient if he does not exist
-func (r *repo) FillFreeBookingSlot(ctx context.Context, b *deiz.Booking) error {
-	return insertBooking(ctx, r.conn, b)
+func (r *repo) DeleteBooking(ctx context.Context, bookingID int, clinicianID int) error {
+	const query = `DELETE FROM clinician_booking WHERE clinician_person_id = $1 AND id = $2`
+	cmdTag, err := r.conn.Exec(ctx, query, clinicianID, bookingID)
+	if err != nil {
+		return err
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return errNothingDeleted
+	}
+	return nil
 }
 
-func (r *repo) RemoveBookingSlot(ctx context.Context, s *deiz.Booking) error {
-	return deleteBooking(ctx, r.conn, s.ID, s.Clinician.ID)
+func (r *repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
+	const query = `INSERT INTO clinician_booking(address_id, blocked, remote, clinician_person_id, patient_id, booking_motive_id, during, paid, note)
+	VALUES(NULLIF($1, 0), $2, $3, $4, NULLIF($5, 0), NULLIF($6, 0), tsrange($7, $8, '()'), $9, NULLIF($10, ''))
+	RETURNING id, delete_id`
+	row := r.conn.QueryRow(ctx, query, b.Address.ID, b.Blocked, b.Remote, b.Clinician.ID, b.Patient.ID, b.Motive.ID, b.Start, b.End, b.Paid, b.Note)
+	err := row.Scan(&b.ID, &b.DeleteID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *repo) GetBookingsInTimeRange(ctx context.Context, from, to time.Time, clinicianID int) ([]deiz.Booking, error) {

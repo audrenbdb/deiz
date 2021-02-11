@@ -21,8 +21,6 @@ type Adeli struct {
 	Identifier string `json:"identifier" validate:"required,min=8"`
 }
 
-type ()
-
 type (
 	clinicianRoleUpdater interface {
 		UpdateClinicianRole(ctx context.Context, rol, clinicianID int) error

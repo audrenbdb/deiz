@@ -23,7 +23,7 @@ func (r *repo) CreatePatient(ctx context.Context, p *deiz.Patient, clinicianID i
 	return row.Scan(&p.ID)
 }
 
-func (r *repo) SearchPatients(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error) {
+func (r *repo) SearchPatient(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error) {
 	const query = `SELECT p.id, p.email, p.name, p.surname, p.phone,
 		COALESCE(a.id, 0) address_id, COALESCE(a.line, '') address_line, COALESCE(a.post_code, 0) address_post_code, COALESCE(a.city, '') address_city,
 		similarity(p.name, $1) AS name_sml
@@ -88,7 +88,7 @@ func (r *repo) EditPatientAddress(ctx context.Context, p *deiz.Patient, clinicia
 		}
 		return nil
 	}
-	return updateAddress(ctx, r.conn, &p.Address)
+	return r.UpdateAddress(ctx, &p.Address)
 }
 
 func (r *repo) RemovePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {

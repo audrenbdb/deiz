@@ -3,14 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/audrenbdb/deiz"
 	"github.com/audrenbdb/deiz/crypt"
 	"github.com/audrenbdb/deiz/http"
-	"github.com/audrenbdb/deiz/mail"
-	"github.com/audrenbdb/deiz/pdf"
 	"github.com/audrenbdb/deiz/repo/psql"
-	"github.com/audrenbdb/deiz/stripe"
-	"github.com/go-playground/validator/v10"
+	"github.com/audrenbdb/deiz/usecase/account"
+	"github.com/audrenbdb/deiz/usecase/booking"
+	"github.com/audrenbdb/deiz/usecase/patient"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"os"
 	"path/filepath"
@@ -42,14 +40,16 @@ func main() {
 	}
 
 	repo := psql.NewRepo(psqlDB, fbClient)
-	pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "assets", "fonts"))
-	mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
-	stripe := stripe.NewService()
+	//pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "assets", "fonts"))
+	//mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
+	//stripe := stripe.NewService()
 	crypt := crypt.NewService()
-	v := validator.New()
-	core := deiz.NewCore(repo, pdf, mail, crypt, stripe)
+
+	bookingUsecase := booking.NewUsecase(repo)
+	accountUsecase := account.NewUsecase(repo, crypt)
+	patientUsecase := patient.NewUsecase(repo)
 	//err = http.StartEchoServer(http.FirebaseCredentialsGetter(fbClient), core, v)
-	err = http.StartEchoServer(http.FakeCredentialsGetter, core, v)
+	err = http.StartEchoServer(http.FakeCredentialsGetter, accountUsecase, bookingUsecase, patientUsecase)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start echo server: %v\n", err)
 		os.Exit(1)

@@ -1,11 +1,6 @@
 package http
 
-import (
-	"github.com/audrenbdb/deiz"
-	"github.com/labstack/echo"
-	"net/http"
-)
-
+/*
 func handlePatchClinicianEmail(edit deiz.EditClinicianEmail, validate validater) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -67,3 +62,4 @@ func handlePostClinician(add deiz.AddClinicianAccount, validate validater) echo.
 		return c.JSON(http.StatusOK, cl)
 	}
 }
+*/

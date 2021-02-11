@@ -1,11 +1,6 @@
 package http
 
-import (
-	"github.com/audrenbdb/deiz"
-	"github.com/labstack/echo"
-	"net/http"
-)
-
+/*
 func handlePostBookingMotive(addMotive deiz.AddBookingMotive, validate validater) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -43,3 +38,4 @@ func handleDeleteBookingMotive(deleteMotive deiz.RemoveBookingMotive, validate v
 		return nil
 	}
 }
+*/

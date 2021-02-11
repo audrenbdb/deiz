@@ -1,12 +1,6 @@
 package http
 
-import (
-	"github.com/audrenbdb/deiz"
-	"github.com/labstack/echo"
-	"net/http"
-	"strconv"
-)
-
+/*
 func handlePostBookingInvoice(createInvoice deiz.CreateBookingInvoice, mailInvoice deiz.MailBookingInvoice, validate validater) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -54,3 +48,4 @@ func handleGetBookingInvoicePDF(getInvoicePDF deiz.SeeInvoicePDF, validate valid
 		return c.Blob(http.StatusOK, "application/pdf", pdfBytes.Bytes())
 	}
 }
+*/

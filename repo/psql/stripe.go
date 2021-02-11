@@ -44,11 +44,3 @@ func (r *repo) GetClinicianStripeSecretKey(ctx context.Context, clinicianID int)
 	}
 	return k.secret, nil
 }
-
-func (r *repo) EditClinicianStripeKeys(ctx context.Context, pk string, sk []byte, clinicianID int) error {
-	k := stripeKeys{
-		public: pk,
-		secret: sk,
-	}
-	return updatePersonStripeKeys(ctx, r.conn, k, clinicianID)
-}

@@ -1,7 +1,6 @@
 package crypt
 
 import (
-	"context"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/md5"
@@ -36,7 +35,7 @@ func createHash(key string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (d *service) CryptStringToBytes(ctx context.Context, str string) ([]byte, error) {
+func (d *service) CryptStringToBytes(str string) ([]byte, error) {
 	var b []byte
 
 	hashedPhrase, err := getHashedPassphrase()
@@ -63,7 +62,7 @@ func (d *service) CryptStringToBytes(ctx context.Context, str string) ([]byte, e
 	return strBytes, err
 }
 
-func (d *service) DecryptBytes(ctx context.Context, strBytes []byte) (string, error) {
+func (d *service) DecryptBytes(strBytes []byte) (string, error) {
 	hashedPhrase, err := getHashedPassphrase()
 	if err != nil {
 		return "", err

@@ -1,7 +1,19 @@
 package http
 
-/*
-func handlePatchCalendarSettings(update deiz.EditCalendarSettings, validate validater) echo.HandlerFunc {
+import (
+	"context"
+	"github.com/audrenbdb/deiz"
+	"github.com/labstack/echo"
+	"net/http"
+)
+
+type (
+	CalendarSettingsEditer interface {
+		EditCalendarSettings(ctx context.Context, s *deiz.CalendarSettings, clinicianID int) error
+	}
+)
+
+func handlePatchCalendarSettings(editer CalendarSettingsEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -9,14 +21,10 @@ func handlePatchCalendarSettings(update deiz.EditCalendarSettings, validate vali
 		if err := c.Bind(&s); err != nil {
 			return c.JSON(http.StatusBadRequest, errBind.Error())
 		}
-		if err := validate.StructCtx(ctx, s); err != nil {
-			return c.JSON(http.StatusBadRequest, errValidating.Error())
-		}
-		err := update(ctx, &s, clinicianID)
+		err := editer.EditCalendarSettings(ctx, &s, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return nil
 	}
 }
-*/

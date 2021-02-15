@@ -7,6 +7,7 @@ type accountRepo interface {
 	ClinicianRegistrationCompleter
 
 	ClinicianBusinessUpdater
+	CalendarSettingsUpdater
 
 	ClinicianHomeAddressSetter
 	ClinicianHomeAddressCreater
@@ -42,6 +43,8 @@ type Usecase struct {
 
 	BusinessUpdater ClinicianBusinessUpdater
 
+	CalendarSettingsUpdater CalendarSettingsUpdater
+
 	StringToBytesCrypter StringToBytesCrypter
 }
 
@@ -59,6 +62,7 @@ func NewUsecase(repo accountRepo, cryptsrv cryptService) *Usecase {
 		OfficeAddressCreater:     repo,
 		AddressOwnerShipVerifier: repo,
 		AddressUpdater:           repo,
+		CalendarSettingsUpdater:  repo,
 
 		StringToBytesCrypter: cryptsrv,
 

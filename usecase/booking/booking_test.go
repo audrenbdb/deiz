@@ -23,6 +23,29 @@ type mockBookingDeleter struct {
 	err error
 }
 
+type mockOverlappingDeleter struct {
+	err error
+}
+
+type mockToClinicianMailer struct {
+	err error
+}
+
+type mockToPatientMailer struct {
+	err error
+}
+
+type mockGoogleLinksBuilder struct{}
+
+type mockCalendarSettingsGetter struct {
+	s   deiz.CalendarSettings
+	err error
+}
+
+func (m *mockCalendarSettingsGetter) GetClinicianCalendarSettings(ctx context.Context, clinicianID int) (deiz.CalendarSettings, error) {
+	return m.s, m.err
+}
+
 func (m *mockBookingsInTimeRangeGetter) GetBookingsInTimeRange(ctx context.Context, start, end time.Time, clinicianID int) ([]deiz.Booking, error) {
 	return m.bookings, m.err
 }
@@ -33,6 +56,26 @@ func (m *mockBookingCreater) CreateBooking(ctx context.Context, b *deiz.Booking)
 
 func (m *mockBookingDeleter) DeleteBooking(ctx context.Context, bookingID, clinicianID int) error {
 	return m.err
+}
+
+func (m *mockOverlappingDeleter) DeleteOverlappingBlockedBooking(ctx context.Context, start, end time.Time, clinicianID int) error {
+	return m.err
+}
+
+func (m *mockToPatientMailer) MailBookingToPatient(ctx context.Context, b *deiz.Booking, tz *time.Location, gCalLink, gMapsLink, cancelURL string) error {
+	return m.err
+}
+
+func (m *mockToClinicianMailer) MailBookingToClinician(ctx context.Context, b *deiz.Booking, tz *time.Location, gCalLink string) error {
+	return m.err
+}
+
+func (m *mockGoogleLinksBuilder) BuildGCalendarLink(start, end time.Time, subject, addressStr, details string) string {
+	return "calendar link"
+}
+
+func (m *mockGoogleLinksBuilder) BuildGMapsLink(addressStr string) string {
+	return "maps link"
 }
 
 func TestIsBookingValid(t *testing.T) {
@@ -116,6 +159,7 @@ func TestGetBookingSlots(t *testing.T) {
 						Start:  time.Date(2021, 2, 9, 23, 45, 0, 0, time.UTC),
 						End:    time.Date(2021, 2, 10, 0, 15, 0, 0, time.UTC),
 						Motive: deiz.BookingMotive{Duration: 30},
+						Remote: true,
 					},
 				},
 			},
@@ -129,11 +173,13 @@ func TestGetBookingSlots(t *testing.T) {
 					Start:  time.Date(2021, 2, 9, 23, 45, 0, 0, time.UTC),
 					End:    time.Date(2021, 2, 10, 0, 15, 0, 0, time.UTC),
 					Motive: deiz.BookingMotive{Duration: 30},
+					Remote: true,
 				},
 				{
 					Start:  time.Date(2021, 2, 9, 23, 0, 0, 0, time.UTC),
 					End:    time.Date(2021, 2, 9, 23, 30, 0, 0, time.UTC),
 					Motive: deiz.BookingMotive{Duration: 30},
+					Remote: true,
 				},
 			},
 		},
@@ -148,52 +194,6 @@ func TestGetBookingSlots(t *testing.T) {
 			bookings, err := u.GetBookingSlots(context.Background(), test.inStart, test.inTzName, test.inDefaultMotiveID, test.inDefaultMotiveDuration, test.inClinicianID)
 			assert.Equal(t, test.outError, err)
 			assert.ElementsMatch(t, test.outBookings, bookings)
-		})
-	}
-}
-
-func TestRemoveOverlappingFreeBookingSlots(t *testing.T) {
-	var tests = []struct {
-		description string
-
-		inFreeSlots   []deiz.Booking
-		inBookedSlots []deiz.Booking
-		inSlotsToKeep []deiz.Booking
-
-		outFreeSlots []deiz.Booking
-	}{
-		{
-			description: "should keep only first free slots because 2nd overlaps with booking",
-			inFreeSlots: []deiz.Booking{
-				{
-					Start: time.Date(2021, 2, 12, 0, 0, 0, 0, time.UTC),
-					End:   time.Date(2021, 2, 12, 0, 30, 0, 0, time.UTC),
-				},
-				{
-					Start: time.Date(2021, 2, 12, 0, 30, 0, 0, time.UTC),
-					End:   time.Date(2021, 2, 12, 1, 0, 0, 0, time.UTC),
-				},
-			},
-			inBookedSlots: []deiz.Booking{
-				{
-					Start: time.Date(2021, 2, 12, 0, 45, 0, 0, time.UTC),
-					End:   time.Date(2021, 2, 12, 1, 15, 0, 0, time.UTC),
-				},
-			},
-			inSlotsToKeep: []deiz.Booking{},
-			outFreeSlots: []deiz.Booking{
-				{
-					Start: time.Date(2021, 2, 12, 0, 0, 0, 0, time.UTC),
-					End:   time.Date(2021, 2, 12, 0, 30, 0, 0, time.UTC),
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			freeSlots := booking.RemoveOverlappingFreeBookingSlots(test.inFreeSlots, test.inBookedSlots, test.inSlotsToKeep)
-			assert.ElementsMatch(t, test.outFreeSlots, freeSlots)
 		})
 	}
 }
@@ -270,4 +270,128 @@ func TestUnlockBookingSlot(t *testing.T) {
 			assert.Equal(t, test.outError, err)
 		})
 	}
+}
+
+func TestRegisterBooking(t *testing.T) {
+	validBooking := deiz.Booking{
+		Patient:   deiz.Patient{ID: 1},
+		Clinician: deiz.Clinician{ID: 1},
+		Start:     time.Now(),
+		End:       time.Now().Add(2000),
+		Blocked:   false,
+		Remote:    true,
+	}
+	var tests = []struct {
+		description string
+
+		overlappingDeleter     mockOverlappingDeleter
+		creater                mockBookingCreater
+		toClinicianMailer      mockToClinicianMailer
+		toPatientMailer        mockToPatientMailer
+		calLinkBuilder         mockGoogleLinksBuilder
+		mapsLinkBuilder        mockGoogleLinksBuilder
+		calendarSettingsGetter mockCalendarSettingsGetter
+
+		inBooking         deiz.Booking
+		inClinicianID     int
+		inNotifyPatient   bool
+		inNotifyClinician bool
+
+		outError error
+	}{
+		{
+			description: "should fail to validate booking",
+			inBooking:   deiz.Booking{},
+			outError:    deiz.ErrorStructValidation,
+		},
+		{
+			description: "should fail to validate clinician owns booking",
+			inBooking:   validBooking,
+			outError:    deiz.ErrorUnauthorized,
+		},
+		{
+			description:        "should fail to delete overlapping blocked slots",
+			overlappingDeleter: mockOverlappingDeleter{err: errors.New("fail to delete overlapping booked slots")},
+
+			inBooking:     validBooking,
+			inClinicianID: 1,
+			outError:      errors.New("fail to delete overlapping booked slots"),
+		},
+		{
+			description:        "should fail to register booking",
+			overlappingDeleter: mockOverlappingDeleter{},
+			creater:            mockBookingCreater{err: errors.New("failed to create")},
+
+			inBooking:     validBooking,
+			inClinicianID: 1,
+
+			outError: errors.New("failed to create"),
+		},
+		{
+			description:            "should fail to get settings",
+			overlappingDeleter:     mockOverlappingDeleter{},
+			creater:                mockBookingCreater{},
+			calendarSettingsGetter: mockCalendarSettingsGetter{err: errors.New("failed to get settings")},
+
+			inBooking:     validBooking,
+			inClinicianID: 1,
+			outError:      errors.New("failed to get settings"),
+		},
+		{
+			description:            "should fail email patient notification",
+			overlappingDeleter:     mockOverlappingDeleter{},
+			calendarSettingsGetter: mockCalendarSettingsGetter{},
+			toPatientMailer:        mockToPatientMailer{err: errors.New("failed to send patient email")},
+			inBooking:              validBooking,
+			inClinicianID:          1,
+			inNotifyPatient:        true,
+			outError:               errors.New("failed to send patient email"),
+		},
+		{
+			description:            "should succeed to email patient notification",
+			overlappingDeleter:     mockOverlappingDeleter{},
+			calendarSettingsGetter: mockCalendarSettingsGetter{},
+			toPatientMailer:        mockToPatientMailer{},
+			inBooking:              validBooking,
+			inClinicianID:          1,
+			inNotifyPatient:        true,
+		},
+
+		{
+			description:            "should fail email clinician notification",
+			overlappingDeleter:     mockOverlappingDeleter{},
+			calendarSettingsGetter: mockCalendarSettingsGetter{},
+			toClinicianMailer:      mockToClinicianMailer{err: errors.New("failed to send patient clinician")},
+			inBooking:              validBooking,
+			inClinicianID:          1,
+			inNotifyClinician:      true,
+			outError:               errors.New("failed to send patient clinician"),
+		}, {
+			description:            "should succeed email clinician notification",
+			overlappingDeleter:     mockOverlappingDeleter{},
+			calendarSettingsGetter: mockCalendarSettingsGetter{},
+			toClinicianMailer:      mockToClinicianMailer{},
+			inBooking:              validBooking,
+			inClinicianID:          1,
+			inNotifyClinician:      true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			u := booking.Usecase{
+				OverlappingBlockedDeleter: &test.overlappingDeleter,
+				Creater:                   &test.creater,
+				ToClinicianMailer:         &test.toClinicianMailer,
+				ToPatientMailer:           &test.toPatientMailer,
+				GMapsLinkBuilder:          &test.mapsLinkBuilder,
+				GCalendarLinkBuilder:      &test.calLinkBuilder,
+				CalendarSettingsGetter:    &test.calendarSettingsGetter,
+			}
+
+			err := u.RegisterBooking(context.Background(), &test.inBooking, test.inClinicianID, test.inNotifyPatient, test.inNotifyClinician)
+			assert.Equal(t, test.outError, err)
+		})
+	}
+
 }

@@ -42,6 +42,13 @@ func (r *repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
 	return nil
 }
 
+func (r *repo) DeleteOverlappingBlockedBooking(ctx context.Context, start, end time.Time, clinicianID int) error {
+	const query = `DELETE FROM clinician_booking
+	WHERE clinician_person_id = $1 AND $2 < upper(during) AND lower(during) < $3`
+	_, err := r.conn.Exec(ctx, query, clinicianID, start, end)
+	return err
+}
+
 func (r *repo) GetBookingsInTimeRange(ctx context.Context, from, to time.Time, clinicianID int) ([]deiz.Booking, error) {
 	const query = `SELECT b.id, b.delete_id, lower(b.during), upper(b.during),
 	COALESCE(m.id, 0), COALESCE(m.duration, 0), COALESCE(m.price, 0), COALESCE(m.public, false),

@@ -2,34 +2,16 @@ package deiz
 
 import (
 	"context"
-	"regexp"
 )
 
 //Patient uses the application to book clinician appointment
 type Patient struct {
-	ID      int     `json:"id" validator:"required"`
-	Name    string  `json:"name" validator:"required"`
-	Surname string  `json:"surname" validator:"required"`
-	Phone   string  `json:"phone" validator:"required,min=10"`
-	Email   string  `json:"email" validator:"required,email"`
-	Address Address `json:"address" validator:"required"`
-}
-
-func (p *Patient) IsValid() bool {
-	if len(p.Name) < 2 {
-		return false
-	}
-	if len(p.Surname) < 2 {
-		return false
-	}
-	if len(p.Phone) < 10 {
-		return false
-	}
-	r := regexp.MustCompile("^\\S+@\\S+$")
-	if !r.MatchString(p.Email) {
-		return false
-	}
-	return true
+	ID      int     `json:"id"`
+	Name    string  `json:"name"`
+	Surname string  `json:"surname"`
+	Phone   string  `json:"phone"`
+	Email   string  `json:"email"`
+	Address Address `json:"address"`
 }
 
 type (

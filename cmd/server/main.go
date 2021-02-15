@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/audrenbdb/deiz/crypt"
+	"github.com/audrenbdb/deiz/gcalendar"
+	"github.com/audrenbdb/deiz/gmaps"
 	"github.com/audrenbdb/deiz/http"
+	"github.com/audrenbdb/deiz/mail"
 	"github.com/audrenbdb/deiz/repo/psql"
 	"github.com/audrenbdb/deiz/usecase/account"
 	"github.com/audrenbdb/deiz/usecase/booking"
@@ -41,11 +44,13 @@ func main() {
 
 	repo := psql.NewRepo(psqlDB, fbClient)
 	//pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "assets", "fonts"))
-	//mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
+	mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
+	gCal := gcalendar.NewService()
+	gMaps := gmaps.NewService()
 	//stripe := stripe.NewService()
 	crypt := crypt.NewService()
 
-	bookingUsecase := booking.NewUsecase(repo)
+	bookingUsecase := booking.NewUsecase(repo, mail, gMaps, gCal)
 	accountUsecase := account.NewUsecase(repo, crypt)
 	patientUsecase := patient.NewUsecase(repo)
 	//err = http.StartEchoServer(http.FirebaseCredentialsGetter(fbClient), core, v)

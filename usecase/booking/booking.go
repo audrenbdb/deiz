@@ -3,6 +3,7 @@ package booking
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/audrenbdb/deiz"
 	"time"
 )
@@ -17,6 +18,15 @@ type (
 	Deleter interface {
 		DeleteBooking(ctx context.Context, bookingID, clinicianID int) error
 	}
+	OverlappingBlockedDeleter interface {
+		DeleteOverlappingBlockedBooking(ctx context.Context, start, end time.Time, clinicianID int) error
+	}
+	ToClinicianMailer interface {
+		MailBookingToClinician(ctx context.Context, b *deiz.Booking, tz *time.Location, gCalLink string) error
+	}
+	ToPatientMailer interface {
+		MailBookingToPatient(ctx context.Context, b *deiz.Booking, tz *time.Location, gCalLink, gMapsLink, cancelURL string) error
+	}
 )
 
 //IsBookingValid ensure minimum fields of booking are valid
@@ -25,6 +35,16 @@ func IsBookingValid(b *deiz.Booking) bool {
 		return false
 	}
 	return true
+}
+
+func NewAvailableBookingSlot(start, end time.Time, address deiz.Address, motive deiz.BookingMotive) deiz.Booking {
+	return deiz.Booking{
+		Start:   start,
+		End:     end,
+		Address: address,
+		Remote:  address.ID == 0,
+		Motive:  motive,
+	}
 }
 
 func (u *Usecase) GetBookingSlots(ctx context.Context, start time.Time, tzName string, defaultMotiveID, defaultMotiveDuration, clinicianID int) ([]deiz.Booking, error) {
@@ -36,35 +56,24 @@ func (u *Usecase) GetBookingSlots(ctx context.Context, start time.Time, tzName s
 	if err != nil {
 		return nil, err
 	}
-	var bookings []deiz.Booking
-	end := start.AddDate(0, 0, 6)
-	freeBookings := FillOfficeHoursWithFreeBookingSlots(
-		start, end,
-		deiz.Clinician{ID: clinicianID}, officeHours, []deiz.Booking{}, deiz.BookingMotive{ID: defaultMotiveID, Duration: defaultMotiveDuration}, loc)
-	bookedSlots, err := u.BookingsInTimeRangeGetter.GetBookingsInTimeRange(ctx, start, end, clinicianID)
+	end := start.AddDate(0, 0, 7)
+	bookings, err := u.BookingsInTimeRangeGetter.GetBookingsInTimeRange(ctx, start, end, clinicianID)
 	if err != nil {
 		return nil, err
 	}
-	bookings = RemoveOverlappingFreeBookingSlots(freeBookings, bookedSlots, []deiz.Booking{})
-	return append(bookings, bookedSlots...), nil
-}
-
-func RemoveOverlappingFreeBookingSlots(freeSlots, bookedSlots, slotsToKeep []deiz.Booking) []deiz.Booking {
-	if freeSlots == nil || len(freeSlots) == 0 {
-		return slotsToKeep
-	}
-	slot := freeSlots[0]
-	overlaps := false
-	for _, b := range bookedSlots {
-		if TimeRangesOverlaps(slot.Start, slot.End, b.Start, b.End) {
-			overlaps = true
-			break
+	bookedSlotsTimeRanges := GetTimeRangesFromBookings(SortBookingsByStart(bookings), [][2]time.Time{})
+	officeHoursTimeRange := GetAllOfficeHoursTimeRange(start, end, officeHours, loc)
+	for i, timeRange := range officeHoursTimeRange {
+		freeTimeRanges := GetTimeRangesNotOverLapping(defaultMotiveDuration, timeRange[0], timeRange[1], bookedSlotsTimeRanges, [][2]time.Time{})
+		for _, timeRange := range freeTimeRanges {
+			bookings = append(bookings,
+				NewAvailableBookingSlot(timeRange[0], timeRange[1],
+					officeHours[i].Address,
+					deiz.BookingMotive{ID: defaultMotiveID, Duration: defaultMotiveDuration}))
 		}
 	}
-	if !overlaps {
-		slotsToKeep = append(slotsToKeep, slot)
-	}
-	return RemoveOverlappingFreeBookingSlots(freeSlots[1:], bookedSlots, slotsToKeep)
+	return bookings, nil
+
 }
 
 func (u *Usecase) BlockBookingSlot(ctx context.Context, b *deiz.Booking, clinicianID int) error {
@@ -79,4 +88,69 @@ func (u *Usecase) BlockBookingSlot(ctx context.Context, b *deiz.Booking, clinici
 
 func (u *Usecase) UnlockBookingSlot(ctx context.Context, bookingID, clinicianID int) error {
 	return u.Deleter.DeleteBooking(ctx, bookingID, clinicianID)
+}
+
+func (u *Usecase) RegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error {
+	if b.Patient.ID == 0 || b.Clinician.ID == 0 || b.End.Before(b.Start) ||
+		b.Blocked || (b.Address.ID == 0 && !b.Remote) {
+		return deiz.ErrorStructValidation
+	}
+	if b.Clinician.ID != clinicianID {
+		return deiz.ErrorUnauthorized
+	}
+	if err := u.OverlappingBlockedDeleter.DeleteOverlappingBlockedBooking(ctx, b.Start, b.End, clinicianID); err != nil {
+		return err
+	}
+	if err := u.Creater.CreateBooking(ctx, b); err != nil {
+		return err
+	}
+	settings, err := u.CalendarSettingsGetter.GetClinicianCalendarSettings(ctx, clinicianID)
+	if err != nil {
+		return err
+	}
+	clinicianTz, err := time.LoadLocation(settings.Timezone.Name)
+	if err != nil {
+		return err
+	}
+	if notifyClinician {
+		if err := u.MailToClinician(ctx, b, clinicianTz, clinicianID); err != nil {
+			return err
+		}
+	}
+	if notifyPatient {
+		if err := u.MailToPatient(ctx, b, clinicianTz, clinicianID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *Usecase) MailToClinician(ctx context.Context, b *deiz.Booking, tz *time.Location, clinicianID int) error {
+	addressStr := ""
+	if !b.Remote {
+		addressStr = fmt.Sprintf("%s, %d %s", b.Address.Line, b.Address.PostCode, b.Address.City)
+	}
+	return u.ToClinicianMailer.MailBookingToClinician(ctx,
+		b, tz, u.GCalendarLinkBuilder.BuildGCalendarLink(
+			b.Start.In(tz), b.End.In(tz),
+			fmt.Sprintf("Consultation avec %s %s", b.Patient.Surname, b.Patient.Name),
+			addressStr, b.Note,
+		))
+}
+
+func (u *Usecase) MailToPatient(ctx context.Context, b *deiz.Booking, tz *time.Location, clinicianID int) error {
+	addressStr := ""
+	if !b.Remote {
+		addressStr = fmt.Sprintf("%s, %d %s", b.Address.Line, b.Address.PostCode, b.Address.City)
+	}
+	return u.ToPatientMailer.MailBookingToPatient(ctx, b, tz,
+		u.GCalendarLinkBuilder.BuildGCalendarLink(
+			b.Start.In(tz),
+			b.End.In(tz),
+			fmt.Sprintf("Consultation avec %s %s", b.Clinician.Surname, b.Clinician.Name),
+			addressStr,
+			""),
+		u.GMapsLinkBuilder.BuildGMapsLink(addressStr),
+		b.DeleteID,
+	)
 }

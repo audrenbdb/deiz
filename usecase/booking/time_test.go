@@ -1,6 +1,7 @@
 package booking_test
 
 import (
+	"github.com/audrenbdb/deiz"
 	"github.com/audrenbdb/deiz/usecase/booking"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -133,6 +134,125 @@ func TestLimitTimeRange(t *testing.T) {
 
 			assert.Equal(t, test.outLowerRange, lowerRange, "expected: %s, got: %s", test.outLowerRange, lowerRange)
 			assert.Equal(t, test.outUpperRange, upperRange, "expected: %s, got: %s", test.outLowerRange, lowerRange)
+		})
+	}
+}
+
+func TestGetTimeRangesFromBookings(t *testing.T) {
+	var tests = []struct {
+		description string
+		inBookings  []deiz.Booking
+		outRanges   [][2]time.Time
+	}{
+		{
+			description: "should return a list of two time ranges",
+			inBookings: []deiz.Booking{
+				{
+					Start: time.Date(2010, 1, 1, 10, 0, 0, 0, time.UTC),
+					End:   time.Date(2010, 1, 1, 11, 0, 0, 0, time.UTC),
+				},
+				{
+					Start: time.Date(2010, 1, 1, 12, 0, 0, 0, time.UTC),
+					End:   time.Date(2010, 1, 1, 13, 0, 0, 0, time.UTC),
+				},
+			},
+			outRanges: [][2]time.Time{
+				{
+					time.Date(2010, 1, 1, 10, 0, 0, 0, time.UTC),
+					time.Date(2010, 1, 1, 11, 0, 0, 0, time.UTC),
+				},
+				{
+					time.Date(2010, 1, 1, 12, 0, 0, 0, time.UTC),
+					time.Date(2010, 1, 1, 13, 0, 0, 0, time.UTC),
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			timeRanges := booking.GetTimeRangesFromBookings(test.inBookings, [][2]time.Time{})
+			assert.ElementsMatch(t, test.outRanges, timeRanges)
+		})
+	}
+}
+
+func TestSortBookingsByStart(t *testing.T) {
+	t.Run("should sort two bookings", func(t *testing.T) {
+		inBookings := []deiz.Booking{
+			{
+				Start: time.Date(2010, 1, 1, 12, 0, 0, 0, time.UTC),
+				End:   time.Date(2010, 1, 1, 13, 0, 0, 0, time.UTC),
+			},
+			{
+				Start: time.Date(2010, 1, 1, 10, 0, 0, 0, time.UTC),
+				End:   time.Date(2010, 1, 1, 11, 0, 0, 0, time.UTC),
+			},
+		}
+		outBookings := []deiz.Booking{
+			{
+				Start: time.Date(2010, 1, 1, 10, 0, 0, 0, time.UTC),
+				End:   time.Date(2010, 1, 1, 11, 0, 0, 0, time.UTC),
+			}, {
+				Start: time.Date(2010, 1, 1, 12, 0, 0, 0, time.UTC),
+				End:   time.Date(2010, 1, 1, 13, 0, 0, 0, time.UTC),
+			},
+		}
+		bookings := booking.SortBookingsByStart(inBookings)
+		assert.Equal(t, outBookings, bookings)
+	})
+}
+
+func TestGetTimeRangesNotOverlapping(t *testing.T) {
+	var tests = []struct {
+		description string
+
+		inDuration           int
+		inLowerLimit         time.Time
+		inUpperLimit         time.Time
+		inRangesToNotOverlap [][2]time.Time
+
+		outRanges [][2]time.Time
+	}{
+		{
+			description:  "should return two 30mn time ranges that would fit lower and upper limit",
+			inDuration:   30,
+			inLowerLimit: time.Date(2010, 1, 1, 12, 0, 0, 0, time.UTC),
+			inUpperLimit: time.Date(2010, 1, 1, 13, 0, 0, 0, time.UTC),
+			outRanges: [][2]time.Time{
+				{
+					time.Date(2010, 1, 1, 12, 0, 0, 0, time.UTC),
+					time.Date(2010, 1, 1, 12, 30, 0, 0, time.UTC),
+				},
+				{
+					time.Date(2010, 1, 1, 12, 30, 0, 0, time.UTC),
+					time.Date(2010, 1, 1, 13, 00, 0, 0, time.UTC),
+				},
+			},
+		},
+		{
+			description:  "should return one 30mn time range before a time range blocked",
+			inDuration:   30,
+			inLowerLimit: time.Date(2010, 1, 1, 12, 0, 0, 0, time.UTC),
+			inUpperLimit: time.Date(2010, 1, 1, 13, 0, 0, 0, time.UTC),
+			inRangesToNotOverlap: [][2]time.Time{
+				{
+					time.Date(2010, 1, 1, 12, 30, 0, 0, time.UTC),
+					time.Date(2010, 1, 1, 13, 00, 0, 0, time.UTC),
+				},
+			},
+			outRanges: [][2]time.Time{
+				{
+					time.Date(2010, 1, 1, 12, 0, 0, 0, time.UTC),
+					time.Date(2010, 1, 1, 12, 30, 0, 0, time.UTC),
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			ranges := booking.GetTimeRangesNotOverLapping(test.inDuration, test.inLowerLimit, test.inUpperLimit, test.inRangesToNotOverlap, [][2]time.Time{})
+			assert.ElementsMatch(t, test.outRanges, ranges)
 		})
 	}
 }

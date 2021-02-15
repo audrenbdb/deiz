@@ -127,7 +127,7 @@ func (r *Repo) RegisterBooking(ctx context.Context, b *Booking, clinicianID int,
 func fillFreeBookingSlotFunc(filler freeBookingSlotFiller, creater patientCreater) FillFreeBookingSlot {
 	return func(ctx context.Context, b *Booking, clinicianID int) error {
 		b.Clinician.ID = clinicianID
-		if !b.Blocked && b.Patient.IsValid() {
+		if !b.Blocked {
 			err := creater.CreatePatient(ctx, &b.Patient, clinicianID)
 			if err != nil {
 				return err

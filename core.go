@@ -36,10 +36,6 @@ type repo interface {
 	clinicianRoleUpdater
 	clinicianInvoicesCounter
 	clinicianStripeSecretKeyGetter
-	clinicianTimezoneGetter
-
-	calendarSettingsEditer
-	calendarSettingsGetter
 
 	bookingsPendingPaymentGetter
 	bookingInvoiceCreater
@@ -71,8 +67,6 @@ type Core struct {
 	EditClinicianPhone     EditClinicianPhone
 	EnableClinicianAccess  EnableClinicianAccess
 	DisableClinicianAccess DisableClinicianAccess
-
-	EditCalendarSettings EditCalendarSettings
 
 	ListBookingsPendingPayment  ListBookingsPendingPayment
 	SeeInvoicePDF               SeeInvoicePDF
@@ -108,8 +102,6 @@ func NewCore(repo repo, pdf pdf, mail mail, crypt crypt, stripe stripe) Core {
 		EditClinicianEmail:     editClinicianEmailFunc(repo),
 		EnableClinicianAccess:  enableClinicianAccessFunc(repo),
 		DisableClinicianAccess: disableClinicianAccessFunc(repo),
-
-		EditCalendarSettings: editCalendarSettingsFunc(repo),
 
 		ListBookingsPendingPayment:  listBookingsPendingPaymentFunc(repo),
 		SeeInvoicePDF:               seeInvoicePDFFunc(pdf),

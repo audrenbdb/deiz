@@ -11,9 +11,12 @@ type (
 	PatientSearcher interface {
 		SearchPatient(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error)
 	}
+	PatientAdder interface {
+		AddPatient(ctx context.Context, p *deiz.Patient, clinicianID int) error
+	}
 )
 
-func HandleGetPatients(searcher PatientSearcher) echo.HandlerFunc {
+func handleGetPatients(searcher PatientSearcher) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -23,6 +26,21 @@ func HandleGetPatients(searcher PatientSearcher) echo.HandlerFunc {
 		}
 		p, err := searcher.SearchPatient(ctx, search, clinicianID)
 		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, p)
+	}
+}
+
+func handlePostPatient(adder PatientAdder) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		var p deiz.Patient
+		if err := c.Bind(&p); err != nil {
+			return c.JSON(http.StatusBadRequest, errBind)
+		}
+		if err := adder.AddPatient(ctx, &p, clinicianID); err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return c.JSON(http.StatusOK, p)

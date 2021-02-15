@@ -9,14 +9,17 @@ import (
 type (
 	AccountService interface {
 		ClinicianAccountGetter
+		CalendarSettingsEditer
 	}
 	BookingService interface {
 		BookingSlotsGetter
 		BookingSlotBlocker
 		BookingSlotUnlocker
+		BookingRegister
 	}
 	PatientService interface {
 		PatientSearcher
+		PatientAdder
 	}
 )
 
@@ -37,9 +40,13 @@ func StartEchoServer(
 
 	e.GET("/api/bookings", handleGetBookingSlots(bookingService), clinicianMW)
 	e.POST("/api/bookings/blocked", handlePostBlockedBookingSlot(bookingService), clinicianMW)
+	e.POST("/api/bookings", handlePostBooking(bookingService), clinicianMW)
 	e.DELETE("/api/bookings/:id/blocked", handleDeleteBookingSlotBlocked(bookingService), clinicianMW)
 
-	e.GET("/api/patients", HandleGetPatients(patientService), clinicianMW)
+	e.GET("/api/patients", handleGetPatients(patientService), clinicianMW)
+	e.POST("/api/patients", handlePostPatient(patientService), clinicianMW)
+
+	e.PATCH("/api/clinician-accounts/calendar-settings", handlePatchCalendarSettings(accountService), clinicianMW)
 
 	/*
 

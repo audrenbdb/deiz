@@ -16,6 +16,8 @@ type (
 		BookingSlotBlocker
 		BookingSlotUnlocker
 		BookingRegister
+		BookingPreRegister
+		BookingConfirmer
 	}
 	PatientService interface {
 		PatientSearcher
@@ -41,6 +43,9 @@ func StartEchoServer(
 	e.GET("/api/bookings", handleGetBookingSlots(bookingService), clinicianMW)
 	e.POST("/api/bookings/blocked", handlePostBlockedBookingSlot(bookingService), clinicianMW)
 	e.POST("/api/bookings", handlePostBooking(bookingService), clinicianMW)
+	e.POST("/api/bookings/pre-registered", handlePostPreRegisteredBooking(bookingService), clinicianMW)
+	e.PATCH("/api/bookings/pre-registered", handlePatchPreRegisteredBooking(bookingService), clinicianMW)
+	e.DELETE("/api/bookings/:id/pre-registered", handleDeleteBookingSlotBlocked(bookingService), clinicianMW)
 	e.DELETE("/api/bookings/:id/blocked", handleDeleteBookingSlotBlocked(bookingService), clinicianMW)
 
 	e.GET("/api/patients", handleGetPatients(patientService), clinicianMW)

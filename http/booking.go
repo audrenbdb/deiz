@@ -22,7 +22,54 @@ type (
 	BookingRegister interface {
 		RegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error
 	}
+	BookingPreRegister interface {
+		PreRegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int) error
+	}
+	BookingConfirmer interface {
+		ConfirmPreRegisteredBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error
+	}
 )
+
+func handlePatchPreRegisteredBooking(confirmer BookingConfirmer) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+
+		notifyPatient, err := strconv.ParseBool(c.QueryParam("notifyPatient"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		notifyClinician, err := strconv.ParseBool(c.QueryParam("notifyClinician"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		var b deiz.Booking
+		if err := c.Bind(&b); err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		err = confirmer.ConfirmPreRegisteredBooking(ctx, &b, clinicianID, notifyPatient, notifyClinician)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, b)
+	}
+}
+
+func handlePostPreRegisteredBooking(register BookingPreRegister) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		var b deiz.Booking
+		if err := c.Bind(&b); err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		err := register.PreRegisterBooking(ctx, &b, clinicianID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, b)
+	}
+}
 
 func handlePostBooking(register BookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {

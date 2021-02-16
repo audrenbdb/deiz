@@ -17,12 +17,9 @@ type stripe interface {
 //mail is a driven actor called BY the core to send emails
 type mail interface {
 	bookingInvoiceMailer
-	bookingMailer
-	bookingCancelMailer
 }
 
 type Repo struct {
-	Booking        BookingRepo
 	Mailing        MailingService
 	GoogleCalendar GoogleCalendarService
 	GoogleMaps     GoogleMapsService
@@ -50,10 +47,6 @@ type repo interface {
 	patientAddressEditer
 	patientRemover
 	patientCreater
-
-	freeBookingSlotFiller
-	bookingSlotRemover
-	bookingsInTimeRangeGetter
 
 	officeHoursGetter
 	officeHoursAdder
@@ -84,13 +77,6 @@ type Core struct {
 	RemovePatient      RemovePatient
 	EditPatientAddress EditPatientAddress
 
-	FillFreeBookingSlot         FillFreeBookingSlot
-	FreeBookingSlot             FreeBookingSlot
-	GetAllBookingSlotsFromWeek  GetAllBookingSlotsFromWeek
-	GetFreeBookingSlotsFromWeek GetFreeBookingSlotsFromWeek
-	MailBooking                 MailBooking
-	MailCancelBooking           MailCancelBooking
-
 	AddOfficeHours    AddOfficeHours
 	RemoveOfficeHours RemoveOfficeHours
 }
@@ -103,11 +89,10 @@ func NewCore(repo repo, pdf pdf, mail mail, crypt crypt, stripe stripe) Core {
 		EnableClinicianAccess:  enableClinicianAccessFunc(repo),
 		DisableClinicianAccess: disableClinicianAccessFunc(repo),
 
-		ListBookingsPendingPayment:  listBookingsPendingPaymentFunc(repo),
-		SeeInvoicePDF:               seeInvoicePDFFunc(pdf),
-		MailBookingInvoice:          mailBookingInvoiceFunc(pdf, mail),
-		CreateBookingInvoice:        createBookingInvoiceFunc(repo, repo),
-		SeePeriodInvoicesSummaryPDF: seePeriodBookingInvoicesSummaryPDFFunc(repo, pdf, repo),
+		ListBookingsPendingPayment: listBookingsPendingPaymentFunc(repo),
+		SeeInvoicePDF:              seeInvoicePDFFunc(pdf),
+		MailBookingInvoice:         mailBookingInvoiceFunc(pdf, mail),
+		CreateBookingInvoice:       createBookingInvoiceFunc(repo, repo),
 
 		CreateStripePaymentSession: creatStripePaymentSessionFunc(repo, crypt, stripe),
 
@@ -118,13 +103,6 @@ func NewCore(repo repo, pdf pdf, mail mail, crypt crypt, stripe stripe) Core {
 		EditPatient:        editPatientFunc(repo),
 		EditPatientAddress: editPatientAddressFunc(repo),
 		RemovePatient:      removePatientFunc(repo),
-
-		FillFreeBookingSlot:         fillFreeBookingSlotFunc(repo, repo),
-		FreeBookingSlot:             freeBookingSlotFunc(repo),
-		GetAllBookingSlotsFromWeek:  getAllBookingSlotsFromWeekFunc(repo, repo),
-		GetFreeBookingSlotsFromWeek: getFreeBookingSlotsFromWeekFunc(repo, repo, repo),
-		MailBooking:                 mailBookingFunc(mail, repo),
-		MailCancelBooking:           mailCancelBookingFunc(mail, repo),
 
 		AddOfficeHours:    addOfficeHoursFunc(repo),
 		RemoveOfficeHours: removeOfficeHoursFunc(repo),

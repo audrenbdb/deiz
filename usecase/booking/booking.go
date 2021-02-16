@@ -18,6 +18,12 @@ type (
 	Deleter interface {
 		DeleteBooking(ctx context.Context, bookingID, clinicianID int) error
 	}
+	Updater interface {
+		UpdateBooking(ctx context.Context, b *deiz.Booking) error
+	}
+	GetterByID interface {
+		GetBookingByID(ctx context.Context, bookingID int) (deiz.Booking, error)
+	}
 	OverlappingBlockedDeleter interface {
 		DeleteOverlappingBlockedBooking(ctx context.Context, start, end time.Time, clinicianID int) error
 	}
@@ -26,6 +32,9 @@ type (
 	}
 	ToPatientMailer interface {
 		MailBookingToPatient(ctx context.Context, b *deiz.Booking, tz *time.Location, gCalLink, gMapsLink, cancelURL string) error
+	}
+	CancelBookingToPatientMailer interface {
+		MailCancelBookingToPatient(ctx context.Context, b *deiz.Booking, tz *time.Location) error
 	}
 )
 
@@ -87,12 +96,52 @@ func (u *Usecase) BlockBookingSlot(ctx context.Context, b *deiz.Booking, clinici
 }
 
 func (u *Usecase) UnlockBookingSlot(ctx context.Context, bookingID, clinicianID int) error {
+	b, err := u.GetterByID.GetBookingByID(ctx, bookingID)
+	if err != nil {
+		return err
+	}
+	if b.Clinician.ID != clinicianID {
+		return deiz.ErrorUnauthorized
+	}
 	return u.Deleter.DeleteBooking(ctx, bookingID, clinicianID)
+}
+
+func (u *Usecase) ConfirmPreRegisteredBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error {
+	if b.Clinician.ID != clinicianID {
+		return deiz.ErrorUnauthorized
+	}
+	if !b.Confirmed || b.End.Before(b.Start) || b.Blocked || b.Patient.ID == 0 || b.Clinician.ID == 0 {
+		return deiz.ErrorStructValidation
+	}
+	err := u.Updater.UpdateBooking(ctx, b)
+	if err != nil {
+		return err
+	}
+	if notifyClinician || notifyPatient {
+		return u.NotifyBooking(ctx, b, clinicianID, notifyPatient, notifyClinician)
+	}
+	return nil
+}
+
+func (u *Usecase) PreRegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int) error {
+	if b.Clinician.ID != clinicianID {
+		return deiz.ErrorUnauthorized
+	}
+	if b.Confirmed || b.End.Before(b.Start) || b.Blocked {
+		return deiz.ErrorStructValidation
+	}
+	if err := u.OverlappingBlockedDeleter.DeleteOverlappingBlockedBooking(ctx, b.Start, b.End, clinicianID); err != nil {
+		return err
+	}
+	if err := u.Creater.CreateBooking(ctx, b); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (u *Usecase) RegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error {
 	if b.Patient.ID == 0 || b.Clinician.ID == 0 || b.End.Before(b.Start) ||
-		b.Blocked || (b.Address.ID == 0 && !b.Remote) {
+		b.Blocked || (b.Address.ID == 0 && !b.Remote) || !b.Confirmed {
 		return deiz.ErrorStructValidation
 	}
 	if b.Clinician.ID != clinicianID {
@@ -104,6 +153,13 @@ func (u *Usecase) RegisterBooking(ctx context.Context, b *deiz.Booking, clinicia
 	if err := u.Creater.CreateBooking(ctx, b); err != nil {
 		return err
 	}
+	if notifyPatient || notifyClinician {
+		return u.NotifyBooking(ctx, b, clinicianID, notifyPatient, notifyClinician)
+	}
+	return nil
+}
+
+func (u *Usecase) NotifyBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error {
 	settings, err := u.CalendarSettingsGetter.GetClinicianCalendarSettings(ctx, clinicianID)
 	if err != nil {
 		return err
@@ -119,6 +175,30 @@ func (u *Usecase) RegisterBooking(ctx context.Context, b *deiz.Booking, clinicia
 	}
 	if notifyPatient {
 		if err := u.MailToPatient(ctx, b, clinicianTz, clinicianID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (u *Usecase) RemoveBooking(ctx context.Context, bookingID int, clinicianID int, notifyPatient bool) error {
+	b, err := u.GetterByID.GetBookingByID(ctx, bookingID)
+	if err != nil {
+		return err
+	}
+	if err := u.Deleter.DeleteBooking(ctx, bookingID, clinicianID); err != nil {
+		return err
+	}
+	if notifyPatient {
+		s, err := u.CalendarSettingsGetter.GetClinicianCalendarSettings(ctx, clinicianID)
+		if err != nil {
+			return err
+		}
+		tz, err := time.LoadLocation(s.Timezone.Name)
+		if err != nil {
+			return err
+		}
+		if err := u.CancelToPatientMailer.MailCancelBookingToPatient(ctx, &b, tz); err != nil {
 			return err
 		}
 	}

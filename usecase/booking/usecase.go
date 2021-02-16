@@ -11,6 +11,8 @@ type repo interface {
 	BookingsInTimeRangeGetter
 	Creater
 	Deleter
+	Updater
+	GetterByID
 	OverlappingBlockedDeleter
 	CalendarSettingsGetter
 }
@@ -18,6 +20,7 @@ type repo interface {
 type mail interface {
 	ToClinicianMailer
 	ToPatientMailer
+	CancelBookingToPatientMailer
 }
 
 type GCalendarLinkBuilder interface {
@@ -37,12 +40,15 @@ type Usecase struct {
 	BookingsInTimeRangeGetter BookingsInTimeRangeGetter
 	Creater                   Creater
 	Deleter                   Deleter
+	GetterByID                GetterByID
 	OverlappingBlockedDeleter OverlappingBlockedDeleter
 	ToClinicianMailer         ToClinicianMailer
 	ToPatientMailer           ToPatientMailer
+	CancelToPatientMailer     CancelBookingToPatientMailer
 	GCalendarLinkBuilder      GCalendarLinkBuilder
 	GMapsLinkBuilder          GMapsLinkBuilder
 	CalendarSettingsGetter    CalendarSettingsGetter
+	Updater                   Updater
 }
 
 func NewUsecase(repo repo, mail mail, gMapsBuilder GMapsLinkBuilder, gCalBuilder GCalendarLinkBuilder) *Usecase {
@@ -51,11 +57,14 @@ func NewUsecase(repo repo, mail mail, gMapsBuilder GMapsLinkBuilder, gCalBuilder
 		BookingsInTimeRangeGetter: repo,
 		Creater:                   repo,
 		Deleter:                   repo,
+		Updater:                   repo,
 		OverlappingBlockedDeleter: repo,
 		CalendarSettingsGetter:    repo,
+		GetterByID:                repo,
 
-		ToClinicianMailer: mail,
-		ToPatientMailer:   mail,
+		ToClinicianMailer:     mail,
+		ToPatientMailer:       mail,
+		CancelToPatientMailer: mail,
 
 		GCalendarLinkBuilder: gCalBuilder,
 		GMapsLinkBuilder:     gMapsBuilder,

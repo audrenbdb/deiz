@@ -1,7 +1,8 @@
 CREATE TABLE clinician_booking (
                                    id SERIAL PRIMARY KEY,
                                    created_at TIMESTAMP DEFAULT NOW(),
-                                   blocked BOOLEAN DEFAULT false,
+                                   confirmed BOOLEAN NOT NULL DEFAULT false,
+                                   blocked BOOLEAN NOT NULL DEFAULT false,
                                    address_id INT REFERENCES address(id) ON DELETE SET NULL,
                                    clinician_person_id INT NOT NULL REFERENCES person(id) ON DELETE CASCADE,
                                    patient_id INT REFERENCES patient(id) ON DELETE CASCADE,

@@ -86,6 +86,7 @@ func createBookingInvoiceFunc(creater bookingInvoiceCreater,
 	}
 }
 
+/*
 func seePeriodBookingInvoicesSummaryPDFFunc(tz clinicianTimezoneGetter, pdf periodBookingInvoicesSummaryPDFGetter, invoicesGetter periodBookingInvoicesGetter) SeePeriodInvoicesSummaryPDF {
 	return func(ctx context.Context, start time.Time, end time.Time, clinicianID int) (*bytes.Buffer, error) {
 		loc, err := getClinicianTimezoneLoc(ctx, clinicianID, tz)
@@ -105,6 +106,8 @@ func seePeriodBookingInvoicesSummaryPDFFunc(tz clinicianTimezoneGetter, pdf peri
 		return pdf.GetPeriodBookingInvoicesSummaryPDF(ctx, invoices, start, end, totalBeforeTax, totalAfterTax, loc)
 	}
 }
+
+*/
 
 func listBookingsPendingPaymentFunc(lister bookingsPendingPaymentGetter) ListBookingsPendingPayment {
 	return func(ctx context.Context, clinicianID int) ([]Booking, error) {

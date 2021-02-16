@@ -27,11 +27,20 @@ type mockOverlappingDeleter struct {
 	err error
 }
 
+type mockGetterByID struct {
+	booking deiz.Booking
+	err     error
+}
+
 type mockToClinicianMailer struct {
 	err error
 }
 
 type mockToPatientMailer struct {
+	err error
+}
+
+type mockCancelBookingToPatientMailer struct {
 	err error
 }
 
@@ -76,6 +85,14 @@ func (m *mockGoogleLinksBuilder) BuildGCalendarLink(start, end time.Time, subjec
 
 func (m *mockGoogleLinksBuilder) BuildGMapsLink(addressStr string) string {
 	return "maps link"
+}
+
+func (m *mockCancelBookingToPatientMailer) MailCancelBookingToPatient(ctx context.Context, b *deiz.Booking, tz *time.Location) error {
+	return m.err
+}
+
+func (m *mockGetterByID) GetBookingByID(ctx context.Context, bookingID int) (deiz.Booking, error) {
+	return m.booking, m.err
 }
 
 func TestIsBookingValid(t *testing.T) {
@@ -393,5 +410,65 @@ func TestRegisterBooking(t *testing.T) {
 			assert.Equal(t, test.outError, err)
 		})
 	}
+}
 
+func TestRemoveBooking(t *testing.T) {
+	var tests = []struct {
+		description string
+
+		deleter         mockBookingDeleter
+		getter          mockGetterByID
+		settingsGetter  mockCalendarSettingsGetter
+		mailerToPatient mockCancelBookingToPatientMailer
+
+		inBookingID     int
+		inClinicianID   int
+		inNotifyPatient bool
+
+		outError error
+	}{
+		{
+			description: "should fail to delete",
+
+			deleter:  mockBookingDeleter{err: errors.New("failed to delete")},
+			outError: errors.New("failed to delete"),
+		},
+		{
+			description:     "should fail to get clinician settings when notifying patient",
+			inNotifyPatient: true,
+			settingsGetter:  mockCalendarSettingsGetter{err: errors.New("failed to get settings")},
+			outError:        errors.New("failed to get settings"),
+		},
+		{
+			description:     "should fail to post cancel booking email",
+			inNotifyPatient: true,
+			mailerToPatient: mockCancelBookingToPatientMailer{err: errors.New("failed to send email to patient")},
+			outError:        errors.New("failed to send email to patient"),
+		},
+		{
+			description:     "should fail to get booking",
+			inNotifyPatient: true,
+			getter:          mockGetterByID{err: errors.New("fail to get booking")},
+			outError:        errors.New("fail to get booking"),
+		},
+		{
+			description: "should fail to authorize",
+			getter:      mockGetterByID{booking: deiz.Booking{Clinician: deiz.Clinician{ID: 3}}},
+
+			outError: deiz.ErrorUnauthorized,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			u := booking.Usecase{
+				Deleter:                &test.deleter,
+				CancelToPatientMailer:  &test.mailerToPatient,
+				CalendarSettingsGetter: &test.settingsGetter,
+				GetterByID:             &test.getter,
+			}
+			err := u.RemoveBooking(context.Background(), test.inBookingID, test.inClinicianID, test.inNotifyPatient)
+			assert.Equal(t, test.outError, err)
+		})
+	}
 }

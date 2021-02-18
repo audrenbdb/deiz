@@ -96,13 +96,6 @@ func (u *Usecase) BlockBookingSlot(ctx context.Context, b *deiz.Booking, clinici
 }
 
 func (u *Usecase) UnlockBookingSlot(ctx context.Context, bookingID, clinicianID int) error {
-	b, err := u.GetterByID.GetBookingByID(ctx, bookingID)
-	if err != nil {
-		return err
-	}
-	if b.Clinician.ID != clinicianID {
-		return deiz.ErrorUnauthorized
-	}
 	return u.Deleter.DeleteBooking(ctx, bookingID, clinicianID)
 }
 

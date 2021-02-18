@@ -22,6 +22,9 @@ type (
 	PatientService interface {
 		PatientSearcher
 		PatientAdder
+		PatientEditer
+		PatientAddressAdder
+		PatientAddressEditer
 	}
 )
 
@@ -50,6 +53,9 @@ func StartEchoServer(
 
 	e.GET("/api/patients", handleGetPatients(patientService), clinicianMW)
 	e.POST("/api/patients", handlePostPatient(patientService), clinicianMW)
+	e.PATCH("/api/patients", handlePatchPatient(patientService), clinicianMW)
+	e.POST("/api/patients/:id/address", handlePostPatientAddress(patientService), clinicianMW)
+	e.PATCH("/api/patients/:id/address", handlePatchPatientAddress(patientService), clinicianMW)
 
 	e.PATCH("/api/clinician-accounts/calendar-settings", handlePatchCalendarSettings(accountService), clinicianMW)
 

@@ -60,9 +60,9 @@ func insertOfficeAddress(ctx context.Context, db db, a *deiz.Address, personID i
 	return nil
 }
 
-func (r *repo) UpdateAddress(ctx context.Context, a *deiz.Address) error {
+func updateAddress(ctx context.Context, db db, a *deiz.Address) error {
 	const query = `UPDATE address SET line = $1, post_code = $2, city = $3 WHERE id = $4`
-	tag, err := r.conn.Exec(ctx, query, a.Line, a.PostCode, a.City, a.ID)
+	tag, err := db.Exec(ctx, query, a.Line, a.PostCode, a.City, a.ID)
 	if err != nil {
 		return err
 	}
@@ -70,6 +70,10 @@ func (r *repo) UpdateAddress(ctx context.Context, a *deiz.Address) error {
 		return errNoRowsUpdated
 	}
 	return nil
+}
+
+func (r *repo) UpdateAddress(ctx context.Context, a *deiz.Address) error {
+	return updateAddress(ctx, r.conn, a)
 }
 
 func (r *repo) SetClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {

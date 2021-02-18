@@ -5,11 +5,11 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-//isPatientTiedToClinician checks if a given patient is in clinician patient list
-func isPatientTiedToClinician(ctx context.Context, db db, p *deiz.Patient, clinicianID int) (bool, error) {
+//IsPatientTiedToClinician checks if a given patient is in clinician patient list
+func (r *repo) IsPatientTiedToClinician(ctx context.Context, p *deiz.Patient, clinicianID int) (bool, error) {
 	const query = `SELECT EXISTS(SELECT 1 FROM patient WHERE clinician_person_id = $1 AND id = $2)`
 	var tied bool
-	row := db.QueryRow(ctx, query, clinicianID, p.ID)
+	row := r.conn.QueryRow(ctx, query, clinicianID, p.ID)
 	if err := row.Scan(&tied); err != nil {
 		return false, err
 	}
@@ -72,23 +72,31 @@ func (r *repo) EditPatient(ctx context.Context, p *deiz.Patient, clinicianID int
 	return nil
 }
 
-//EditPatientAddress creates or update patient address
-func (r *repo) EditPatientAddress(ctx context.Context, p *deiz.Patient, clinicianID int) error {
-	tied, err := isPatientTiedToClinician(ctx, r.conn, p, clinicianID)
+func updatePatientAddress(ctx context.Context, db db, addressID int, patientID int) error {
+	const query = `UPDATE patient SET address_id = $1 WHERE id = $2`
+	cmdTag, err := db.Exec(ctx, query, addressID, patientID)
 	if err != nil {
 		return err
 	}
-	if !tied {
-		return errUnauthorized
+	if cmdTag.RowsAffected() == 0 {
+		return errNoRowsUpdated
 	}
-	if p.Address.ID == 0 {
-		err := insertAddress(ctx, r.conn, &p.Address)
-		if err != nil {
-			return err
-		}
-		return nil
+	return nil
+}
+
+func (r *repo) CreatePatientAddress(ctx context.Context, a *deiz.Address, patientID int) error {
+	tx, err := r.conn.Begin(ctx)
+	defer tx.Rollback(ctx)
+	if err != nil {
+		return err
 	}
-	return r.UpdateAddress(ctx, &p.Address)
+	if err := insertAddress(ctx, tx, a); err != nil {
+		return err
+	}
+	if err := updatePatientAddress(ctx, tx, a.ID, patientID); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func (r *repo) RemovePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {

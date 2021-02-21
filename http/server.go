@@ -25,6 +25,10 @@ type (
 		PatientEditer
 		PatientAddressAdder
 		PatientAddressEditer
+		PatientBookingsGetter
+		PatientNotesGetter
+		PatientNoteAdder
+		PatientNoteRemover
 	}
 )
 
@@ -56,6 +60,11 @@ func StartEchoServer(
 	e.PATCH("/api/patients", handlePatchPatient(patientService), clinicianMW)
 	e.POST("/api/patients/:id/address", handlePostPatientAddress(patientService), clinicianMW)
 	e.PATCH("/api/patients/:id/address", handlePatchPatientAddress(patientService), clinicianMW)
+	e.GET("/api/patients/:id/bookings", handleGetPatientBookings(patientService), clinicianMW)
+
+	e.GET("/api/patients/:id/notes", handleGetPatientNotes(patientService), clinicianMW)
+	e.POST("/api/patients/:id/notes", handlePostPatientNote(patientService), clinicianMW)
+	e.DELETE("/api/patients/:patientId/notes/:notesId", handleDeletePatientNote(patientService), clinicianMW)
 
 	e.PATCH("/api/clinician-accounts/calendar-settings", handlePatchCalendarSettings(accountService), clinicianMW)
 

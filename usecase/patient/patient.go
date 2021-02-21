@@ -13,6 +13,9 @@ type (
 	Creater interface {
 		CreatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error
 	}
+	Updater interface {
+		UpdatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error
+	}
 )
 
 func IsPatientValid(p *deiz.Patient) bool {
@@ -41,4 +44,11 @@ func (u *Usecase) AddPatient(ctx context.Context, p *deiz.Patient, clinicianID i
 		return deiz.ErrorStructValidation
 	}
 	return u.Creater.CreatePatient(ctx, p, clinicianID)
+}
+
+func (u *Usecase) EditPatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
+	if !IsPatientValid(p) {
+		return deiz.ErrorStructValidation
+	}
+	return u.Updater.UpdatePatient(ctx, p, clinicianID)
 }

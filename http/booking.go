@@ -28,7 +28,26 @@ type (
 	BookingConfirmer interface {
 		ConfirmPreRegisteredBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error
 	}
+	PatientBookingsGetter interface {
+		GetPatientBookings(ctx context.Context, clinicianID, patientID int) ([]deiz.Booking, error)
+	}
 )
+
+func handleGetPatientBookings(getter PatientBookingsGetter) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		patientID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		bookings, err := getter.GetPatientBookings(ctx, clinicianID, patientID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, bookings)
+	}
+}
 
 func handlePatchPreRegisteredBooking(confirmer BookingConfirmer) echo.HandlerFunc {
 	return func(c echo.Context) error {

@@ -14,6 +14,11 @@ type Patient struct {
 	Address Address `json:"address"`
 }
 
+type PatientNote struct {
+	ID      int    `json:"id"`
+	Content string `json:"content"`
+}
+
 type (
 	patientEditer interface {
 		EditPatient(ctx context.Context, p *Patient, clinicianID int) error

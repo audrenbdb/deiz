@@ -24,7 +24,72 @@ type (
 	PatientAddressEditer interface {
 		EditPatientAddress(ctx context.Context, a *deiz.Address, patientID int, clinicianID int) error
 	}
+	PatientNotesGetter interface {
+		GetPatientNotes(ctx context.Context, patientID int, clinicianID int) ([]deiz.PatientNote, error)
+	}
+	PatientNoteAdder interface {
+		AddPatientNote(ctx context.Context, n *deiz.PatientNote, patientID int, clinicianID int) error
+	}
+	PatientNoteRemover interface {
+		RemovePatientNote(ctx context.Context, noteID int, patientID int, clinicianID int) error
+	}
 )
+
+func handleDeletePatientNote(remover PatientNoteRemover) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		patientID, err := strconv.Atoi(c.Param("patientId"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, errValidating)
+		}
+		noteID, err := strconv.Atoi(c.Param("noteId"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, errValidating)
+		}
+		err = remover.RemovePatientNote(ctx, noteID, patientID, clinicianID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return nil
+	}
+}
+
+func handlePostPatientNote(adder PatientNoteAdder) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		patientID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, errValidating)
+		}
+		var n deiz.PatientNote
+		if err := c.Bind(&n); err != nil {
+			return c.JSON(http.StatusBadRequest, errValidating)
+		}
+		err = adder.AddPatientNote(ctx, &n, patientID, clinicianID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, n)
+	}
+}
+
+func handleGetPatientNotes(getter PatientNotesGetter) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		patientID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, errValidating)
+		}
+		notes, err := getter.GetPatientNotes(ctx, patientID, clinicianID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, notes)
+	}
+}
 
 func handlePatchPatientAddress(addressEditer PatientAddressEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {

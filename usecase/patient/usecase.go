@@ -8,9 +8,6 @@ type repo interface {
 	AddressCreater
 	AddressUpdater
 	BookingsGetter
-	NotesGetter
-	NoteCreater
-	NoteDeleter
 }
 
 type Usecase struct {
@@ -21,9 +18,6 @@ type Usecase struct {
 	AddressCreater        AddressCreater
 	AddressUpdater        AddressUpdater
 	BookingsGetter        BookingsGetter
-	NotesGetter           NotesGetter
-	NoteCreater           NoteCreater
-	NoteDeleter           NoteDeleter
 }
 
 func NewUsecase(repo repo) *Usecase {
@@ -35,8 +29,5 @@ func NewUsecase(repo repo) *Usecase {
 		AddressUpdater:        repo,
 		Updater:               repo,
 		BookingsGetter:        repo,
-		NotesGetter:           repo,
-		NoteCreater:           repo,
-		NoteDeleter:           repo,
 	}
 }

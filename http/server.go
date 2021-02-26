@@ -18,6 +18,7 @@ type (
 		BookingRegister
 		BookingPreRegister
 		BookingConfirmer
+		BookingRemover
 	}
 	PatientService interface {
 		PatientSearcher
@@ -26,9 +27,13 @@ type (
 		PatientAddressAdder
 		PatientAddressEditer
 		PatientBookingsGetter
-		PatientNotesGetter
-		PatientNoteAdder
-		PatientNoteRemover
+	}
+	BillingService interface {
+		UnpaidBookingsGetter
+		BookingInvoiceGenerater
+		BookingInvoiceMailer
+		PaymentMethodsGetter
+		PeriodInvoicesGetter
 	}
 )
 
@@ -37,6 +42,7 @@ func StartEchoServer(
 	accountService AccountService,
 	bookingService BookingService,
 	patientService PatientService,
+	billingService BillingService,
 ) error {
 	clinicianMW := roleMW(credentialsGetter, 2)
 	//adminMW := roleMW(credentialsGetter, 3)
@@ -52,8 +58,10 @@ func StartEchoServer(
 	e.POST("/api/bookings", handlePostBooking(bookingService), clinicianMW)
 	e.POST("/api/bookings/pre-registered", handlePostPreRegisteredBooking(bookingService), clinicianMW)
 	e.PATCH("/api/bookings/pre-registered", handlePatchPreRegisteredBooking(bookingService), clinicianMW)
-	e.DELETE("/api/bookings/:id/pre-registered", handleDeleteBookingSlotBlocked(bookingService), clinicianMW)
 	e.DELETE("/api/bookings/:id/blocked", handleDeleteBookingSlotBlocked(bookingService), clinicianMW)
+	e.DELETE("/api/bookings/:id", handleDeleteBooking(bookingService), clinicianMW)
+
+	e.GET("/api/bookings/unpaid", handleGetUnpaidBookings(billingService), clinicianMW)
 
 	e.GET("/api/patients", handleGetPatients(patientService), clinicianMW)
 	e.POST("/api/patients", handlePostPatient(patientService), clinicianMW)
@@ -62,12 +70,13 @@ func StartEchoServer(
 	e.PATCH("/api/patients/:id/address", handlePatchPatientAddress(patientService), clinicianMW)
 	e.GET("/api/patients/:id/bookings", handleGetPatientBookings(patientService), clinicianMW)
 
-	e.GET("/api/patients/:id/notes", handleGetPatientNotes(patientService), clinicianMW)
-	e.POST("/api/patients/:id/notes", handlePostPatientNote(patientService), clinicianMW)
-	e.DELETE("/api/patients/:patientId/notes/:notesId", handleDeletePatientNote(patientService), clinicianMW)
+	e.POST("/api/pdf-booking-invoices", handlePostPDFBookingInvoice(billingService), clinicianMW)
+	e.POST("/api/booking-invoices", handlePostBookingInvoice(billingService), clinicianMW)
+	e.GET("/api/booking-invoices", handleGetPeriodInvoices(billingService), clinicianMW)
 
 	e.PATCH("/api/clinician-accounts/calendar-settings", handlePatchCalendarSettings(accountService), clinicianMW)
 
+	e.GET("/api/payment-methods", handleGetPaymentMethods(billingService), clinicianMW)
 	/*
 
 		e.PATCH("/api/clinicians/:id/calendar-settings/:cid", handlePatchCalendarSettings(core.EditCalendarSettings, v), clinicianMW)

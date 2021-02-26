@@ -9,6 +9,9 @@ type (
 	BookingsGetter interface {
 		GetPatientBookings(ctx context.Context, clinicianID int, patientID int) ([]deiz.Booking, error)
 	}
+	UnpaidBookingsGetter interface {
+		GetPatientUnpaidBookings(ctx context.Context, patientID int, clinicianID int) ([]deiz.Booking, error)
+	}
 )
 
 func (u *Usecase) GetPatientBookings(ctx context.Context, clinicianID, patientID int) ([]deiz.Booking, error) {

@@ -7,7 +7,7 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-func (m *mailer) MailBookingInvoice(ctx context.Context, invoice *deiz.BookingInvoice, invoicePDF *bytes.Buffer) error {
+func (m *mailer) MailBookingInvoice(ctx context.Context, invoice *deiz.BookingInvoice, invoicePDF *bytes.Buffer, sendTo string) error {
 	b := invoice.Booking
 	var emailBuffer bytes.Buffer
 	emailData := struct {
@@ -34,7 +34,7 @@ func (m *mailer) MailBookingInvoice(ctx context.Context, invoice *deiz.BookingIn
 	\Agenda pour thérapeutes\n
 	https://deiz.fr`, emailData.Name, emailData.Amount, emailData.Date)
 	return m.sender.Send(ctx, createMail(
-		b.Patient.Email,
+		sendTo,
 		b.Clinician.Email,
 		"Facture de consultation",
 		&emailBuffer, plainBody,

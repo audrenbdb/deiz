@@ -174,7 +174,7 @@ func (u *Usecase) NotifyBooking(ctx context.Context, b *deiz.Booking, clinicianI
 	return nil
 }
 
-func (u *Usecase) RemoveBooking(ctx context.Context, bookingID int, clinicianID int, notifyPatient bool) error {
+func (u *Usecase) RemoveBooking(ctx context.Context, bookingID int, notifyPatient bool, clinicianID int) error {
 	b, err := u.GetterByID.GetBookingByID(ctx, bookingID)
 	if err != nil {
 		return err

@@ -8,8 +8,10 @@ import (
 	"github.com/audrenbdb/deiz/gmaps"
 	"github.com/audrenbdb/deiz/http"
 	"github.com/audrenbdb/deiz/mail"
+	"github.com/audrenbdb/deiz/pdf"
 	"github.com/audrenbdb/deiz/repo/psql"
 	"github.com/audrenbdb/deiz/usecase/account"
+	"github.com/audrenbdb/deiz/usecase/billing"
 	"github.com/audrenbdb/deiz/usecase/booking"
 	"github.com/audrenbdb/deiz/usecase/patient"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -43,7 +45,7 @@ func main() {
 	}
 
 	repo := psql.NewRepo(psqlDB, fbClient)
-	//pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "assets", "fonts"))
+	pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "../../assets", "fonts"))
 	mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
 	gCal := gcalendar.NewService()
 	gMaps := gmaps.NewService()
@@ -53,8 +55,14 @@ func main() {
 	bookingUsecase := booking.NewUsecase(repo, mail, gMaps, gCal)
 	accountUsecase := account.NewUsecase(repo, crypt)
 	patientUsecase := patient.NewUsecase(repo)
+	billingUsecase := billing.NewUsecase(repo, mail, pdf)
 	//err = http.StartEchoServer(http.FirebaseCredentialsGetter(fbClient), core, v)
-	err = http.StartEchoServer(http.FakeCredentialsGetter, accountUsecase, bookingUsecase, patientUsecase)
+	err = http.StartEchoServer(
+		http.FakeCredentialsGetter,
+		accountUsecase,
+		bookingUsecase,
+		patientUsecase,
+		billingUsecase)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start echo server: %v\n", err)
 		os.Exit(1)

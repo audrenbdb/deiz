@@ -16,43 +16,6 @@ func (r *repo) IsPatientTiedToClinician(ctx context.Context, p *deiz.Patient, cl
 	return tied, nil
 }
 
-func (r *repo) GetPatientNotes(ctx context.Context, patientID int) ([]deiz.PatientNote, error) {
-	const query = `SELECT id, content FROM patient_note WHERE patient_id = $1`
-	rows, err := r.conn.Query(ctx, query, patientID)
-	defer rows.Close()
-	if err != nil {
-		return nil, err
-	}
-	var notes []deiz.PatientNote
-	for rows.Next() {
-		var n deiz.PatientNote
-		err := rows.Scan(&n.ID, &n.Content)
-		if err != nil {
-			return nil, err
-		}
-		notes = append(notes, n)
-	}
-	return notes, nil
-}
-
-func (r *repo) CreatePatientNote(ctx context.Context, n *deiz.PatientNote, patientID int) error {
-	const query = `INSERT INTO patient_note(person_id, content) VALUES($1, $2) RETURNING id`
-	row := r.conn.QueryRow(ctx, query, patientID, n.Content)
-	return row.Scan(&n.ID)
-}
-
-func (r *repo) DeletePatientNote(ctx context.Context, noteID int, patientID int) error {
-	const query = `DELETE FROM patient_note WHERE id = $1 AND patient_id = $2`
-	cmdTag, err := r.conn.Exec(ctx, query, noteID, patientID)
-	if err != nil {
-		return err
-	}
-	if cmdTag.RowsAffected() == 0 {
-		return errNothingDeleted
-	}
-	return nil
-}
-
 func (r *repo) CreatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
 	const query = `INSERT INTO patient(clinician_person_id, email, name, surname, phone, address_id)
 	VALUES($1, $2, $3, $4, $5, NULLIF($6, 0)) RETURNING id`
@@ -61,7 +24,7 @@ func (r *repo) CreatePatient(ctx context.Context, p *deiz.Patient, clinicianID i
 }
 
 func (r *repo) SearchPatient(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error) {
-	const query = `SELECT p.id, p.email, p.name, p.surname, p.phone,
+	const query = `SELECT p.id, p.email, p.name, p.surname, p.phone, COALESCE(p.note, ''),
 		COALESCE(a.id, 0) address_id, COALESCE(a.line, '') address_line, COALESCE(a.post_code, 0) address_post_code, COALESCE(a.city, '') address_city,
 		similarity(p.name, $1) AS name_sml
 		FROM patient p LEFT JOIN address a ON p.address_id = a.id
@@ -76,7 +39,7 @@ func (r *repo) SearchPatient(ctx context.Context, search string, clinicianID int
 	for rows.Next() {
 		var p deiz.Patient
 		var sml float64
-		err := rows.Scan(&p.ID, &p.Email, &p.Name, &p.Surname, &p.Phone, &p.Address.ID,
+		err := rows.Scan(&p.ID, &p.Email, &p.Name, &p.Surname, &p.Phone, &p.Note, &p.Address.ID,
 			&p.Address.Line, &p.Address.PostCode, &p.Address.City, &sml)
 		if err != nil {
 			return nil, err
@@ -98,8 +61,8 @@ func (r *repo) CountPatients(ctx context.Context, clinicianID int) (int, error) 
 }
 
 func (r *repo) UpdatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
-	const query = `UPDATE patient SET name = $1, surname = $2, phone = $3, email = $4 WHERE clinician_person_id = $5 AND id = $6`
-	cmdTag, err := r.conn.Exec(ctx, query, p.Name, p.Surname, p.Phone, p.Email, clinicianID, p.ID)
+	const query = `UPDATE patient SET name = $1, surname = $2, phone = $3, email = $4, note = NULLIF($5, '') WHERE clinician_person_id = $6 AND id = $7`
+	cmdTag, err := r.conn.Exec(ctx, query, p.Name, p.Surname, p.Phone, p.Email, p.Note, clinicianID, p.ID)
 	if err != nil {
 		return err
 	}

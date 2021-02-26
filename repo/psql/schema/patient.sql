@@ -11,16 +11,10 @@ CREATE TABLE patient (
                              CONSTRAINT surname_length CHECK (CHAR_LENGTH(surname) > 1),
                          phone VARCHAR(50) NOT NULL
                              CONSTRAINT phone_length CHECK (CHAR_LENGTH(phone) >= 10),
+                         note VARCHAR(255) DEFAULT NULL,
                          address_id INT REFERENCES address(id) ON DELETE SET NULL DEFAULT NULL,
                          UNIQUE (id, clinician_person_id),
                          UNIQUE (email, clinician_person_id)
 );
 CREATE UNIQUE index clinician_patient ON patient(id, clinician_person_id);
 CREATE INDEX trgm_idx ON patient USING GIST (name gist_trgm_ops);
-
-
-CREATE TABLE patient_note(
-    id SERIAL PRIMARY KEY,
-    patient_id INT NOT NULL REFERENCES patient(id) ON DELETE CASCADE,
-    content VARCHAR(255) NOT NULL
-);

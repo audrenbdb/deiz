@@ -22,6 +22,9 @@ type (
 	BookingRegister interface {
 		RegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error
 	}
+	BookingRemover interface {
+		RemoveBooking(ctx context.Context, bookingID int, notifyPatient bool, clinicianID int) error
+	}
 	BookingPreRegister interface {
 		PreRegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int) error
 	}
@@ -31,7 +34,22 @@ type (
 	PatientBookingsGetter interface {
 		GetPatientBookings(ctx context.Context, clinicianID, patientID int) ([]deiz.Booking, error)
 	}
+	UnpaidBookingsGetter interface {
+		GetUnpaidBookings(ctx context.Context, clinicianID int) ([]deiz.Booking, error)
+	}
 )
+
+func handleGetUnpaidBookings(getter UnpaidBookingsGetter) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		bookings, err := getter.GetUnpaidBookings(ctx, clinicianID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, bookings)
+	}
+}
 
 func handleGetPatientBookings(getter PatientBookingsGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
@@ -115,6 +133,25 @@ func handlePostBooking(register BookingRegister) echo.HandlerFunc {
 	}
 }
 
+func handleDeleteBooking(remover BookingRemover) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		bookingID, err := strconv.Atoi(c.Param("id"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		notifyPatient, err := strconv.ParseBool(c.QueryParam("notifyPatient"))
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		if err := remover.RemoveBooking(ctx, bookingID, notifyPatient, clinicianID); err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return nil
+	}
+}
+
 func handleGetBookingSlots(getter BookingSlotsGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -170,17 +207,5 @@ func handleDeleteBookingSlotBlocked(unlocker BookingSlotUnlocker) echo.HandlerFu
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return nil
-	}
-}
-
-func handleGetBookingsPendingPayment(getBookingsPendingPayments deiz.ListBookingsPendingPayment) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
-		b, err := getBookingsPendingPayments(ctx, clinicianID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		return c.JSON(http.StatusOK, b)
 	}
 }

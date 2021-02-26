@@ -1,11 +1,5 @@
 package deiz
 
-//pdf is a driven actor called BY the core to create PDF
-type pdf interface {
-	bookingInvoicePDFGenerater
-	periodBookingInvoicesSummaryPDFGetter
-}
-
 type crypt interface {
 	bytesDecrypter
 }
@@ -14,16 +8,8 @@ type stripe interface {
 	stripePaymentSessionCreater
 }
 
-//mail is a driven actor called BY the core to send emails
-type mail interface {
-	bookingInvoiceMailer
-}
-
 type Repo struct {
-	Mailing        MailingService
-	GoogleCalendar GoogleCalendarService
-	GoogleMaps     GoogleMapsService
-	Crypt          CryptService
+	Mailing MailingService
 }
 
 //repo is a driven actor called BY the core to manage storage and persistence
@@ -31,12 +17,7 @@ type repo interface {
 	clinicianEmailEditer
 	clinicianPhoneEditer
 	clinicianRoleUpdater
-	clinicianInvoicesCounter
 	clinicianStripeSecretKeyGetter
-
-	bookingsPendingPaymentGetter
-	bookingInvoiceCreater
-	periodBookingInvoicesGetter
 
 	bookingMotiveAdder
 	bookingMotiveRemover
@@ -61,12 +42,6 @@ type Core struct {
 	EnableClinicianAccess  EnableClinicianAccess
 	DisableClinicianAccess DisableClinicianAccess
 
-	ListBookingsPendingPayment  ListBookingsPendingPayment
-	SeeInvoicePDF               SeeInvoicePDF
-	MailBookingInvoice          MailBookingInvoice
-	CreateBookingInvoice        CreateBookingInvoice
-	SeePeriodInvoicesSummaryPDF SeePeriodInvoicesSummaryPDF
-
 	CreateStripePaymentSession CreateStripePaymentSession
 
 	AddBookingMotive    AddBookingMotive
@@ -82,17 +57,12 @@ type Core struct {
 }
 
 //Implements core function with driven actors
-func NewCore(repo repo, pdf pdf, mail mail, crypt crypt, stripe stripe) Core {
+func NewCore(repo repo, crypt crypt, stripe stripe) Core {
 	return Core{
 		EditClinicianPhone:     editClinicianPhoneFunc(repo),
 		EditClinicianEmail:     editClinicianEmailFunc(repo),
 		EnableClinicianAccess:  enableClinicianAccessFunc(repo),
 		DisableClinicianAccess: disableClinicianAccessFunc(repo),
-
-		ListBookingsPendingPayment: listBookingsPendingPaymentFunc(repo),
-		SeeInvoicePDF:              seeInvoicePDFFunc(pdf),
-		MailBookingInvoice:         mailBookingInvoiceFunc(pdf, mail),
-		CreateBookingInvoice:       createBookingInvoiceFunc(repo, repo),
 
 		CreateStripePaymentSession: creatStripePaymentSessionFunc(repo, crypt, stripe),
 

@@ -2,7 +2,6 @@ package pdf
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"github.com/audrenbdb/deiz"
 	"golang.org/x/text/language"
@@ -10,7 +9,7 @@ import (
 	"time"
 )
 
-func (pdf *pdf) GenerateBookingInvoicePDF(ctx context.Context, i *deiz.BookingInvoice) (*bytes.Buffer, error) {
+func (pdf *pdf) CreateBookingInvoicePDF(i *deiz.BookingInvoice) (*bytes.Buffer, error) {
 	doc := pdf.createPDF(portrait, mm, A4)
 	p := message.NewPrinter(language.French)
 	initPDF(doc,
@@ -37,7 +36,7 @@ func (pdf *pdf) GenerateBookingInvoicePDF(ctx context.Context, i *deiz.BookingIn
 	doc.Cell(1, 0, "")
 	doc.CellFormat(56, 10, "Prestation", "", 0, "C", true, 0, "")
 	doc.Cell(1, 0, "")
-	doc.CellFormat(56, 10, "Prix unitaire", "", 0, "C", true, 0, "")
+	doc.CellFormat(56, 10, "Prix unitaire H.T.", "", 0, "C", true, 0, "")
 	doc.SetTextColor(pdf.blueTheme.red, pdf.blueTheme.green, pdf.blueTheme.blue)
 
 	//product details
@@ -65,7 +64,7 @@ func (pdf *pdf) GenerateBookingInvoicePDF(ctx context.Context, i *deiz.BookingIn
 	doc.Ln(1)
 	doc.Cell(102, 0, "")
 	doc.CellFormat(50, 10, "T.V.A :", "", 0, "L", false, 0, "")
-	doc.CellFormat(15, 10, p.Sprintf("%.2f", float32(i.PriceBeforeTax/100)*i.TaxFee/100), "", 0, "R", false, 0, "")
+	doc.CellFormat(15, 10, p.Sprintf("%.2f", float32(i.PriceAfterTax-i.PriceBeforeTax)/100), "", 0, "R", false, 0, "")
 	doc.CellFormat(5, 10, "€", "", 1, "R", false, 0, "")
 	doc.Ln(1)
 	doc.Cell(102, 0, "")
@@ -91,9 +90,16 @@ func (pdf *pdf) GenerateBookingInvoicePDF(ctx context.Context, i *deiz.BookingIn
 	return &buffer, nil
 }
 
-func (pdf *pdf) GetPeriodBookingInvoicesSummaryPDF(ctx context.Context, invoices []deiz.BookingInvoice, start, end time.Time, totalBeforeTax, totalAfterTax int64, clinicianTz *time.Location) (*bytes.Buffer, error) {
+func (pdf *pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, end time.Time, clinicianTz *time.Location) (*bytes.Buffer, error) {
 	doc := pdf.createPDF(landscape, mm, A4)
 	p := message.NewPrinter(language.French)
+
+	var totalBeforeTax int64
+	var totalAfterTax int64
+	for _, i := range invoices {
+		totalBeforeTax = totalBeforeTax + i.PriceBeforeTax
+		totalAfterTax = totalAfterTax + i.PriceAfterTax
+	}
 	initPDF(doc,
 		headerAsPeriodEarningsSummary(doc,
 			start.In(clinicianTz).Format("02/01/2006"),

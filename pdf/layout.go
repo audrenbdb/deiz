@@ -46,9 +46,9 @@ func headerAsPeriodEarningsSummary(doc *gofpdf.Fpdf, startDateStr, endDateStr st
 		doc.Ln(6)
 		doc.Cell(0, 0, "Et le "+endDateStr)
 		doc.Ln(6)
-		doc.Cell(0, 0, "Chiffre d'affaire : "+p.Sprintf("%.2f €", float64(totalBeforeTax)/100))
+		doc.Cell(0, 0, "Chiffre d'affaire : "+p.Sprintf("%.2f €", float64(totalAfterTax)/100))
 		doc.Ln(6)
-		doc.Cell(0, 0, "Revenus net de T.V.A : "+p.Sprintf("%.2f €", float64(totalAfterTax)/100))
+		doc.Cell(0, 0, "Revenus net de T.V.A : "+p.Sprintf("%.2f €", float64(totalBeforeTax)/100))
 		doc.SetFontSize(currentFontSize)
 
 		doc.Ln(12)

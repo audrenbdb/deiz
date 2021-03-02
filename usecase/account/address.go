@@ -21,6 +21,9 @@ type (
 	AddressUpdater interface {
 		UpdateAddress(ctx context.Context, address *deiz.Address) error
 	}
+	AddressDeleter interface {
+		DeleteAddress(ctx context.Context, addressID int) error
+	}
 )
 
 func IsAddressValid(a *deiz.Address) bool {
@@ -47,7 +50,7 @@ func (u *Usecase) AddClinicianHomeAddress(ctx context.Context, address *deiz.Add
 	return u.HomeAddressSetter.SetClinicianHomeAddress(ctx, address, clinicianID)
 }
 
-func (u *Usecase) UpdateClinicianAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
+func (u *Usecase) EditClinicianAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
 	if !IsAddressValid(address) {
 		return deiz.ErrorStructValidation
 	}
@@ -62,4 +65,15 @@ func (u *Usecase) UpdateClinicianAddress(ctx context.Context, address *deiz.Addr
 		return err
 	}
 	return nil
+}
+
+func (u *Usecase) RemoveClinicianAddress(ctx context.Context, addressID int, clinicianID int) error {
+	ownsAddress, err := u.AddressOwnerShipVerifier.IsAddressToClinician(ctx, &deiz.Address{ID: addressID}, clinicianID)
+	if err != nil {
+		return err
+	}
+	if !ownsAddress {
+		return deiz.ErrorUnauthorized
+	}
+	return u.AddressDeleter.DeleteAddress(ctx, addressID)
 }

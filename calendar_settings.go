@@ -4,6 +4,7 @@ type CalendarSettings struct {
 	ID            int           `json:"id"`
 	DefaultMotive BookingMotive `json:"defaultMotive"`
 	Timezone      Timezone      `json:"timezone"`
+	RemoteAllowed bool          `json:"remoteAllowed"`
 }
 
 type Timezone struct {

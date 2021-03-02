@@ -2,6 +2,7 @@ package psql
 
 import (
 	"context"
+	"fmt"
 	"github.com/audrenbdb/deiz"
 )
 
@@ -48,7 +49,7 @@ func insertAdeli(ctx context.Context, db db, a *deiz.Adeli, clinicianID int) err
 }
 
 //Update clinicianPhone
-func (r *repo) EditClinicianPhone(ctx context.Context, phone string, clinicianID int) error {
+func (r *repo) UpdateClinicianPhone(ctx context.Context, phone string, clinicianID int) error {
 	const query = `UPDATE person SET phone = $1 WHERE id = $2`
 	tag, err := r.conn.Exec(ctx, query, phone, clinicianID)
 	if err != nil {
@@ -60,8 +61,20 @@ func (r *repo) EditClinicianPhone(ctx context.Context, phone string, clinicianID
 	return nil
 }
 
+func (r *repo) UpdateClinicianProfession(ctx context.Context, profession string, clinicianID int) error {
+	const query = `UPDATE person SET profession = $1 WHERE id = $2`
+	tag, err := r.conn.Exec(ctx, query, profession, clinicianID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return errNoRowsUpdated
+	}
+	return nil
+}
+
 //Update clinician email and clinician firebase account email if exists
-func (r *repo) EditClinicianEmail(ctx context.Context, newEmail string, clinicianID int) error {
+func (r *repo) UpdateClinicianEmail(ctx context.Context, newEmail string, clinicianID int) error {
 	p, err := getPersonByID(ctx, r.conn, clinicianID)
 	if err != nil {
 		return err
@@ -80,7 +93,7 @@ func (r *repo) EditClinicianEmail(ctx context.Context, newEmail string, clinicia
 	//if fire base user is set, also updates his firebase account
 	u, err := r.firebaseAuth.GetUserByEmail(ctx, p.email)
 	if err != nil {
-		if err.Error() != firebaseUserNotFound {
+		if err.Error() != fmt.Sprintf("cannot find user from email: \"%s\"", p.email) {
 			return err
 		}
 		return tx.Commit(ctx)

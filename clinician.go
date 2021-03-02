@@ -17,8 +17,8 @@ type Clinician struct {
 }
 
 type Adeli struct {
-	ID         int    `json:"id" validate:"required"`
-	Identifier string `json:"identifier" validate:"required,min=8"`
+	ID         int    `json:"id"`
+	Identifier string `json:"identifier"`
 }
 
 type (
@@ -27,9 +27,6 @@ type (
 	}
 	clinicianEmailEditer interface {
 		EditClinicianEmail(ctx context.Context, email string, clinicianID int) error
-	}
-	clinicianPhoneEditer interface {
-		EditClinicianPhone(ctx context.Context, phone string, clinicianID int) error
 	}
 )
 
@@ -59,11 +56,5 @@ func disableClinicianAccessFunc(updater clinicianRoleUpdater) DisableClinicianAc
 func editClinicianEmailFunc(editer clinicianEmailEditer) EditClinicianEmail {
 	return func(ctx context.Context, email string, clinicianID int) error {
 		return editer.EditClinicianEmail(ctx, strings.ToLower(email), clinicianID)
-	}
-}
-
-func editClinicianPhoneFunc(editer clinicianPhoneEditer) EditClinicianPhone {
-	return func(ctx context.Context, phone string, clinicianID int) error {
-		return editer.EditClinicianPhone(ctx, phone, clinicianID)
 	}
 }

@@ -10,6 +10,21 @@ type (
 	AccountService interface {
 		ClinicianAccountGetter
 		CalendarSettingsEditer
+		ClinicianPhoneEditer
+		ClinicianEmailEditer
+		ClinicianAddressEditer
+		ClinicianAdeliEditer
+		ClinicianProfessionEditer
+		TaxExemptionCodesGetter
+		BusinessEditer
+		ClinicianOfficeAddressAdder
+		ClinicianHomeAddressAdder
+		ClinicianAddressRemover
+		OfficeHoursAdder
+		OfficeHoursRemover
+		BookingMotiveAdder
+		BookingMotiveRemover
+		BookingMotiveEditer
 	}
 	BookingService interface {
 		BookingSlotsGetter
@@ -34,6 +49,7 @@ type (
 		BookingInvoiceMailer
 		PaymentMethodsGetter
 		PeriodInvoicesGetter
+		PeriodInvoicesSummaryMailer
 	}
 )
 
@@ -52,6 +68,7 @@ func StartEchoServer(
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{Level: 5}))
 
 	e.GET("/api/clinician-accounts/current", handleGetClinicianAccount(accountService), clinicianMW)
+	e.PATCH("/api/businesses/:id", handlePatchBusiness(accountService), clinicianMW)
 
 	e.GET("/api/bookings", handleGetBookingSlots(bookingService), clinicianMW)
 	e.POST("/api/bookings/blocked", handlePostBlockedBookingSlot(bookingService), clinicianMW)
@@ -63,6 +80,14 @@ func StartEchoServer(
 
 	e.GET("/api/bookings/unpaid", handleGetUnpaidBookings(billingService), clinicianMW)
 
+	e.PATCH("/api/clinicians/:id/phone", handlePatchClinicianPhone(accountService), clinicianMW)
+	e.PATCH("/api/clinicians/:id/email", handlePatchClinicianEmail(accountService), clinicianMW)
+	e.PATCH("/api/clinicians/:id/adeli", handlePatchClinicianAdeli(accountService), clinicianMW)
+	e.PATCH("/api/clinicians/:id/profession", handlePatchClinicianProfession(accountService), clinicianMW)
+	e.PATCH("/api/clinicians/:id/addresses/:aid", handlePatchClinicianAddress(accountService), clinicianMW)
+	e.POST("/api/clinicians/:id/addresses", handlePostClinicianAddress(accountService, accountService), clinicianMW)
+	e.DELETE("/api/clinicians/:id/addresses/:aid", handleDeleteClinicianAddress(accountService), clinicianMW)
+
 	e.GET("/api/patients", handleGetPatients(patientService), clinicianMW)
 	e.POST("/api/patients", handlePostPatient(patientService), clinicianMW)
 	e.PATCH("/api/patients", handlePatchPatient(patientService), clinicianMW)
@@ -70,13 +95,23 @@ func StartEchoServer(
 	e.PATCH("/api/patients/:id/address", handlePatchPatientAddress(patientService), clinicianMW)
 	e.GET("/api/patients/:id/bookings", handleGetPatientBookings(patientService), clinicianMW)
 
-	e.POST("/api/pdf-booking-invoices", handlePostPDFBookingInvoice(billingService), clinicianMW)
+	e.POST("/api/pdf-booking-invoices/:id", handlePostPDFBookingInvoice(billingService), clinicianMW)
+	e.POST("/api/pdf-booking-invoices", handlePostPDFBookingInvoicesPeriodSummary(billingService), clinicianMW)
 	e.POST("/api/booking-invoices", handlePostBookingInvoice(billingService), clinicianMW)
 	e.GET("/api/booking-invoices", handleGetPeriodInvoices(billingService), clinicianMW)
 
 	e.PATCH("/api/clinician-accounts/calendar-settings", handlePatchCalendarSettings(accountService), clinicianMW)
 
 	e.GET("/api/payment-methods", handleGetPaymentMethods(billingService), clinicianMW)
+	e.GET("/api/tax-exemption-codes", handleGetTaxExemptionCodes(accountService), clinicianMW)
+
+	e.POST("/api/office-hours", handlePostOfficeHours(accountService), clinicianMW)
+	e.DELETE("/api/office-hours/:id", handleDeleteOfficeHours(accountService), clinicianMW)
+
+	e.POST("/api/booking-motives", handlePostBookingMotive(accountService), clinicianMW)
+	e.PATCH("/api/booking-motives/:id", handlePatchBookingMotive(accountService), clinicianMW)
+	e.DELETE("/api/booking-motives/:id", handleDeleteBookingMotive(accountService), clinicianMW)
+
 	/*
 
 		e.PATCH("/api/clinicians/:id/calendar-settings/:cid", handlePatchCalendarSettings(core.EditCalendarSettings, v), clinicianMW)

@@ -5,8 +5,20 @@ type accountRepo interface {
 	ClinicianAccountGetter
 	ClinicianRegistrationCompleteVerifier
 	ClinicianRegistrationCompleter
+	ClinicianPhoneUpdater
+	ClinicianEmailUpdater
+	ClinicianAdeliUpdater
+	ClinicianProfessionUpdater
+
+	BookingMotiveUpdater
+	BookingMotiveDeleter
+	BookingMotiveCreater
+
+	OfficeHoursCreater
+	OfficeHoursDeleter
 
 	ClinicianBusinessUpdater
+	TaxExemptionCodesGetter
 	CalendarSettingsUpdater
 
 	ClinicianHomeAddressSetter
@@ -14,6 +26,7 @@ type accountRepo interface {
 	ClinicianOfficeAddressCreater
 	ClinicianAddressOwnershipVerifier
 	AddressUpdater
+	AddressDeleter
 
 	ClinicianStripeKeysUpdater
 
@@ -25,14 +38,26 @@ type cryptService interface {
 }
 
 type Usecase struct {
-	AccountCreater ClinicianAccountCreater
-	AccountGetter  ClinicianAccountGetter
+	AccountCreater             ClinicianAccountCreater
+	AccountGetter              ClinicianAccountGetter
+	ClinicianPhoneUpdater      ClinicianPhoneUpdater
+	ClinicianEmailUpdater      ClinicianEmailUpdater
+	ClinicianAdeliUpdater      ClinicianAdeliUpdater
+	ClinicianProfessionUpdater ClinicianProfessionUpdater
+
+	OfficeHoursCreater OfficeHoursCreater
+	OfficeHoursDeleter OfficeHoursDeleter
+
+	BookingMotiveUpdater BookingMotiveUpdater
+	BookingMotiveDeleter BookingMotiveDeleter
+	BookingMotiveCreater BookingMotiveCreater
 
 	HomeAddressCreater       ClinicianHomeAddressCreater
 	HomeAddressSetter        ClinicianHomeAddressSetter
 	OfficeAddressCreater     ClinicianOfficeAddressCreater
 	AddressOwnerShipVerifier ClinicianAddressOwnershipVerifier
 	AddressUpdater           AddressUpdater
+	AddressDeleter           AddressDeleter
 
 	StripeKeysUpdater ClinicianStripeKeysUpdater
 
@@ -41,7 +66,8 @@ type Usecase struct {
 	RegistrationVerifier  ClinicianRegistrationCompleteVerifier
 	RegistrationCompleter ClinicianRegistrationCompleter
 
-	BusinessUpdater ClinicianBusinessUpdater
+	BusinessUpdater         ClinicianBusinessUpdater
+	TaxExemptionCodesGetter TaxExemptionCodesGetter
 
 	CalendarSettingsUpdater CalendarSettingsUpdater
 
@@ -50,16 +76,29 @@ type Usecase struct {
 
 func NewUsecase(repo accountRepo, cryptsrv cryptService) *Usecase {
 	return &Usecase{
-		AccountCreater:        repo,
-		AccountGetter:         repo,
-		RegistrationVerifier:  repo,
-		RegistrationCompleter: repo,
+		AccountCreater:             repo,
+		AccountGetter:              repo,
+		RegistrationVerifier:       repo,
+		RegistrationCompleter:      repo,
+		ClinicianPhoneUpdater:      repo,
+		ClinicianEmailUpdater:      repo,
+		ClinicianAdeliUpdater:      repo,
+		ClinicianProfessionUpdater: repo,
 
-		BusinessUpdater: repo,
+		OfficeHoursCreater: repo,
+		OfficeHoursDeleter: repo,
+
+		BookingMotiveUpdater: repo,
+		BookingMotiveDeleter: repo,
+		BookingMotiveCreater: repo,
+
+		BusinessUpdater:         repo,
+		TaxExemptionCodesGetter: repo,
 
 		HomeAddressSetter:        repo,
 		HomeAddressCreater:       repo,
 		OfficeAddressCreater:     repo,
+		AddressDeleter:           repo,
 		AddressOwnerShipVerifier: repo,
 		AddressUpdater:           repo,
 		CalendarSettingsUpdater:  repo,

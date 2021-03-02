@@ -25,7 +25,7 @@ type (
 		MailBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, invoicePDF *bytes.Buffer, sendTo string) error
 	}
 	InvoicesSummaryMailer interface {
-		MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buffer, sendTo string) error
+		MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buffer, start, end time.Time, tz *time.Location, sendTo string) error
 	}
 	InvoicesCounter interface {
 		CountClinicianInvoices(ctx context.Context, clinicianID int) (int, error)
@@ -87,6 +87,5 @@ func (u *Usecase) MailPeriodInvoicesSummary(ctx context.Context, start, end time
 	if err != nil {
 		return err
 	}
-	return u.MailPeriodInvoicesSummary(ctx, pdf)
-	return nil
+	return u.InvoicesSummaryMailer.MailInvoicesSummary(ctx, pdf, start, end, tz, sendTo)
 }

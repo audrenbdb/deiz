@@ -7,7 +7,7 @@ import (
 
 func (r *repo) GetClinicianOfficeHours(ctx context.Context, clinicianID int) ([]deiz.OfficeHours, error) {
 	const query = `SELECT h.id, h.start_mn, h.end_mn, h.week_day,
-	COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, ''), h.remote_allowed
+	COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, '')
 	FROM office_hours h
 	LEFT JOIN address a ON h.address_id = a.id
 	WHERE h.person_id = $1`
@@ -19,7 +19,7 @@ func (r *repo) GetClinicianOfficeHours(ctx context.Context, clinicianID int) ([]
 	var hours []deiz.OfficeHours
 	for rows.Next() {
 		var h deiz.OfficeHours
-		err := rows.Scan(&h.ID, &h.StartMn, &h.EndMn, &h.WeekDay, &h.Address.ID, &h.Address.Line, &h.Address.PostCode, &h.Address.City, &h.RemoteAllowed)
+		err := rows.Scan(&h.ID, &h.StartMn, &h.EndMn, &h.WeekDay, &h.Address.ID, &h.Address.Line, &h.Address.PostCode, &h.Address.City)
 		if err != nil {
 			return nil, err
 		}
@@ -28,16 +28,16 @@ func (r *repo) GetClinicianOfficeHours(ctx context.Context, clinicianID int) ([]
 	return hours, nil
 }
 
-func (r *repo) AddOfficeHours(ctx context.Context, h *deiz.OfficeHours, clinicianID int) error {
-	const query = `INSERT INTO office_hours(start_mn, end_mn, week_day, address_id, person_id, remote_allowed)
-	VALUES($1, $2, $3, NULLIF($4, 0), $5, $6) RETURNING id`
-	row := r.conn.QueryRow(ctx, query, h.StartMn, h.EndMn, h.WeekDay, h.Address.ID, clinicianID, h.RemoteAllowed)
+func (r *repo) CreateOfficeHours(ctx context.Context, h *deiz.OfficeHours, clinicianID int) error {
+	const query = `INSERT INTO office_hours(start_mn, end_mn, week_day, address_id, person_id)
+	VALUES($1, $2, $3, NULLIF($4, 0), $5) RETURNING id`
+	row := r.conn.QueryRow(ctx, query, h.StartMn, h.EndMn, h.WeekDay, h.Address.ID, clinicianID)
 	return row.Scan(&h.ID)
 }
 
-func (r *repo) RemoveOfficeHours(ctx context.Context, h *deiz.OfficeHours, clinicianID int) error {
+func (r *repo) DeleteOfficeHours(ctx context.Context, hoursID, clinicianID int) error {
 	const query = `DELETE FROM office_hours WHERE id = $1 AND person_id = $2`
-	cmdTag, err := r.conn.Exec(ctx, query, h.ID, clinicianID)
+	cmdTag, err := r.conn.Exec(ctx, query, hoursID, clinicianID)
 	if err != nil {
 		return err
 	}

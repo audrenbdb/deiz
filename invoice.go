@@ -29,27 +29,6 @@ type PaymentMethod struct {
 }
 
 /*
-func seePeriodBookingInvoicesSummaryPDFFunc(tz clinicianTimezoneGetter, pdf periodBookingInvoicesSummaryPDFGetter, invoicesGetter periodBookingInvoicesGetter) SeePeriodInvoicesSummaryPDF {
-	return func(ctx context.Context, start time.Time, end time.Time, clinicianID int) (*bytes.Buffer, error) {
-		loc, err := getClinicianTimezoneLoc(ctx, clinicianID, tz)
-		if err != nil {
-			return nil, err
-		}
-		invoices, err := invoicesGetter.GetPeriodBookingInvoices(ctx, start, end, clinicianID)
-		if err != nil {
-			return nil, err
-		}
-		var totalBeforeTax int64
-		var totalAfterTax int64
-		for _, i := range invoices {
-			totalBeforeTax = totalBeforeTax + i.PriceBeforeTax
-			totalAfterTax = totalAfterTax + i.PriceAfterTax
-		}
-		return pdf.GetPeriodBookingInvoicesSummaryPDF(ctx, invoices, start, end, totalBeforeTax, totalAfterTax, loc)
-	}
-}
-
-/*
 func getCancelBookingURL(deleteID string) string {
 	cancelURL, _ := url.Parse("https://deiz.fr")
 	cancelURL.Path += "api/public/appointments/delete"

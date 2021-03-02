@@ -17,7 +17,7 @@ type (
 		MailBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, sendTo string) error
 	}
 	PeriodInvoicesSummaryMailer interface {
-		MailPeriodInvoicesSummary(ctx context.Context, start, end time.Time, sendTo string, clinicianID int) error
+		MailPeriodInvoicesSummary(ctx context.Context, start, end time.Time, tzName string, sendTo string, clinicianID int) error
 	}
 	PeriodInvoicesGetter interface {
 		GetPeriodInvoices(ctx context.Context, start, end time.Time, clinicianID int) ([]deiz.BookingInvoice, error)
@@ -28,17 +28,23 @@ func handlePostPDFBookingInvoicesPeriodSummary(mailer PeriodInvoicesSummaryMaile
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
-
 		type post struct {
-			SendTo string    `json:"sendTo"`
-			Start  time.Time `json:"start"`
-			End    time.Time `json:"end"`
+			SendTo   string `json:"sendTo"`
+			Timezone string `json:"timezone"`
 		}
 		var p post
 		if err := c.Bind(&p); err != nil {
-			return c.JSON(http.StatusBadRequest, errBind.Error())
+			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		return mailer.MailPeriodInvoicesSummary(ctx, p.Start, p.End, p.SendTo, clinicianID)
+		startParam, err := strconv.ParseInt(c.QueryParam("start"), 10, 64)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		endParam, err := strconv.ParseInt(c.QueryParam("end"), 10, 64)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		return mailer.MailPeriodInvoicesSummary(ctx, time.Unix(startParam, 0), time.Unix(endParam, 0), p.Timezone, p.SendTo, clinicianID)
 	}
 }
 

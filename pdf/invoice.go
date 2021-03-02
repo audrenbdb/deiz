@@ -120,7 +120,7 @@ func (pdf *pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, 
 		doc.Cell(1, 0, "")
 		doc.CellFormat(67, 4, i.Recipient[0], "", 0, "C", false, 0, "")
 		doc.Cell(1, 0, "")
-		doc.CellFormat(33, 4, p.Sprintf("%.2f €", float64(i.PriceBeforeTax)/100), "", 0, "C", false, 0, "")
+		doc.CellFormat(33, 4, p.Sprintf("%.2f €", float64(i.PriceAfterTax)/100), "", 0, "C", false, 0, "")
 		doc.Cell(1, 0, "")
 		doc.CellFormat(33, 4, i.PaymentMethod.Name, "", 0, "C", false, 0, "")
 		doc.Ln(6)

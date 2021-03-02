@@ -133,3 +133,15 @@ func (r *repo) CreateClinicianOfficeAddress(ctx context.Context, a *deiz.Address
 	}
 	return nil
 }
+
+func (r *repo) DeleteAddress(ctx context.Context, addressID int) error {
+	const query = `DELETE from address WHERE id = $1`
+	tag, err := r.conn.Exec(ctx, query, addressID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return errNoRowsUpdated
+	}
+	return nil
+}

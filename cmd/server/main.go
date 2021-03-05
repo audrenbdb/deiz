@@ -10,9 +10,11 @@ import (
 	"github.com/audrenbdb/deiz/mail"
 	"github.com/audrenbdb/deiz/pdf"
 	"github.com/audrenbdb/deiz/repo/psql"
+	"github.com/audrenbdb/deiz/stripe"
 	"github.com/audrenbdb/deiz/usecase/account"
 	"github.com/audrenbdb/deiz/usecase/billing"
 	"github.com/audrenbdb/deiz/usecase/booking"
+	"github.com/audrenbdb/deiz/usecase/contact"
 	"github.com/audrenbdb/deiz/usecase/patient"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"os"
@@ -49,20 +51,25 @@ func main() {
 	mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
 	gCal := gcalendar.NewService()
 	gMaps := gmaps.NewService()
-	//stripe := stripe.NewService()
+	stripe := stripe.NewService()
 	crypt := crypt.NewService()
 
-	bookingUsecase := booking.NewUsecase(repo, mail, gMaps, gCal)
-	accountUsecase := account.NewUsecase(repo, crypt)
-	patientUsecase := patient.NewUsecase(repo)
-	billingUsecase := billing.NewUsecase(repo, mail, pdf)
-	//err = http.StartEchoServer(http.FirebaseCredentialsGetter(fbClient), core, v)
 	err = http.StartEchoServer(
-		http.FakeCredentialsGetter,
-		accountUsecase,
-		bookingUsecase,
-		patientUsecase,
-		billingUsecase)
+		http.FirebaseCredentialsGetter(fbClient),
+		account.NewUsecase(repo, crypt),
+		booking.NewUsecase(repo, mail, gMaps, gCal),
+		patient.NewUsecase(repo),
+		billing.NewUsecase(repo, mail, pdf, crypt, stripe),
+		contact.NewUsecase(repo, mail))
+	/*err = http.StartEchoServer(
+	http.FakeCredentialsGetter,
+	accountUsecase,
+	bookingUsecase,
+	patientUsecase,
+	billingUsecase,
+	contactUsecase)
+
+	*/
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start echo server: %v\n", err)
 		os.Exit(1)

@@ -90,6 +90,18 @@ func (r *repo) DeleteBooking(ctx context.Context, bookingID int, clinicianID int
 	return nil
 }
 
+func (r *repo) DeleteBookingByDeleteID(ctx context.Context, deleteID string) error {
+	const query = `DELETE FROM clinician_booking WHERE delete_id = $1`
+	cmdTag, err := r.conn.Exec(ctx, query, deleteID)
+	if err != nil {
+		return err
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return errNothingDeleted
+	}
+	return nil
+}
+
 func (r *repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
 	const query = `INSERT INTO clinician_booking(address_id, blocked, remote, clinician_person_id, patient_id, booking_motive_id, during, paid, note, confirmed)
 	VALUES(NULLIF($1, 0), $2, $3, $4, NULLIF($5, 0), NULLIF($6, 0), tsrange($7, $8, '()'), $9, NULLIF($10, ''), $11)
@@ -107,6 +119,16 @@ func (r *repo) DeleteOverlappingBlockedBooking(ctx context.Context, start, end t
 	WHERE clinician_person_id = $1 AND $2 < upper(during) AND lower(during) < $3`
 	_, err := r.conn.Exec(ctx, query, clinicianID, start, end)
 	return err
+}
+
+func (r *repo) GetBookingByDeleteID(ctx context.Context, deleteID string) (deiz.Booking, error) {
+	const query = bookingSelect + `WHERE delete_id = $1`
+	row := r.conn.QueryRow(ctx, query, deleteID)
+	b, err := scanBookingRow(row)
+	if err != nil {
+		return deiz.Booking{}, err
+	}
+	return b, nil
 }
 
 func (r *repo) GetBookingByID(ctx context.Context, bookingID int) (deiz.Booking, error) {

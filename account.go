@@ -9,3 +9,11 @@ type ClinicianAccount struct {
 	BookingMotives   []BookingMotive  `json:"bookingMotives"`
 	CalendarSettings CalendarSettings `json:"calendarSettings"`
 }
+
+type ClinicianAccountPublicData struct {
+	Clinician       Clinician       `json:"clinician"`
+	StripePublicKey string          `json:"stripePublicKey"`
+	PublicMotives   []BookingMotive `json:"bookingMotives"`
+	ClinicianTz     string          `json:"clinicianTz"`
+	RemoteAllowed   bool            `json:"remoteAllowed"`
+}

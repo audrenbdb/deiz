@@ -6,8 +6,8 @@ import (
 )
 
 func insertBusiness(ctx context.Context, db db, b *deiz.Business, personID int) error {
-	const query = `INSERT INTO business(person_id, identifier, name, tax_exemption_id) VALUES($1, NULLIF($2, ''), NULLIF($3, 0), NULLIF($4, 0)) RETURNING id`
-	row := db.QueryRow(ctx, query, personID, b.Identifier, b.TaxExemption.ID)
+	const query = `INSERT INTO business(person_id, identifier, name, tax_exemption_id) VALUES($1, NULLIF($2, ''), NULLIF($3, ''), NULLIF($4, 0)) RETURNING id`
+	row := db.QueryRow(ctx, query, personID, b.Identifier, b.Name, b.TaxExemption.ID)
 	err := row.Scan(&b.ID)
 	if err != nil {
 		return err

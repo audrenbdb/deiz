@@ -3,6 +3,7 @@ package account
 type accountRepo interface {
 	ClinicianAccountCreater
 	ClinicianAccountGetter
+	PublicDataGetter
 	ClinicianRegistrationCompleteVerifier
 	ClinicianRegistrationCompleter
 	ClinicianPhoneUpdater
@@ -40,6 +41,7 @@ type cryptService interface {
 type Usecase struct {
 	AccountCreater             ClinicianAccountCreater
 	AccountGetter              ClinicianAccountGetter
+	PublicDataGetter           PublicDataGetter
 	ClinicianPhoneUpdater      ClinicianPhoneUpdater
 	ClinicianEmailUpdater      ClinicianEmailUpdater
 	ClinicianAdeliUpdater      ClinicianAdeliUpdater
@@ -78,6 +80,7 @@ func NewUsecase(repo accountRepo, cryptsrv cryptService) *Usecase {
 	return &Usecase{
 		AccountCreater:             repo,
 		AccountGetter:              repo,
+		PublicDataGetter:           repo,
 		RegistrationVerifier:       repo,
 		RegistrationCompleter:      repo,
 		ClinicianPhoneUpdater:      repo,
@@ -106,5 +109,7 @@ func NewUsecase(repo accountRepo, cryptsrv cryptService) *Usecase {
 		StringToBytesCrypter: cryptsrv,
 
 		ClinicianGetterByEmail: repo,
+
+		StripeKeysUpdater: repo,
 	}
 }

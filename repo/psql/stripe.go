@@ -1,6 +1,8 @@
 package psql
 
-import "context"
+import (
+	"context"
+)
 
 type stripeKeys struct {
 	id     int
@@ -43,4 +45,12 @@ func (r *repo) GetClinicianStripeSecretKey(ctx context.Context, clinicianID int)
 		return nil, err
 	}
 	return k.secret, nil
+}
+
+func (r *repo) UpdateClinicianStripeKeys(ctx context.Context, pk string, sk []byte, clinicianID int) error {
+	k := stripeKeys{
+		public: pk,
+		secret: sk,
+	}
+	return updatePersonStripeKeys(ctx, r.conn, k, clinicianID)
 }

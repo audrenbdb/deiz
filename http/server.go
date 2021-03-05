@@ -8,7 +8,9 @@ import (
 
 type (
 	AccountService interface {
+		ClinicianAccountAdder
 		ClinicianAccountGetter
+		ClinicianAccountPublicDataGetter
 		CalendarSettingsEditer
 		ClinicianPhoneEditer
 		ClinicianEmailEditer
@@ -25,15 +27,20 @@ type (
 		BookingMotiveAdder
 		BookingMotiveRemover
 		BookingMotiveEditer
+		StripeKeysSetter
+		ClinicianRegistrationCompleter
 	}
 	BookingService interface {
 		BookingSlotsGetter
+		FreeBookingSlotsGetter
 		BookingSlotBlocker
 		BookingSlotUnlocker
 		BookingRegister
+		PublicBookingRegister
 		BookingPreRegister
 		BookingConfirmer
 		BookingRemover
+		PublicBookingRemover
 	}
 	PatientService interface {
 		PatientSearcher
@@ -50,6 +57,11 @@ type (
 		PaymentMethodsGetter
 		PeriodInvoicesGetter
 		PeriodInvoicesSummaryMailer
+		StripePaymentSessionCreater
+	}
+	ContactService interface {
+		ContactFormToClinicianSender
+		GetInTouchSender
 	}
 )
 
@@ -59,6 +71,7 @@ func StartEchoServer(
 	bookingService BookingService,
 	patientService PatientService,
 	billingService BillingService,
+	contactService ContactService,
 ) error {
 	clinicianMW := roleMW(credentialsGetter, 2)
 	//adminMW := roleMW(credentialsGetter, 3)
@@ -67,6 +80,9 @@ func StartEchoServer(
 	e.Use(middleware.CORS())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{Level: 5}))
 
+	e.POST("/api/registrations", handlePostRegistration(accountService))
+
+	e.POST("/api/clinician-accounts", handlePostClinicianAccount(accountService))
 	e.GET("/api/clinician-accounts/current", handleGetClinicianAccount(accountService), clinicianMW)
 	e.PATCH("/api/businesses/:id", handlePatchBusiness(accountService), clinicianMW)
 
@@ -112,34 +128,23 @@ func StartEchoServer(
 	e.PATCH("/api/booking-motives/:id", handlePatchBookingMotive(accountService), clinicianMW)
 	e.DELETE("/api/booking-motives/:id", handleDeleteBookingMotive(accountService), clinicianMW)
 
-	/*
+	e.PATCH("/api/clinician-accounts/stripe-keys", handlePatchStripeKeys(accountService), clinicianMW)
 
-		e.PATCH("/api/clinicians/:id/calendar-settings/:cid", handlePatchCalendarSettings(core.EditCalendarSettings, v), clinicianMW)
-
-		e.PATCH("/api/clinicians/:id/phone", handlePatchClinicianPhone(core.EditClinicianPhone, v), clinicianMW)
-		e.PATCH("/api/clinicians/:id/email", handlePatchClinicianEmail(core.EditClinicianEmail, v), clinicianMW)
-
-		e.GET("/api/bookings/pending-payment", handleGetBookingsPendingPayment(core.ListBookingsPendingPayment), clinicianMW)
-		e.GET("/api/bookings", handleGetAllBookingsSlot(core.GetAllBookingSlotsFromWeek), clinicianMW)
-		e.POST("/api/bookings/blocked", handlePostBookingBlocked(core.FillFreeBookingSlot), clinicianMW)
-		e.DELETE("/api/bookings/:id/blocked", handleDeleteBookingBlocked(core.FreeBookingSlot), clinicianMW)
-
-		e.GET("/api/booking-invoices/:id/pdf", handleGetBookingInvoicePDF(core.SeeInvoicePDF, v), clinicianMW)
-		e.POST("/api/booking-invoices", handlePostBookingInvoice(core.CreateBookingInvoice, core.MailBookingInvoice, v), clinicianMW)
-
-		e.POST("/api/clinicians/:id/booking-motives", handlePostBookingMotive(core.AddBookingMotive, v), clinicianMW)
-		e.DELETE("/api/clinicians/:id/booking-motives/:id", handleDeleteBookingMotive(core.RemoveBookingMotive, v), clinicianMW)
-
-		e.GET("/api/patients", handleGetPatients(core.SearchPatients), clinicianMW)
-		e.PATCH("/api/patients/:pid", handlePatchPatient(core.EditPatient, v), clinicianMW)
-	*/
+	/* PUBLIC API */
+	e.GET("/api/public/clinician-accounts", handleGetClinicianAccountPublicData(accountService))
+	e.GET("/api/public/booking-slots", handleGetFreeBookingSlots(bookingService))
+	e.POST("/api/public/bookings", handlePublicPostBooking(bookingService))
+	e.GET("/api/public/session-checkout", handleGetSessionCheckout(billingService))
+	e.DELETE("/api/public/bookings/:id", handleDeletePublicBooking(bookingService))
+	e.POST("/api/public/contact-form", handlePostContactFormToClinician(contactService))
+	e.POST("/api/public/get-in-touch-form", handlePostGetInTouchForm(contactService))
 
 	return e.Start(":8080")
 }
 
 func FakeCredentialsGetter(ctx context.Context, tokenID string) (credentials, error) {
 	return credentials{
-		userID: 1,
+		userID: 11,
 		role:   2,
 	}, nil
 }

@@ -125,7 +125,7 @@ func (r *repo) UpdateClinicianRole(ctx context.Context, role int, clinicianID in
 	//if fire base user is set, also updates his firebase claims
 	u, err := r.firebaseAuth.GetUserByEmail(ctx, p.email)
 	if err != nil {
-		if err.Error() != firebaseUserNotFound {
+		if err.Error() != fmt.Sprintf("cannot find user from email: \"%s\"", p.email) {
 			return err
 		}
 		return tx.Commit(ctx)
@@ -152,4 +152,8 @@ func (r *repo) GetClinicianByEmail(ctx context.Context, email string) (deiz.Clin
 		return deiz.Clinician{}, err
 	}
 	return c, nil
+}
+
+func (r *repo) GetClinicianByID(ctx context.Context, clinicianID int) (deiz.Clinician, error) {
+	return getClinicianByID(ctx, r.conn, clinicianID)
 }

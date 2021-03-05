@@ -87,23 +87,3 @@ func FirebaseCredentialsGetter(client *firebaseAuth.Client) credentialsGetter {
 		}, nil
 	}
 }
-
-/*
-func handleLogin(log deiz.Login) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		type logForm struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
-		}
-		var f logForm
-		if err := c.Bind(&f); err != nil {
-			return c.JSON(http.StatusBadRequest, err.Error())
-		}
-		err := log(c.Request().Context(), f.Email, f.Password)
-		if err != nil {
-			c.JSON(http.StatusUnauthorized, err.Error())
-		}
-		return nil
-	}
-}
-*/

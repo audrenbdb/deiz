@@ -64,24 +64,3 @@ func handlePostClinicianAddress(
 		return c.JSON(http.StatusOK, a)
 	}
 }
-
-/*
-func handlePatchClinicianAddress(updateAddress deiz.EditClinicianAddress, validate validater) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
-		var address deiz.Address
-		if err := c.Bind(&address); err != nil {
-			return c.JSON(http.StatusBadRequest, errBind.Error())
-		}
-		if err := validate.StructCtx(ctx, address); err != nil {
-			return c.JSON(http.StatusBadRequest, errValidating)
-		}
-		err := updateAddress(ctx, &address, clinicianID)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		return nil
-	}
-}
-*/

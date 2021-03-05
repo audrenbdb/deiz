@@ -7,6 +7,7 @@ type repo interface {
 	InvoicesCounter
 	PaymentMethodsGetter
 	PeriodInvoicesGetter
+	ClinicianStripeSecretKeyGetter
 }
 
 type mailer interface {
@@ -19,30 +20,44 @@ type pdfer interface {
 	InvoicesSummaryPDFCreater
 }
 
-type Usecase struct {
-	UnpaidBookingsGetter      UnpaidBookingsGetter
-	ClinicianBoundChecker     ClinicianBoundChecker
-	BookingInvoiceCreater     BookingInvoiceCreater
-	BookingInvoiceMailer      BookingInvoiceMailer
-	InvoicesCounter           InvoicesCounter
-	BookingInvoicePDFCreater  BookingInvoicePDFCreater
-	PaymentMethodsGetter      PaymentMethodsGetter
-	PeriodInvoicesGetter      PeriodInvoicesGetter
-	InvoicesSummaryPDFCreater InvoicesSummaryPDFCreater
-	InvoicesSummaryMailer     InvoicesSummaryMailer
+type crypter interface {
+	BytesDecrypter
 }
 
-func NewUsecase(repo repo, mailer mailer, pdfer pdfer) *Usecase {
+type striper interface {
+	StripePaymentSessionCreater
+}
+
+type Usecase struct {
+	UnpaidBookingsGetter           UnpaidBookingsGetter
+	ClinicianBoundChecker          ClinicianBoundChecker
+	BookingInvoiceCreater          BookingInvoiceCreater
+	BookingInvoiceMailer           BookingInvoiceMailer
+	InvoicesCounter                InvoicesCounter
+	BookingInvoicePDFCreater       BookingInvoicePDFCreater
+	PaymentMethodsGetter           PaymentMethodsGetter
+	PeriodInvoicesGetter           PeriodInvoicesGetter
+	InvoicesSummaryPDFCreater      InvoicesSummaryPDFCreater
+	InvoicesSummaryMailer          InvoicesSummaryMailer
+	ClinicianStripeSecretKeyGetter ClinicianStripeSecretKeyGetter
+	BytesDecrypter                 BytesDecrypter
+	StripePaymentSessionCreater    StripePaymentSessionCreater
+}
+
+func NewUsecase(repo repo, mailer mailer, pdfer pdfer, crypter crypter, striper striper) *Usecase {
 	return &Usecase{
-		UnpaidBookingsGetter:      repo,
-		ClinicianBoundChecker:     repo,
-		BookingInvoiceCreater:     repo,
-		BookingInvoiceMailer:      mailer,
-		InvoicesSummaryMailer:     mailer,
-		InvoicesCounter:           repo,
-		BookingInvoicePDFCreater:  pdfer,
-		InvoicesSummaryPDFCreater: pdfer,
-		PaymentMethodsGetter:      repo,
-		PeriodInvoicesGetter:      repo,
+		UnpaidBookingsGetter:           repo,
+		ClinicianBoundChecker:          repo,
+		BookingInvoiceCreater:          repo,
+		BookingInvoiceMailer:           mailer,
+		InvoicesSummaryMailer:          mailer,
+		InvoicesCounter:                repo,
+		BookingInvoicePDFCreater:       pdfer,
+		InvoicesSummaryPDFCreater:      pdfer,
+		PaymentMethodsGetter:           repo,
+		PeriodInvoicesGetter:           repo,
+		ClinicianStripeSecretKeyGetter: repo,
+		BytesDecrypter:                 crypter,
+		StripePaymentSessionCreater:    striper,
 	}
 }

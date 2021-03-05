@@ -111,23 +111,3 @@ func handlePatchClinicianAdeli(edit ClinicianAdeliEditer) echo.HandlerFunc {
 		return nil
 	}
 }
-
-/*
-func handlePostClinician(add deiz.AddClinicianAccount, validate validater) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-		var cl deiz.Clinician
-		if err := c.Bind(&cl); err != nil {
-			return c.JSON(http.StatusBadRequest, errBind.Error())
-		}
-		if err := validate.StructExceptCtx(ctx, cl, "ID"); err != nil {
-			return c.JSON(http.StatusBadRequest, errValidating.Error())
-		}
-		err := add(ctx, &cl)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		return c.JSON(http.StatusOK, cl)
-	}
-}
-*/

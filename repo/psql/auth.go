@@ -9,8 +9,8 @@ const firebaseUserNotFound = "auth/person-not-found"
 
 func setFirebasePersonClaims(ctx context.Context, auth auth, id, role int, uid string) error {
 	claims := map[string]interface{}{
-		"personId": id,
-		"role":     role,
+		"userId": id,
+		"role":   role,
 	}
 	return auth.SetCustomUserClaims(ctx, uid, claims)
 }

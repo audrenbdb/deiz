@@ -24,17 +24,6 @@ type BookingInvoice struct {
 }
 
 type PaymentMethod struct {
-	ID   int    `json:"id" validator:"required"`
-	Name string `json:"name" validator:"required"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
-
-/*
-func getCancelBookingURL(deleteID string) string {
-	cancelURL, _ := url.Parse("https://deiz.fr")
-	cancelURL.Path += "api/public/appointments/delete"
-	params := url.Values{}
-	params.Add("id", deleteID)
-	cancelURL.RawQuery = params.Encode()
-	return cancelURL.String()
-}
-*/

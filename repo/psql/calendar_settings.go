@@ -25,7 +25,7 @@ func getCalendarSettingsByPersonID(ctx context.Context, db db, personID int) (de
 }
 
 func insertCalendarSettings(ctx context.Context, db db, s *deiz.CalendarSettings, personID int) error {
-	const query = `INSERT INTO calendar_settings(person_id, default_booking_motive_id, timezone_id, step) VALUES($1, NULLIF($2, 0), COALESCE(NULLIF($3, 0), 1)) RETURNING id`
+	const query = `INSERT INTO calendar_settings(person_id, default_booking_motive_id, timezone_id) VALUES($1, NULLIF($2, 0), COALESCE(NULLIF($3, 0), 1)) RETURNING id`
 	row := db.QueryRow(ctx, query, personID, s.DefaultMotive.ID, s.Timezone.ID)
 	return row.Scan(&s.ID)
 }

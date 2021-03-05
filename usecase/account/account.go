@@ -12,6 +12,9 @@ type (
 	ClinicianAccountGetter interface {
 		GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error)
 	}
+	PublicDataGetter interface {
+		GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error)
+	}
 	ClinicianRegistrationCompleteVerifier interface {
 		IsClinicianRegistrationComplete(ctx context.Context, email string) (bool, error)
 	}
@@ -19,6 +22,10 @@ type (
 		CompleteClinicianRegistration(ctx context.Context, c *deiz.Clinician, password string, clinicianID int) error
 	}
 )
+
+func (u *Usecase) GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error) {
+	return u.PublicDataGetter.GetClinicianAccountPublicData(ctx, clinicianID)
+}
 
 func (u *Usecase) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
 	return u.AccountGetter.GetClinicianAccount(ctx, clinicianID)
@@ -38,11 +45,11 @@ func (u *Usecase) EnsureClinicianRegistrationComplete(ctx context.Context, email
 	if err != nil {
 		return err
 	}
-	isRegistered, err := u.RegistrationVerifier.IsClinicianRegistrationComplete(ctx, email)
+	isComplete, err := u.RegistrationVerifier.IsClinicianRegistrationComplete(ctx, email)
 	if err != nil {
 		return err
 	}
-	if isRegistered {
+	if isComplete {
 		return nil
 	}
 	return u.RegistrationCompleter.CompleteClinicianRegistration(ctx, &clinician, password, clinician.ID)

@@ -1,9 +1,9 @@
 package deiz
 
 type OfficeHours struct {
-	ID      int     `json:"id" validator:"required"`
-	StartMn int     `json:"startMn" validator:"required"`
-	EndMn   int     `json:"endMn" validator:"required"`
-	WeekDay int     `json:"weekDay" validator:"required"`
-	Address Address `json:"address" validator:"required"`
+	ID      int     `json:"id"`
+	StartMn int     `json:"startMn"`
+	EndMn   int     `json:"endMn"`
+	WeekDay int     `json:"weekDay"`
+	Address Address `json:"address"`
 }

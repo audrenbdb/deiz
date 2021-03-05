@@ -1,6 +1,6 @@
 CREATE TABLE business (
                           id SERIAL PRIMARY KEY,
-                          person_id INT REFERENCES person(id) UNIQUE,
+                          person_id INT UNIQUE REFERENCES person(id) ON DELETE CASCADE,
                           name VARCHAR(100),
                           identifier VARCHAR(100),
                           tax_exemption_id INT REFERENCES tax_exemption(id)

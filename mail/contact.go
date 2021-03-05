@@ -38,3 +38,27 @@ func (m *mailer) MailContactForm(ctx context.Context, to string, form deiz.Conta
 		form.Email, "Nouvelle question de "+emailData.Name,
 		&emailBuffer, plainBody, nil))
 }
+
+func (m *mailer) MailGetInTouchForm(ctx context.Context, form deiz.GetInTouchForm) error {
+	var emailBuffer bytes.Buffer
+	err := m.tmpl.ExecuteTemplate(&emailBuffer, "get-in-touch.html", form)
+	if err != nil {
+		return err
+	}
+	plainBody := fmt.Sprintf(`Deiz\n
+	Demande de rappel\n
+	\n
+	Madame ou monsieur %s souhaite être rappelé!\n
+	\n
+	Coordonnées :\n
+	Nom : %s\n
+	Email : %s\n
+	Téléphone : %s\n
+	Ville : %s\n
+	Métier : %s\n
+	\n
+	Deiz\n
+	Agenda pour thérapeutes\n
+	https://deiz.fr`, form.Name, form.Name, form.Email, form.Phone, form.City, form.Job)
+	return m.sender.Send(ctx, createMail("contact@deiz.fr", form.Email, "Demande de rappel", &emailBuffer, plainBody, nil))
+}

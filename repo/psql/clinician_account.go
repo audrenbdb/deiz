@@ -2,15 +2,17 @@ package psql
 
 import (
 	"context"
+	"fmt"
 	"github.com/audrenbdb/deiz"
 )
 
 func (r *repo) IsClinicianRegistrationComplete(ctx context.Context, email string) (bool, error) {
 	_, err := r.firebaseAuth.GetUserByEmail(ctx, email)
 	if err != nil {
-		if err.Error() != firebaseUserNotFound {
+		if err.Error() != fmt.Sprintf("cannot find user from email: \"%s\"", email) {
 			return false, err
 		}
+		return false, nil
 	}
 	return true, nil
 }
@@ -92,10 +94,29 @@ func (r *repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.C
 	return acc, nil
 }
 
-func (r *repo) UpdateClinicianStripeKeys(ctx context.Context, pk string, sk []byte, clinicianID int) error {
-	k := stripeKeys{
-		public: pk,
-		secret: sk,
+//GetClinicianAccountPublicData retrieves all public available data about clinician
+func (r *repo) GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error) {
+	var acc deiz.ClinicianAccountPublicData
+	var err error
+	acc.Clinician, err = getClinicianByID(ctx, r.conn, clinicianID)
+	if err != nil {
+		return deiz.ClinicianAccountPublicData{}, err
 	}
-	return updatePersonStripeKeys(ctx, r.conn, k, clinicianID)
+	acc.Clinician.Address = deiz.Address{}
+	acc.PublicMotives, err = getPublicMotives(ctx, r.conn, clinicianID)
+	if err != nil {
+		return deiz.ClinicianAccountPublicData{}, err
+	}
+	settings, err := getCalendarSettingsByPersonID(ctx, r.conn, clinicianID)
+	if err != nil {
+		return deiz.ClinicianAccountPublicData{}, err
+	}
+	acc.ClinicianTz = settings.Timezone.Name
+	acc.RemoteAllowed = settings.RemoteAllowed
+	keys, err := getStripeKeysByPersonID(ctx, r.conn, clinicianID)
+	if err != nil {
+		return deiz.ClinicianAccountPublicData{}, err
+	}
+	acc.StripePublicKey = keys.public
+	return acc, nil
 }

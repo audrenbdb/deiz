@@ -106,23 +106,3 @@ func handleGetPeriodInvoices(getter PeriodInvoicesGetter) echo.HandlerFunc {
 		return c.JSON(http.StatusOK, invoices)
 	}
 }
-
-/*
-func handleGetBookingInvoicePDF(getInvoicePDF deiz.SeeInvoicePDF, validate validater) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-		var i deiz.BookingInvoice
-		if err := c.Bind(&i); err != nil {
-			return c.JSON(http.StatusBadRequest, errBind.Error())
-		}
-		if err := validate.StructCtx(ctx, i); err != nil {
-			return c.JSON(http.StatusBadRequest, errValidating)
-		}
-		pdfBytes, err := getInvoicePDF(ctx, &i)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		return c.Blob(http.StatusOK, "application/pdf", pdfBytes.Bytes())
-	}
-}
-*/

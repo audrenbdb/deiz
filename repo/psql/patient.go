@@ -3,6 +3,7 @@ package psql
 import (
 	"context"
 	"github.com/audrenbdb/deiz"
+	"github.com/jackc/pgx/v4"
 )
 
 //IsPatientTiedToClinician checks if a given patient is in clinician patient list
@@ -21,6 +22,17 @@ func (r *repo) CreatePatient(ctx context.Context, p *deiz.Patient, clinicianID i
 	VALUES($1, $2, $3, $4, $5, NULLIF($6, 0)) RETURNING id`
 	row := r.conn.QueryRow(ctx, query, clinicianID, p.Email, p.Name, p.Surname, p.Phone, p.Address.ID)
 	return row.Scan(&p.ID)
+}
+
+func (r *repo) GetPatientByEmail(ctx context.Context, email string, clinicianID int) (deiz.Patient, error) {
+	const query = `SELECT id, name, surname, phone, email FROM patient WHERE clinician_person_id = $1 AND email = $2`
+	row := r.conn.QueryRow(ctx, query, clinicianID, email)
+	var p deiz.Patient
+	err := row.Scan(&p.ID, &p.Name, &p.Surname, &p.Phone, &p.Email)
+	if err != nil && err != pgx.ErrNoRows {
+		return deiz.Patient{}, err
+	}
+	return p, nil
 }
 
 func (r *repo) SearchPatient(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error) {

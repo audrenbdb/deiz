@@ -40,7 +40,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	psqlDB, err := pgxpool.Connect(context.Background(), os.Getenv("TEST_DATABASE_URL"))
+	psqlDB, err := pgxpool.Connect(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start database pool : %v\n", err)
 		os.Exit(1)
@@ -48,7 +48,7 @@ func main() {
 
 	repo := psql.NewRepo(psqlDB, fbClient)
 	pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "../../assets", "fonts"))
-	mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
+	mail := mail.NewService(parseEmailTemplates(path), mail.NewPostFixClient())
 	gCal := gcalendar.NewService()
 	gMaps := gmaps.NewService()
 	stripe := stripe.NewService()
@@ -56,6 +56,7 @@ func main() {
 
 	err = http.StartEchoServer(
 		http.FirebaseCredentialsGetter(fbClient),
+		//http.FakeCredentialsGetter,
 		account.NewUsecase(repo, crypt),
 		booking.NewUsecase(repo, mail, gMaps, gCal),
 		patient.NewUsecase(repo),

@@ -2,7 +2,6 @@ package booking
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/audrenbdb/deiz"
 	"net/url"
@@ -134,9 +133,10 @@ func (u *Usecase) BlockBookingSlot(ctx context.Context, b *deiz.Booking, clinici
 	if b.Clinician.ID != clinicianID {
 		return deiz.ErrorUnauthorized
 	}
-	if b.Patient.ID != 0 || b.Address.ID != 0 || b.Motive.ID != 0 || b.Note != "" {
-		return errors.New("booking is not empty")
-	}
+	b.Patient.ID = 0
+	b.Address.ID = 0
+	b.Motive.ID = 0
+	b.Note = ""
 	return u.Creater.CreateBooking(ctx, b)
 }
 
@@ -263,9 +263,13 @@ func (u *Usecase) RemovePublicBooking(ctx context.Context, deleteID string) erro
 }
 
 func (u *Usecase) RemoveBooking(ctx context.Context, bookingID int, notifyPatient bool, clinicianID int) error {
-	b, err := u.GetterByID.GetBookingByID(ctx, bookingID)
-	if err != nil {
-		return err
+	var b deiz.Booking
+	var err error
+	if notifyPatient {
+		b, err = u.GetterByID.GetBookingByID(ctx, bookingID)
+		if err != nil {
+			return err
+		}
 	}
 	if err := u.Deleter.DeleteBooking(ctx, bookingID, clinicianID); err != nil {
 		return err

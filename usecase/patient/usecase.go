@@ -8,12 +8,14 @@ type repo interface {
 	AddressCreater
 	AddressUpdater
 	BookingsGetter
+	GetterByEmail
 }
 
 type Usecase struct {
 	Searcher              Searcher
 	Creater               Creater
 	Updater               Updater
+	GetterByEmail         GetterByEmail
 	ClinicianBoundChecker ClinicianBoundChecker
 	AddressCreater        AddressCreater
 	AddressUpdater        AddressUpdater
@@ -29,5 +31,6 @@ func NewUsecase(repo repo) *Usecase {
 		AddressUpdater:        repo,
 		Updater:               repo,
 		BookingsGetter:        repo,
+		GetterByEmail:         repo,
 	}
 }

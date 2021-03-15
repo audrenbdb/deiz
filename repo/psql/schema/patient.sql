@@ -16,5 +16,5 @@ CREATE TABLE patient (
                          UNIQUE (id, clinician_person_id),
                          UNIQUE (email, clinician_person_id)
 );
-CREATE UNIQUE index clinician_patient ON patient(id, clinician_person_id);
-CREATE INDEX trgm_idx ON patient USING GIST (name gist_trgm_ops);
+CREATE UNIQUE index clinician_patient_unique ON patient(id, clinician_person_id);
+CREATE INDEX trgm_idx_patient ON patient USING GIST (name gist_trgm_ops);

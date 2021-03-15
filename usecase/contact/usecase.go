@@ -41,6 +41,9 @@ func NewUsecase(repo repo, mail mail) *Usecase {
 }
 
 func (u *Usecase) SendContactFormToClinician(ctx context.Context, f deiz.ContactForm) error {
+	if f.ClinicianID == 0 || len(f.Name) < 2 || len(f.Message) < 2 || len(f.Email) < 6 {
+		return deiz.ErrorUnauthorized
+	}
 	c, err := u.ClinicianGetter.GetClinicianByID(ctx, f.ClinicianID)
 	if err != nil {
 		return err
@@ -49,5 +52,8 @@ func (u *Usecase) SendContactFormToClinician(ctx context.Context, f deiz.Contact
 }
 
 func (u *Usecase) SendGetInTouchForm(ctx context.Context, f deiz.GetInTouchForm) error {
+	if len(f.Email) < 6 || len(f.Phone) < 10 || len(f.Name) < 2 || len(f.City) < 2 || len(f.Job) < 2 {
+		return deiz.ErrorUnauthorized
+	}
 	return u.GetInTouchMailer.MailGetInTouchForm(ctx, f)
 }

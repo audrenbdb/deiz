@@ -7,4 +7,4 @@ CREATE TABLE booking_motive (
                                     CONSTRAINT name_length CHECK (CHAR_LENGTH(name) > 1),
                                 public BOOLEAN NOT NULL default false
 );
-CREATE UNIQUE index id_clinician_id ON booking_motive(id, person_id);
+CREATE UNIQUE index id_clinician_id_booking ON booking_motive(id, person_id);

@@ -16,6 +16,9 @@ type (
 	Updater interface {
 		UpdatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error
 	}
+	GetterByEmail interface {
+		GetPatientByEmail(ctx context.Context, email string, clinicianID int) (deiz.Patient, error)
+	}
 )
 
 func IsPatientValid(p *deiz.Patient) bool {
@@ -42,6 +45,14 @@ func (u *Usecase) SearchPatient(ctx context.Context, search string, clinicianID 
 func (u *Usecase) AddPatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
 	if !IsPatientValid(p) {
 		return deiz.ErrorStructValidation
+	}
+	existingPatient, err := u.GetterByEmail.GetPatientByEmail(ctx, p.Email, clinicianID)
+	if err != nil {
+		return err
+	}
+	if existingPatient.ID != 0 {
+		p.ID = existingPatient.ID
+		return nil
 	}
 	return u.Creater.CreatePatient(ctx, p, clinicianID)
 }

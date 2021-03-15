@@ -19,19 +19,6 @@ func insertPerson(ctx context.Context, db db, p *person) error {
 	return row.Scan(&p.id)
 }
 
-func getPersonByEmail(ctx context.Context, db db, email string) (person, error) {
-	query := `SELECT id, role FROM person WHERE email = $1`
-	row := db.QueryRow(ctx, query, email)
-	p := person{
-		email: email,
-	}
-	err := row.Scan(&p.id, &p.role)
-	if err != nil {
-		return person{}, err
-	}
-	return p, nil
-}
-
 func updatePersonEmail(ctx context.Context, db db, email string, personID int) error {
 	const query = `UPDATE person SET email = $1 WHERE id = $2`
 	cmdTag, err := db.Exec(ctx, query, email, personID)

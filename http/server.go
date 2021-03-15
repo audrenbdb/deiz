@@ -144,7 +144,7 @@ func StartEchoServer(
 
 func FakeCredentialsGetter(ctx context.Context, tokenID string) (credentials, error) {
 	return credentials{
-		userID: 11,
+		userID: 7,
 		role:   2,
 	}, nil
 }

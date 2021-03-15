@@ -44,7 +44,7 @@ func (r *repo) GetPeriodBookingInvoices(ctx context.Context, start time.Time, en
 	i.id, i.created_at, i.identifier, i.sender, i.recipient,
 	i.city_and_date, i.delivery_date,
 	i.delivery_date_str, i.label, i.price_before_tax, i.price_after_tax, i.tax_fee,
-	i.exemption, i.canceled,
+	COALESCE(i.exemption, ''), i.canceled,
 	pm.id, pm.name,
 	COALESCE(bp.id, 0), COALESCE(bp.name, ''), COALESCE(bp.surname, ''), COALESCE(bp.phone, ''), COALESCE(bp.email, '')
 	FROM booking_invoice i INNER JOIN payment_method pm ON i.payment_method_id = pm.id

@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"fmt"
 	"github.com/audrenbdb/deiz"
 )
 
@@ -43,11 +44,11 @@ func (u *Usecase) EnsureClinicianRegistrationComplete(ctx context.Context, email
 	}
 	clinician, err := u.ClinicianGetterByEmail.GetClinicianByEmail(ctx, email)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to get clinician by email: %s", err)
 	}
 	isComplete, err := u.RegistrationVerifier.IsClinicianRegistrationComplete(ctx, email)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to check is registration is complete: %s", err)
 	}
 	if isComplete {
 		return nil

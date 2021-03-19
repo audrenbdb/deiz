@@ -36,7 +36,7 @@ func (m *mailer) MailBookingInvoice(ctx context.Context, invoice *deiz.BookingIn
 	https://deiz.fr`, emailData.Name, emailData.Amount, emailData.Date)
 	return m.sender.Send(ctx, createMail(
 		sendTo,
-		b.Clinician.Email,
+		noReplyAddress,
 		"Facture de consultation",
 		&emailBuffer, plainBody,
 		invoicePDF))
@@ -66,7 +66,7 @@ func (m *mailer) MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buff
 	https://deiz.fr`, emailData.Start, emailData.End)
 	return m.sender.Send(ctx, createMail(
 		sendTo,
-		"contact@deiz.fr",
+		noReplyAddress,
 		"Résumé de factures",
 		&emailBuffer, plainBody,
 		summaryPDF))

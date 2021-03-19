@@ -27,7 +27,7 @@ func (m *mailer) MailCancelBookingToPatient(ctx context.Context, b *deiz.Booking
 	Application de gestion pour thérapeutes\n
 	https://deiz.fr`, emailData.BookingDateStr)
 	return m.sender.Send(ctx, createMail(b.Patient.Email,
-		b.Clinician.Email,
+		noReplyAddress,
 		fmt.Sprintf("RDV du %s annulé", emailData.BookingDateStr),
 		&emailBuffer, plainBody,
 		nil,
@@ -66,7 +66,7 @@ func (m *mailer) MailCancelBookingToClinician(ctx context.Context, b *deiz.Booki
 	Application de gestion pour thérapeutes\n
 	https://deiz.fr`, emailData.BookingDateStr, emailData.Motive, emailData.Name, emailData.Phone, emailData.Email)
 	return m.sender.Send(ctx, createMail(b.Patient.Email,
-		b.Clinician.Email,
+		noReplyAddress,
 		fmt.Sprintf("RDV du %s avec %s annulé", emailData.BookingDateStr, emailData.Name),
 		&emailBuffer, plainBody,
 		nil,
@@ -120,7 +120,7 @@ func (m *mailer) MailBookingToPatient(ctx context.Context, b *deiz.Booking, clin
 	`, emailData.Name, emailData.Phone, emailData.BookingDateStr, emailData.GCalendarLink,
 		emailData.CancelLink, emailData.AddressLine, emailData.AddressCity, emailData.GMapsLink)
 	return m.sender.Send(ctx, createMail(b.Patient.Email,
-		b.Clinician.Email,
+		noReplyAddress,
 		"RDV confirmé "+emailData.BookingDateStr,
 		&emailBuffer, plainBody,
 		nil,
@@ -165,7 +165,7 @@ func (m *mailer) MailBookingToClinician(ctx context.Context, b *deiz.Booking, cl
 	https://deiz.fr
 	`, emailData.BookingDateStr, emailData.Motive, emailData.Name, emailData.Phone, emailData.Email, emailData.GCalendarLink)
 	return m.sender.Send(ctx, createMail(b.Clinician.Email,
-		b.Patient.Email,
+		noReplyAddress,
 		fmt.Sprintf("RDV confirmé avec %s %s", emailData.Name, emailData.BookingDateStr),
 		&emailBuffer, plainBody,
 		nil,

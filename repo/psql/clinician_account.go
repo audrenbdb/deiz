@@ -64,32 +64,32 @@ func (r *repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.C
 	var err error
 	acc.Clinician, err = getClinicianByID(ctx, r.conn, clinicianID)
 	if err != nil {
-		return deiz.ClinicianAccount{}, err
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get clinician by ID: %s", err)
 	}
 	acc.Business, err = getBusinessByPersonID(ctx, r.conn, clinicianID)
 	if err != nil {
-		return deiz.ClinicianAccount{}, err
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get clinician business details: %s", err)
 	}
 	acc.OfficeAddresses, err = getOfficeAddressesByPersonID(ctx, r.conn, clinicianID)
 	if err != nil {
-		return deiz.ClinicianAccount{}, err
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get office addresses: %s", err)
 	}
 	keys, err := getStripeKeysByPersonID(ctx, r.conn, clinicianID)
 	if err != nil {
-		return deiz.ClinicianAccount{}, err
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get person stripe keys: %s", err)
 	}
 	acc.StripePublicKey = keys.public
 	acc.OfficeHours, err = r.GetClinicianOfficeHours(ctx, clinicianID)
 	if err != nil {
-		return deiz.ClinicianAccount{}, err
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get clinician office hours: %s", err)
 	}
 	acc.BookingMotives, err = getBookingMotivesByPersonID(ctx, r.conn, clinicianID)
 	if err != nil {
-		return deiz.ClinicianAccount{}, err
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get booking motives: %s", err)
 	}
 	acc.CalendarSettings, err = getCalendarSettingsByPersonID(ctx, r.conn, clinicianID)
 	if err != nil {
-		return deiz.ClinicianAccount{}, err
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get calendar settings: %s", err)
 	}
 	return acc, nil
 }

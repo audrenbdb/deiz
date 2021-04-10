@@ -49,6 +49,7 @@ func main() {
 	repo := psql.NewRepo(psqlDB, fbClient)
 	pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "../../assets", "fonts"))
 	mail := mail.NewService(parseEmailTemplates(path), mail.NewPostFixClient())
+	//mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
 	gCal := gcalendar.NewService()
 	gMaps := gmaps.NewService()
 	stripe := stripe.NewService()

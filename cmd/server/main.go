@@ -48,16 +48,16 @@ func main() {
 
 	repo := psql.NewRepo(psqlDB, fbClient)
 	pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "../../assets", "fonts"))
-	mail := mail.NewService(parseEmailTemplates(path), mail.NewPostFixClient())
-	//mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
+	//mail := mail.NewService(parseEmailTemplates(path), mail.NewPostFixClient())
+	mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
 	gCal := gcalendar.NewService()
 	gMaps := gmaps.NewService()
 	stripe := stripe.NewService()
 	crypt := crypt.NewService()
 
 	err = http.StartEchoServer(
-		http.FirebaseCredentialsGetter(fbClient),
-		//http.FakeCredentialsGetter,
+		//http.FirebaseCredentialsGetter(fbClient),
+		http.FakeCredentialsGetter,
 		account.NewUsecase(repo, crypt),
 		booking.NewUsecase(repo, mail, gMaps, gCal),
 		patient.NewUsecase(repo),

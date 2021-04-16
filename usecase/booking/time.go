@@ -56,3 +56,7 @@ func GetTimeRangesNotOverLapping(duration int, anchor, upperLimit time.Time, ran
 		upperLimit, rangesToNotOverlap,
 		append(notOverlappingRanges, [2]time.Time{anchor, nextAnchor}))
 }
+
+func resetTimeMn(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), t.Hour(), 0, 0, 0, time.UTC)
+}

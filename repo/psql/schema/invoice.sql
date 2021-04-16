@@ -1,7 +1,7 @@
 CREATE TABLE booking_invoice (
                          id SERIAL PRIMARY KEY,
                          person_id INT REFERENCES person(id) ON DELETE CASCADE,
-                         booking_id INT REFERENCES clinician_booking(id) ON DELETE SET NULL,
+                         booking_id INT UNIQUE REFERENCES clinician_booking(id) ON DELETE SET NULL,
                          created_at TIMESTAMP NOT NULL DEFAULT timezone('utc', NOW()),
                          identifier VARCHAR(100) NOT NULL
                              CONSTRAINT identifier_length CHECK (CHAR_LENGTH(identifier) > 8),

@@ -15,10 +15,10 @@ type (
 )
 
 func (u *Usecase) AddOfficeHours(ctx context.Context, h *deiz.OfficeHours, clinicianID int) error {
-	if h.StartMn > h.EndMn || h.WeekDay < 0 || h.WeekDay > 6 {
+	if h.IsInvalid() {
 		return deiz.ErrorUnauthorized
 	}
-	if h.Address.ID != 0 {
+	if h.Address.IsSet() {
 		owns, err := u.AddressOwnerShipVerifier.IsAddressToClinician(ctx, &deiz.Address{ID: h.Address.ID}, clinicianID)
 		if err != nil {
 			return err

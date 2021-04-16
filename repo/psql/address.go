@@ -14,7 +14,7 @@ func getOfficeAddressesByPersonID(ctx context.Context, db db, personID int) ([]d
 	if err != nil {
 		return nil, err
 	}
-	var addresses []deiz.Address
+	addresses := []deiz.Address{}
 	for rows.Next() {
 		var a deiz.Address
 		err := rows.Scan(&a.ID, &a.Line, &a.PostCode, &a.City)
@@ -144,4 +144,15 @@ func (r *repo) DeleteAddress(ctx context.Context, addressID int) error {
 		return errNoRowsUpdated
 	}
 	return nil
+}
+
+func (r *repo) GetAddressByID(ctx context.Context, addressID int) (deiz.Address, error) {
+	const query = `SELECT a.line, a.post_code, a.city
+	FROM address WHERE id = $1`
+	row := r.conn.QueryRow(ctx, query, addressID)
+	address := deiz.Address{ID: addressID}
+	if err := row.Scan(&address.Line, &address.PostCode, &address.City); err != nil {
+		return deiz.Address{}, nil
+	}
+	return address, nil
 }

@@ -58,6 +58,7 @@ type (
 		PeriodInvoicesGetter
 		PeriodInvoicesSummaryMailer
 		StripePaymentSessionCreater
+		BookingInvoiceCanceler
 	}
 	ContactService interface {
 		ContactFormToClinicianSender
@@ -114,6 +115,7 @@ func StartEchoServer(
 	e.POST("/api/pdf-booking-invoices/:id", handlePostPDFBookingInvoice(billingService), clinicianMW)
 	e.POST("/api/pdf-booking-invoices", handlePostPDFBookingInvoicesPeriodSummary(billingService), clinicianMW)
 	e.POST("/api/booking-invoices", handlePostBookingInvoice(billingService), clinicianMW)
+	e.POST("/api/booking-invoices/canceled", handlePostBookingInvoiceCancel(billingService), clinicianMW)
 	e.GET("/api/booking-invoices", handleGetPeriodInvoices(billingService), clinicianMW)
 
 	e.PATCH("/api/clinician-accounts/calendar-settings", handlePatchCalendarSettings(accountService), clinicianMW)

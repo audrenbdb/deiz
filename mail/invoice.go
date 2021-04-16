@@ -42,14 +42,14 @@ func (m *mailer) MailBookingInvoice(ctx context.Context, invoice *deiz.BookingIn
 		invoicePDF))
 }
 
-func (m *mailer) MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buffer, start, end time.Time, tz *time.Location, sendTo string) error {
+func (m *mailer) MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buffer, start, end time.Time, sendTo string) error {
 	var emailBuffer bytes.Buffer
 	emailData := struct {
 		Start string
 		End   string
 	}{
-		Start: start.In(tz).Format("02/01/2006"),
-		End:   end.In(tz).Format("02/01/2006"),
+		Start: start.In(m.loc).Format("02/01/2006"),
+		End:   end.In(m.loc).Format("02/01/2006"),
 	}
 	err := m.tmpl.ExecuteTemplate(&emailBuffer, "invoices-summary.html", emailData)
 	if err != nil {

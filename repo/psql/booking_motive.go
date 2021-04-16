@@ -24,7 +24,7 @@ func getBookingMotivesByPersonID(ctx context.Context, db db, clinicianID int) ([
 	if err != nil {
 		return nil, err
 	}
-	var motives []deiz.BookingMotive
+	motives := []deiz.BookingMotive{}
 	for rows.Next() {
 		var m deiz.BookingMotive
 		err := rows.Scan(&m.ID, &m.Name, &m.Duration, &m.Price, &m.Public)
@@ -43,7 +43,7 @@ func getPublicMotives(ctx context.Context, db db, clinicianID int) ([]deiz.Booki
 	if err != nil {
 		return nil, err
 	}
-	var motives []deiz.BookingMotive
+	motives := []deiz.BookingMotive{}
 	for rows.Next() {
 		var m deiz.BookingMotive
 		err := rows.Scan(&m.ID, &m.Name, &m.Duration, &m.Price)

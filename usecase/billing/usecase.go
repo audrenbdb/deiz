@@ -8,6 +8,7 @@ type repo interface {
 	PaymentMethodsGetter
 	PeriodInvoicesGetter
 	ClinicianStripeSecretKeyGetter
+	BookingInvoiceCanceler
 }
 
 type mailer interface {
@@ -42,6 +43,7 @@ type Usecase struct {
 	ClinicianStripeSecretKeyGetter ClinicianStripeSecretKeyGetter
 	BytesDecrypter                 BytesDecrypter
 	StripePaymentSessionCreater    StripePaymentSessionCreater
+	BookingInvoiceCanceler         BookingInvoiceCanceler
 }
 
 func NewUsecase(repo repo, mailer mailer, pdfer pdfer, crypter crypter, striper striper) *Usecase {
@@ -59,5 +61,6 @@ func NewUsecase(repo repo, mailer mailer, pdfer pdfer, crypter crypter, striper 
 		ClinicianStripeSecretKeyGetter: repo,
 		BytesDecrypter:                 crypter,
 		StripePaymentSessionCreater:    striper,
+		BookingInvoiceCanceler:         repo,
 	}
 }

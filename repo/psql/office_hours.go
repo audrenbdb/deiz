@@ -16,7 +16,7 @@ func (r *repo) GetClinicianOfficeHours(ctx context.Context, clinicianID int) ([]
 	if err != nil {
 		return nil, err
 	}
-	var hours []deiz.OfficeHours
+	hours := []deiz.OfficeHours{}
 	for rows.Next() {
 		var h deiz.OfficeHours
 		err := rows.Scan(&h.ID, &h.StartMn, &h.EndMn, &h.WeekDay, &h.Address.ID, &h.Address.Line, &h.Address.PostCode, &h.Address.City)

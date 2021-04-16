@@ -6,6 +6,18 @@ import (
 	"time"
 )
 
+func setInvoiceCanceled(ctx context.Context, db db, invoiceID int, clinicianID int) error {
+	const query = `UPDATE booking_invoice SET canceled = true WHERE id = $1 AND person_id = $2`
+	cmdTag, err := db.Exec(ctx, query, invoiceID, clinicianID)
+	if err != nil {
+		return err
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return errNoRowsUpdated
+	}
+	return nil
+}
+
 func (r *repo) GetBookingsPendingPayment(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
 	const query = `SELECT b.id, lower(b.during), upper(b.during), b.remote, b.note,
 	COALESCE(m.id, 0), COALESCE(m.name, ''), COALESCE(m.duration, 0), COALESCE(m.price, 0),
@@ -94,6 +106,23 @@ func (r *repo) CreateBookingInvoice(ctx context.Context, i *deiz.BookingInvoice,
 		return err
 	}
 	err = updateBookingPaidStatus(ctx, tx, true, i.Booking.ID, clinicianID)
+	if err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+func (r *repo) CancelBookingInvoice(ctx context.Context, originalInvoiceID int, i *deiz.BookingInvoice, clinicianID int) error {
+	tx, err := r.conn.Begin(ctx)
+	defer tx.Rollback(ctx)
+	if err != nil {
+		return err
+	}
+	err = insertBookingInvoice(ctx, tx, i, clinicianID)
+	if err != nil {
+		return err
+	}
+	err = setInvoiceCanceled(ctx, tx, originalInvoiceID, clinicianID)
 	if err != nil {
 		return err
 	}

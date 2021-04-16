@@ -26,39 +26,32 @@ type (
 	}
 )
 
-func IsAddressValid(a *deiz.Address) bool {
-	if len(a.Line) < 2 || a.PostCode < 10000 || len(a.City) < 2 {
-		return false
-	}
-	return true
-}
-
 func (u *Usecase) AddClinicianOfficeAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
-	if !IsAddressValid(address) {
+	if address.IsInvalid() {
 		return deiz.ErrorStructValidation
 	}
 	return u.OfficeAddressCreater.CreateClinicianOfficeAddress(ctx, address, clinicianID)
 }
 
 func (u *Usecase) AddClinicianHomeAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
-	if !IsAddressValid(address) {
+	if address.IsInvalid() {
 		return deiz.ErrorStructValidation
 	}
-	if address.ID == 0 {
+	if address.IsNotSet() {
 		return u.HomeAddressCreater.CreateClinicianHomeAddress(ctx, address, clinicianID)
 	}
 	return u.HomeAddressSetter.SetClinicianHomeAddress(ctx, address, clinicianID)
 }
 
 func (u *Usecase) EditClinicianAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
-	if !IsAddressValid(address) {
+	if address.IsInvalid() {
 		return deiz.ErrorStructValidation
 	}
-	ownsAddress, err := u.AddressOwnerShipVerifier.IsAddressToClinician(ctx, address, clinicianID)
+	addressBelongsToClinician, err := u.AddressOwnerShipVerifier.IsAddressToClinician(ctx, address, clinicianID)
 	if err != nil {
 		return err
 	}
-	if !ownsAddress {
+	if !addressBelongsToClinician {
 		return deiz.ErrorUnauthorized
 	}
 	if err := u.AddressUpdater.UpdateAddress(ctx, address); err != nil {
@@ -68,11 +61,11 @@ func (u *Usecase) EditClinicianAddress(ctx context.Context, address *deiz.Addres
 }
 
 func (u *Usecase) RemoveClinicianAddress(ctx context.Context, addressID int, clinicianID int) error {
-	ownsAddress, err := u.AddressOwnerShipVerifier.IsAddressToClinician(ctx, &deiz.Address{ID: addressID}, clinicianID)
+	addressBelongsToClinician, err := u.AddressOwnerShipVerifier.IsAddressToClinician(ctx, &deiz.Address{ID: addressID}, clinicianID)
 	if err != nil {
 		return err
 	}
-	if !ownsAddress {
+	if !addressBelongsToClinician {
 		return deiz.ErrorUnauthorized
 	}
 	return u.AddressDeleter.DeleteAddress(ctx, addressID)

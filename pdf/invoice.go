@@ -90,7 +90,7 @@ func (pdf *pdf) CreateBookingInvoicePDF(i *deiz.BookingInvoice) (*bytes.Buffer, 
 	return &buffer, nil
 }
 
-func (pdf *pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, end time.Time, clinicianTz *time.Location) (*bytes.Buffer, error) {
+func (pdf *pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, end time.Time) (*bytes.Buffer, error) {
 	doc := pdf.createPDF(landscape, mm, A4)
 	p := message.NewPrinter(language.French)
 
@@ -102,8 +102,8 @@ func (pdf *pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, 
 	}
 	initPDF(doc,
 		headerAsPeriodEarningsSummary(doc,
-			start.In(clinicianTz).Format("02/01/2006"),
-			end.In(clinicianTz).Format("02/01/2006"), totalBeforeTax, totalAfterTax, pdf.blueTheme, 20),
+			start.In(pdf.loc).Format("02/01/2006"),
+			end.In(pdf.loc).Format("02/01/2006"), totalBeforeTax, totalAfterTax, pdf.blueTheme, 20),
 		footerFunc(doc, pdf.blueTheme),
 	)
 
@@ -112,9 +112,9 @@ func (pdf *pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, 
 		doc.SetTextColor(pdf.blueTheme.red, pdf.blueTheme.green, pdf.blueTheme.blue)
 		doc.SetDrawColor(pdf.blueTheme.red, pdf.blueTheme.green, pdf.blueTheme.blue)
 		doc.Cell(10, 0, "")
-		doc.CellFormat(33, 4, i.CreatedAt.In(clinicianTz).Format("02/01/2006"), "", 0, "C", false, 0, "")
+		doc.CellFormat(33, 4, i.CreatedAt.In(pdf.loc).Format("02/01/2006"), "", 0, "C", false, 0, "")
 		doc.Cell(1, 0, "")
-		doc.CellFormat(33, 4, i.DeliveryDate.In(clinicianTz).Format("02/01/2006"), "", 0, "C", false, 0, "")
+		doc.CellFormat(33, 4, i.DeliveryDate.In(pdf.loc).Format("02/01/2006"), "", 0, "C", false, 0, "")
 		doc.Cell(1, 0, "")
 		doc.CellFormat(33, 4, i.Identifier, "", 0, "C", false, 0, "")
 		doc.Cell(1, 0, "")

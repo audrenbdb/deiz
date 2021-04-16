@@ -1,14 +1,6 @@
 package booking_test
 
-import (
-	"context"
-	"errors"
-	"github.com/audrenbdb/deiz"
-	"github.com/audrenbdb/deiz/usecase/booking"
-	"github.com/stretchr/testify/assert"
-	"testing"
-	"time"
-)
+/*
 
 type mockBookingsInTimeRangeGetter struct {
 	bookings []deiz.Booking
@@ -472,3 +464,4 @@ func TestRemoveBooking(t *testing.T) {
 		})
 	}
 }
+*/

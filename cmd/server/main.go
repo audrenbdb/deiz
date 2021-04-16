@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"text/template"
+	"time"
 
 	firebase "firebase.google.com/go"
 	firebaseAuth "firebase.google.com/go/auth"
@@ -46,10 +47,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	paris, err := time.LoadLocation("Europe/Paris")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to load location: %v\n", err)
+		os.Exit(1)
+	}
+
 	repo := psql.NewRepo(psqlDB, fbClient)
-	pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "../../assets", "fonts"))
-	//mail := mail.NewService(parseEmailTemplates(path), mail.NewPostFixClient())
-	mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient())
+	pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "../../assets", "fonts"), paris)
+	//mail := mail.NewService(parseEmailTemplates(path), mail.NewPostFixClient(), paris)
+	mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient(), paris)
 	gCal := gcalendar.NewService()
 	gMaps := gmaps.NewService()
 	stripe := stripe.NewService()
@@ -59,7 +66,7 @@ func main() {
 		//http.FirebaseCredentialsGetter(fbClient),
 		http.FakeCredentialsGetter,
 		account.NewUsecase(repo, crypt),
-		booking.NewUsecase(repo, mail, gMaps, gCal),
+		booking.NewUsecase(repo, mail, gMaps, gCal, paris),
 		patient.NewUsecase(repo),
 		billing.NewUsecase(repo, mail, pdf, crypt, stripe),
 		contact.NewUsecase(repo, mail))

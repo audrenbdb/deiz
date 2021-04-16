@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/audrenbdb/deiz"
 )
@@ -29,29 +30,35 @@ func (u *Usecase) GetClinicianAccountPublicData(ctx context.Context, clinicianID
 }
 
 func (u *Usecase) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
-	return u.AccountGetter.GetClinicianAccount(ctx, clinicianID)
+	account, err := u.AccountGetter.GetClinicianAccount(ctx, clinicianID)
+	if err != nil {
+		return deiz.ClinicianAccount{}, err
+	}
+	return account, nil
 }
 
 func (u *Usecase) AddClinicianAccount(ctx context.Context, account *deiz.ClinicianAccount) error {
 	return u.AccountCreater.CreateClinicianAccount(ctx, account)
 }
 
-//EnsureClinicianRegistration checks if account exists and is registered with email and password
-//if not, complete it
 func (u *Usecase) EnsureClinicianRegistrationComplete(ctx context.Context, email, password string) error {
-	if len(email) < 5 || len(password) < 6 {
+	if !credentialsValid(email, password) {
 		return deiz.ErrorStructValidation
 	}
 	clinician, err := u.ClinicianGetterByEmail.GetClinicianByEmail(ctx, email)
 	if err != nil {
-		return fmt.Errorf("unable to get clinician by email: %s", err)
+		return errors.New("ce clinician n'existe pas")
 	}
 	isComplete, err := u.RegistrationVerifier.IsClinicianRegistrationComplete(ctx, email)
 	if err != nil {
 		return fmt.Errorf("unable to check is registration is complete: %s", err)
 	}
-	if isComplete {
-		return nil
+	if !isComplete {
+		return u.RegistrationCompleter.CompleteClinicianRegistration(ctx, &clinician, password, clinician.ID)
 	}
-	return u.RegistrationCompleter.CompleteClinicianRegistration(ctx, &clinician, password, clinician.ID)
+	return nil
+}
+
+func credentialsValid(email, password string) bool {
+	return len(email) >= 5 && len(password) >= 6
 }

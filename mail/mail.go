@@ -8,12 +8,14 @@ import (
 	"os"
 	"os/exec"
 	"text/template"
+	"time"
 )
 
 const noReplyAddress = "noreply@deiz.fr"
 
 type mailer struct {
 	tmpl   *template.Template
+	loc    *time.Location
 	sender sender
 }
 
@@ -33,10 +35,11 @@ type sender interface {
 	Send(ctx context.Context, m *gomail.Message) error
 }
 
-func NewService(tmpl *template.Template, sender sender) *mailer {
+func NewService(tmpl *template.Template, sender sender, loc *time.Location) *mailer {
 	return &mailer{
 		tmpl:   tmpl,
 		sender: sender,
+		loc:    loc,
 	}
 }
 

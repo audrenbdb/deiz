@@ -116,7 +116,7 @@ func (r *repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
 
 func (r *repo) DeleteOverlappingBlockedBooking(ctx context.Context, start, end time.Time, clinicianID int) error {
 	const query = `DELETE FROM clinician_booking
-	WHERE clinician_person_id = $1 AND $2 < upper(during) AND lower(during) < $3`
+	WHERE clinician_person_id = $1 AND $2 < upper(during) AND lower(during) < $3 AND patient_id IS NULL`
 	_, err := r.conn.Exec(ctx, query, clinicianID, start, end)
 	return err
 }
@@ -141,7 +141,36 @@ func (r *repo) GetBookingByID(ctx context.Context, bookingID int) (deiz.Booking,
 	return b, nil
 }
 
-func (r *repo) GetBookingsInTimeRange(ctx context.Context, from, to time.Time, clinicianID int) ([]deiz.Booking, error) {
+func (r *repo) GetBookingsInTimeRange(ctx context.Context, from, to time.Time) ([]deiz.Booking, error) {
+	const query = `SELECT b.id, b.delete_id, lower(b.during), upper(b.during),
+	COALESCE(m.id, 0), COALESCE(m.name, ''), COALESCE(m.duration, 0), COALESCE(m.price, 0), COALESCE(m.public, false),
+	c.id, c.surname, c.name, c.phone,
+	COALESCE(p.id, 0), COALESCE(p.surname, ''), COALESCE(p.name, ''), COALESCE(p.phone, ''), COALESCE(p.email, ''),
+	COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, ''),
+	b.remote, b.paid, b.blocked, COALESCE(b.note, ''), b.confirmed
+	FROM clinician_booking b
+	LEFT JOIN booking_motive m ON b.booking_motive_id = m.id
+	INNER JOIN patient p ON b.patient_id = p.id
+	INNER JOIN person c ON b.clinician_person_id = c.id
+	LEFT JOIN address a ON b.address_id = a.id 
+	WHERE lower(b.during) >= $1 AND lower(b.during) < $2`
+	rows, err := r.conn.Query(ctx, query, from, to)
+	defer rows.Close()
+	if err != nil {
+		return nil, err
+	}
+	var bookingSlots []deiz.Booking
+	for rows.Next() {
+		b, err := scanBookingRow(rows)
+		if err != nil {
+			return nil, err
+		}
+		bookingSlots = append(bookingSlots, b)
+	}
+	return bookingSlots, nil
+}
+
+func (r *repo) GetClinicianBookingsInTimeRange(ctx context.Context, from, to time.Time, clinicianID int) ([]deiz.Booking, error) {
 	const query = bookingSelect + `WHERE b.clinician_person_id = $1 AND $2 <= upper(b.during) AND lower(b.during) <= $3`
 	rows, err := r.conn.Query(ctx, query, clinicianID, from, to)
 	defer rows.Close()
@@ -190,4 +219,18 @@ func (r *repo) UpdateBooking(ctx context.Context, b *deiz.Booking) error {
 		return errNoRowsUpdated
 	}
 	return nil
+}
+
+func (r *repo) IsBookingSlotAvailable(ctx context.Context, from, to time.Time, clinicianID int) (bool, error) {
+	const query = `SELECT EXISTS(
+		SELECT 1 FROM clinician_booking b 
+		WHERE clinician_person_id = $1 
+		AND $2 < upper(b.during) AND lower(b.during) < $3 AND b.patient_id IS NOT NULL)`
+	var slotTaken bool
+	row := r.conn.QueryRow(ctx, query, clinicianID, from, to)
+	err := row.Scan(&slotTaken)
+	if err != nil {
+		return false, err
+	}
+	return !slotTaken, nil
 }

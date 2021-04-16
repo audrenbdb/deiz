@@ -17,10 +17,13 @@ type (
 		MailBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, sendTo string) error
 	}
 	PeriodInvoicesSummaryMailer interface {
-		MailPeriodInvoicesSummary(ctx context.Context, start, end time.Time, tzName string, sendTo string, clinicianID int) error
+		MailPeriodInvoicesSummary(ctx context.Context, start, end time.Time, sendTo string, clinicianID int) error
 	}
 	PeriodInvoicesGetter interface {
 		GetPeriodInvoices(ctx context.Context, start, end time.Time, clinicianID int) ([]deiz.BookingInvoice, error)
+	}
+	BookingInvoiceCanceler interface {
+		CancelBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, clinicianID int) error
 	}
 )
 
@@ -44,7 +47,7 @@ func handlePostPDFBookingInvoicesPeriodSummary(mailer PeriodInvoicesSummaryMaile
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		return mailer.MailPeriodInvoicesSummary(ctx, time.Unix(startParam, 0), time.Unix(endParam, 0), p.Timezone, p.SendTo, clinicianID)
+		return mailer.MailPeriodInvoicesSummary(ctx, time.Unix(startParam, 0), time.Unix(endParam, 0), p.SendTo, clinicianID)
 	}
 }
 
@@ -80,6 +83,22 @@ func handlePostBookingInvoice(generater BookingInvoiceGenerater) echo.HandlerFun
 			return c.JSON(http.StatusBadRequest, errBind.Error())
 		}
 		err = generater.GenerateBookingInvoice(ctx, &i, clinicianID, sendToPatient)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, i)
+	}
+}
+
+func handlePostBookingInvoiceCancel(canceler BookingInvoiceCanceler) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		clinicianID := getCredFromEchoCtx(c).userID
+		var i deiz.BookingInvoice
+		if err := c.Bind(&i); err != nil {
+			return c.JSON(http.StatusBadRequest, errBind.Error())
+		}
+		err := canceler.CancelBookingInvoice(ctx, &i, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}

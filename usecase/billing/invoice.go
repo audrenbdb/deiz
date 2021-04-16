@@ -16,7 +16,7 @@ type (
 		CreateBookingInvoicePDF(i *deiz.BookingInvoice) (*bytes.Buffer, error)
 	}
 	InvoicesSummaryPDFCreater interface {
-		CreateInvoicesSummaryPDF(i []deiz.BookingInvoice, start, end time.Time, loc *time.Location) (*bytes.Buffer, error)
+		CreateInvoicesSummaryPDF(i []deiz.BookingInvoice, start, end time.Time) (*bytes.Buffer, error)
 	}
 	ClinicianBoundChecker interface {
 		IsPatientTiedToClinician(ctx context.Context, p *deiz.Patient, clinicianID int) (bool, error)
@@ -25,13 +25,16 @@ type (
 		MailBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, invoicePDF *bytes.Buffer, sendTo string) error
 	}
 	InvoicesSummaryMailer interface {
-		MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buffer, start, end time.Time, tz *time.Location, sendTo string) error
+		MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buffer, start, end time.Time, sendTo string) error
 	}
 	InvoicesCounter interface {
 		CountClinicianInvoices(ctx context.Context, clinicianID int) (int, error)
 	}
 	PeriodInvoicesGetter interface {
 		GetPeriodBookingInvoices(ctx context.Context, start, end time.Time, clinicianID int) ([]deiz.BookingInvoice, error)
+	}
+	BookingInvoiceCanceler interface {
+		CancelBookingInvoice(ctx context.Context, originalInvoiceID int, i *deiz.BookingInvoice, clinicianID int) error
 	}
 )
 
@@ -40,7 +43,6 @@ func (u *Usecase) GetPeriodInvoices(ctx context.Context, start, end time.Time, c
 }
 
 func (u *Usecase) GenerateBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, clinicianID int, sendToPatient bool) error {
-	const invoiceIDFormat = "DEIZ-%d-%08d"
 	bound, err := u.ClinicianBoundChecker.IsPatientTiedToClinician(ctx, &i.Booking.Patient, clinicianID)
 	if err != nil {
 		return err
@@ -48,14 +50,13 @@ func (u *Usecase) GenerateBookingInvoice(ctx context.Context, i *deiz.BookingInv
 	if !bound {
 		return deiz.ErrorUnauthorized
 	}
-	if i.TaxFee < 0 || i.PaymentMethod.ID <= 0 || i.PriceAfterTax < i.PriceBeforeTax || i.CityAndDate == "" || i.PriceAfterTax < 0 {
+	if i.IsInvalid() {
 		return deiz.ErrorStructValidation
 	}
-	count, err := u.InvoicesCounter.CountClinicianInvoices(ctx, clinicianID)
+	err = u.generateInvoiceIdentifier(ctx, i, clinicianID)
 	if err != nil {
 		return err
 	}
-	i.Identifier = fmt.Sprintf(invoiceIDFormat, clinicianID, count+1)
 	err = u.BookingInvoiceCreater.CreateBookingInvoice(ctx, i, clinicianID)
 	if err != nil {
 		return err
@@ -66,6 +67,27 @@ func (u *Usecase) GenerateBookingInvoice(ctx context.Context, i *deiz.BookingInv
 	return nil
 }
 
+func (u *Usecase) generateInvoiceIdentifier(ctx context.Context, i *deiz.BookingInvoice, clinicianID int) error {
+	count, err := u.InvoicesCounter.CountClinicianInvoices(ctx, clinicianID)
+	if err != nil {
+		return fmt.Errorf("unable to generate invoice identifier: %s", err)
+	}
+	i.SetIdentifier(clinicianID, count)
+	return nil
+}
+
+func (u *Usecase) CancelBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, clinicianID int) error {
+	i.RemoveBooking()
+	if i.IsInvalid() {
+		return deiz.ErrorStructValidation
+	}
+	err := u.generateInvoiceIdentifier(ctx, i, clinicianID)
+	if err != nil {
+		return err
+	}
+	return u.BookingInvoiceCanceler.CancelBookingInvoice(ctx, i.ID, i, clinicianID)
+}
+
 func (u *Usecase) MailBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, sendTo string) error {
 	invoicePDF, err := u.BookingInvoicePDFCreater.CreateBookingInvoicePDF(i)
 	if err != nil {
@@ -74,18 +96,14 @@ func (u *Usecase) MailBookingInvoice(ctx context.Context, i *deiz.BookingInvoice
 	return u.BookingInvoiceMailer.MailBookingInvoice(ctx, i, invoicePDF, sendTo)
 }
 
-func (u *Usecase) MailPeriodInvoicesSummary(ctx context.Context, start, end time.Time, tzName string, sendTo string, clinicianID int) error {
+func (u *Usecase) MailPeriodInvoicesSummary(ctx context.Context, start, end time.Time, sendTo string, clinicianID int) error {
 	invoices, err := u.PeriodInvoicesGetter.GetPeriodBookingInvoices(ctx, start, end, clinicianID)
 	if err != nil {
 		return err
 	}
-	tz, err := time.LoadLocation(tzName)
+	pdf, err := u.InvoicesSummaryPDFCreater.CreateInvoicesSummaryPDF(invoices, start, end)
 	if err != nil {
 		return err
 	}
-	pdf, err := u.InvoicesSummaryPDFCreater.CreateInvoicesSummaryPDF(invoices, start, end, tz)
-	if err != nil {
-		return err
-	}
-	return u.InvoicesSummaryMailer.MailInvoicesSummary(ctx, pdf, start, end, tz, sendTo)
+	return u.InvoicesSummaryMailer.MailInvoicesSummary(ctx, pdf, start, end, sendTo)
 }

@@ -8,6 +8,8 @@ type ClinicianAccount struct {
 	OfficeHours      []OfficeHours    `json:"officeHours"`
 	BookingMotives   []BookingMotive  `json:"bookingMotives"`
 	CalendarSettings CalendarSettings `json:"calendarSettings"`
+	PaymentMethods   []PaymentMethod  `json:"paymentMethods"`
+	TaxExemptions    []TaxExemption   `json:"taxExemptions"`
 }
 
 type ClinicianAccountPublicData struct {

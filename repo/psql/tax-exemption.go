@@ -12,7 +12,7 @@ func (r *repo) GetTaxExemptionCodes(ctx context.Context) ([]deiz.TaxExemption, e
 	if err != nil {
 		return nil, err
 	}
-	var exemptions []deiz.TaxExemption
+	exemptions := []deiz.TaxExemption{}
 	for rows.Next() {
 		var t deiz.TaxExemption
 		err := rows.Scan(&t.ID, &t.Code)

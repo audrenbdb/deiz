@@ -5,15 +5,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/audrenbdb/deiz"
-	"time"
+	"github.com/audrenbdb/deiz/intl"
 )
 
-func (m *mailer) MailCancelBookingToPatient(ctx context.Context, b *deiz.Booking, tz *time.Location) error {
+func (m *mailer) MailCancelBookingToPatient(ctx context.Context, b *deiz.Booking) error {
 	var emailBuffer bytes.Buffer
 	emailData := struct {
 		BookingDateStr string
 	}{
-		BookingDateStr: b.Start.In(tz).Format("02/01/2006 à 15h04"),
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
 	}
 	err := m.tmpl.ExecuteTemplate(&emailBuffer, "cancelappointment-topatient.html", emailData)
 	if err != nil {
@@ -34,7 +34,7 @@ func (m *mailer) MailCancelBookingToPatient(ctx context.Context, b *deiz.Booking
 	))
 }
 
-func (m *mailer) MailCancelBookingToClinician(ctx context.Context, b *deiz.Booking, tz *time.Location) error {
+func (m *mailer) MailCancelBookingToClinician(ctx context.Context, b *deiz.Booking) error {
 	var emailBuffer bytes.Buffer
 	emailData := struct {
 		BookingDateStr string
@@ -43,7 +43,7 @@ func (m *mailer) MailCancelBookingToClinician(ctx context.Context, b *deiz.Booki
 		Email          string
 		Motive         string
 	}{
-		BookingDateStr: b.Start.In(tz).Format("02/01/2006 à 15h04"),
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
 		Name:           b.Patient.Surname + " " + b.Patient.Name,
 		Phone:          b.Patient.Phone,
 		Email:          b.Patient.Email,
@@ -73,7 +73,7 @@ func (m *mailer) MailCancelBookingToClinician(ctx context.Context, b *deiz.Booki
 	))
 }
 
-func (m *mailer) MailBookingToPatient(ctx context.Context, b *deiz.Booking, clinicianTz *time.Location, gCalendarLink, gMapsLink, cancelURL string) error {
+func (m *mailer) MailBookingReminder(ctx context.Context, b *deiz.Booking, gCalendarLink, gMapsLink, cancelURL string) error {
 	var emailBuffer bytes.Buffer
 	emailData := struct {
 		Name           string
@@ -88,7 +88,61 @@ func (m *mailer) MailBookingToPatient(ctx context.Context, b *deiz.Booking, clin
 	}{
 		Name:           b.Clinician.Surname + " " + b.Clinician.Name,
 		Phone:          b.Clinician.Phone,
-		BookingDateStr: b.Start.In(clinicianTz).Format("le 02/01/2006 à 15h04"),
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
+		GCalendarLink:  gCalendarLink,
+		GMapsLink:      gMapsLink,
+		CancelLink:     cancelURL,
+		AddressLine:    b.Address.Line,
+		AddressCity:    fmt.Sprintf("%d %s", b.Address.PostCode, b.Address.City),
+		Remote:         b.Remote,
+	}
+
+	err := m.tmpl.ExecuteTemplate(&emailBuffer, "booking-reminder.html", emailData)
+	if err != nil {
+		return err
+	}
+	plainBody := fmt.Sprintf(`Deiz\n
+	Rappel de RDV\n
+	Avec %s\n
+	%s\n
+	%s\n
+	\n
+	Ajouter à Google Calendar : %s\n
+	Annuler : %s\n
+	\n
+	%s\n
+	%s\n
+	Itinéraire : %s\n
+	\n
+	Deiz\n
+	Agenda pour thérapeutes\n
+	https://deiz.fr
+	`, emailData.Name, emailData.Phone, emailData.BookingDateStr, emailData.GCalendarLink,
+		emailData.CancelLink, emailData.AddressLine, emailData.AddressCity, emailData.GMapsLink)
+	return m.sender.Send(ctx, createMail(b.Patient.Email,
+		noReplyAddress,
+		"Rappel de rdv : "+emailData.BookingDateStr,
+		&emailBuffer, plainBody,
+		nil,
+	))
+}
+
+func (m *mailer) MailBookingToPatient(ctx context.Context, b *deiz.Booking, gCalendarLink, gMapsLink, cancelURL string) error {
+	var emailBuffer bytes.Buffer
+	emailData := struct {
+		Name           string
+		Phone          string
+		BookingDateStr string
+		GCalendarLink  string
+		GMapsLink      string
+		CancelLink     string
+		AddressLine    string
+		AddressCity    string
+		Remote         bool
+	}{
+		Name:           b.Clinician.Surname + " " + b.Clinician.Name,
+		Phone:          b.Clinician.Phone,
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
 		GCalendarLink:  gCalendarLink,
 		GMapsLink:      gMapsLink,
 		CancelLink:     cancelURL,
@@ -127,7 +181,7 @@ func (m *mailer) MailBookingToPatient(ctx context.Context, b *deiz.Booking, clin
 	))
 }
 
-func (m *mailer) MailBookingToClinician(ctx context.Context, b *deiz.Booking, clinicianTz *time.Location, gCalendarLink string) error {
+func (m *mailer) MailBookingToClinician(ctx context.Context, b *deiz.Booking, gCalendarLink string) error {
 	var emailBuffer bytes.Buffer
 	emailData := struct {
 		Name           string
@@ -140,7 +194,7 @@ func (m *mailer) MailBookingToClinician(ctx context.Context, b *deiz.Booking, cl
 	}{
 		Name:           b.Patient.Surname + " " + b.Patient.Name,
 		Phone:          b.Patient.Phone,
-		BookingDateStr: b.Start.In(clinicianTz).Format("le 02/01/2006 à 15h04"),
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
 		Motive:         b.Motive.Name,
 		Email:          b.Patient.Email,
 		GCalendarLink:  gCalendarLink,

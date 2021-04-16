@@ -1,10 +1,9 @@
-package account_test
+package account
 
 import (
 	"context"
 	"errors"
 	"github.com/audrenbdb/deiz"
-	"github.com/audrenbdb/deiz/usecase/account"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -40,7 +39,7 @@ func TestIsCalendarSettingsValid(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			valid := account.IsCalendarSettingsValid(&test.inSettings)
+			valid := isCalendarSettingsValid(&test.inSettings)
 			assert.Equal(t, test.valid, valid)
 		})
 	}
@@ -81,7 +80,7 @@ func TestEditCalendarSettings(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			u := account.Usecase{
+			u := Usecase{
 				CalendarSettingsUpdater: &test.updater,
 			}
 			err := u.EditCalendarSettings(context.Background(), &test.inSettings, test.inClinicianID)

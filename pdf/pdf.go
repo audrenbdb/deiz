@@ -2,6 +2,7 @@ package pdf
 
 import (
 	"github.com/jung-kurt/gofpdf"
+	"time"
 )
 
 type orientation string
@@ -16,6 +17,7 @@ const (
 )
 
 type pdf struct {
+	loc        *time.Location
 	fontFamily string
 	fontFile   string
 	fontDir    string
@@ -23,13 +25,14 @@ type pdf struct {
 	blueTheme rgb
 }
 
-func NewService(fontFamily, fontFile, fontDir string) *pdf {
+func NewService(fontFamily, fontFile, fontDir string, loc *time.Location) *pdf {
 	blueTheme := rgb{
 		red:   0,
 		green: 0,
 		blue:  70,
 	}
 	return &pdf{
+		loc:        loc,
 		fontFamily: fontFamily,
 		fontFile:   fontFile,
 		fontDir:    fontDir,

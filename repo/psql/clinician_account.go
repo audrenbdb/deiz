@@ -91,6 +91,14 @@ func (r *repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.C
 	if err != nil {
 		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get calendar settings: %s", err)
 	}
+	acc.PaymentMethods, err = r.GetPaymentMethods(ctx)
+	if err != nil {
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get payment methods: %s", err)
+	}
+	acc.TaxExemptions, err = r.GetTaxExemptionCodes(ctx)
+	if err != nil {
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get tax exemption codes: %s", err)
+	}
 	return acc, nil
 }
 

@@ -1,5 +1,7 @@
 package deiz
 
+import "time"
+
 type OfficeHours struct {
 	ID      int     `json:"id"`
 	StartMn int     `json:"startMn"`
@@ -14,4 +16,8 @@ func (h *OfficeHours) IsValid() bool {
 
 func (h *OfficeHours) IsInvalid() bool {
 	return !h.IsValid()
+}
+
+func (h *OfficeHours) IsWithinDate(d time.Time) bool {
+	return int(d.Weekday()) == h.WeekDay
 }

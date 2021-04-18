@@ -17,6 +17,10 @@ func (p *Patient) IsSet() bool {
 	return p.ID != 0
 }
 
+func (p *Patient) IsNotSet() bool {
+	return !p.IsSet()
+}
+
 func (p *Patient) Sanitize() {
 	p.Name = strings.TrimSpace(p.Name)
 	p.Name = strings.ToUpper(p.Name)

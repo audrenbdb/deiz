@@ -13,7 +13,7 @@ func (m *mailer) MailCancelBookingToPatient(ctx context.Context, b *deiz.Booking
 	emailData := struct {
 		BookingDateStr string
 	}{
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
 	}
 	err := m.tmpl.ExecuteTemplate(&emailBuffer, "cancelappointment-topatient.html", emailData)
 	if err != nil {
@@ -43,7 +43,7 @@ func (m *mailer) MailCancelBookingToClinician(ctx context.Context, b *deiz.Booki
 		Email          string
 		Motive         string
 	}{
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
 		Name:           b.Patient.Surname + " " + b.Patient.Name,
 		Phone:          b.Patient.Phone,
 		Email:          b.Patient.Email,
@@ -88,7 +88,7 @@ func (m *mailer) MailBookingReminder(ctx context.Context, b *deiz.Booking, gCale
 	}{
 		Name:           b.Clinician.Surname + " " + b.Clinician.Name,
 		Phone:          b.Clinician.Phone,
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
 		GCalendarLink:  gCalendarLink,
 		GMapsLink:      gMapsLink,
 		CancelLink:     cancelURL,
@@ -142,7 +142,7 @@ func (m *mailer) MailBookingToPatient(ctx context.Context, b *deiz.Booking, gCal
 	}{
 		Name:           b.Clinician.Surname + " " + b.Clinician.Name,
 		Phone:          b.Clinician.Phone,
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
 		GCalendarLink:  gCalendarLink,
 		GMapsLink:      gMapsLink,
 		CancelLink:     cancelURL,
@@ -194,7 +194,7 @@ func (m *mailer) MailBookingToClinician(ctx context.Context, b *deiz.Booking, gC
 	}{
 		Name:           b.Patient.Surname + " " + b.Patient.Name,
 		Phone:          b.Patient.Phone,
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 January à 15h04")),
+		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
 		Motive:         b.Motive.Name,
 		Email:          b.Patient.Email,
 		GCalendarLink:  gCalendarLink,

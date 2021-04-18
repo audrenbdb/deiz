@@ -1,6 +1,7 @@
 package deiz
 
 import (
+	"sort"
 	"time"
 )
 
@@ -20,12 +21,28 @@ type Booking struct {
 	Note      string        `json:"note"`
 }
 
+func (b *Booking) Assigned() bool {
+	return b.Confirmed || b.PreRegistered()
+}
+
+func (b *Booking) PreRegistered() bool {
+	return !b.Blocked && b.ID != 0 && !b.Confirmed
+}
+
 func (b *Booking) PatientNotSet() bool {
 	return b.Patient.ID == 0
 }
 
+func (b *Booking) PatientSet() bool {
+	return !b.PatientNotSet()
+}
+
 func (b *Booking) ClinicianNotSet() bool {
 	return b.Clinician.ID == 0
+}
+
+func (b *Booking) ClinicianSet() bool {
+	return !b.ClinicianNotSet()
 }
 
 func (b *Booking) AddressNotSet() bool {
@@ -47,10 +64,18 @@ func (b *Booking) SetPatient(p Patient) {
 	b.Patient = p
 }
 
-func (b *Booking) SetBlocked() {
+func (b *Booking) SetBlocked() *Booking {
 	b.Patient.ID = 0
 	b.Address.ID = 0
 	b.Motive.ID = 0
 	b.Note = ""
 	b.Blocked = true
+	return b
+}
+
+func SortBookingByDate(bookings []Booking) []Booking {
+	sort.SliceStable(bookings, func(i, j int) bool {
+		return bookings[i].Start.Before(bookings[j].Start)
+	})
+	return bookings
 }

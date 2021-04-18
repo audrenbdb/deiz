@@ -30,18 +30,6 @@ type (
 		StripeKeysSetter
 		ClinicianRegistrationCompleter
 	}
-	BookingService interface {
-		BookingSlotsGetter
-		FreeBookingSlotsGetter
-		BookingSlotBlocker
-		BookingSlotUnlocker
-		BookingRegister
-		PublicBookingRegister
-		BookingPreRegister
-		BookingConfirmer
-		BookingRemover
-		PublicBookingRemover
-	}
 	PatientService interface {
 		PatientSearcher
 		PatientAdder
@@ -69,10 +57,14 @@ type (
 func StartEchoServer(
 	credentialsGetter credentialsGetter,
 	accountService AccountService,
-	bookingService BookingService,
 	patientService PatientService,
 	billingService BillingService,
 	contactService ContactService,
+	bookingRegister bookingRegister,
+	bookingPreRegister bookingPreRegister,
+	bookingSlotBlocker bookingSlotBlocker,
+	bookingSlotDeleter bookingSlotDeleter,
+	calendarReader calendarReader,
 ) error {
 	clinicianMW := roleMW(credentialsGetter, 2)
 	//adminMW := roleMW(credentialsGetter, 3)
@@ -87,13 +79,13 @@ func StartEchoServer(
 	e.GET("/api/clinician-accounts/current", handleGetClinicianAccount(accountService), clinicianMW)
 	e.PATCH("/api/businesses/:id", handlePatchBusiness(accountService), clinicianMW)
 
-	e.GET("/api/bookings", handleGetBookingSlots(bookingService), clinicianMW)
-	e.POST("/api/bookings/blocked", handlePostBlockedBookingSlot(bookingService), clinicianMW)
-	e.POST("/api/bookings", handlePostBooking(bookingService), clinicianMW)
-	e.POST("/api/bookings/pre-registered", handlePostPreRegisteredBooking(bookingService), clinicianMW)
-	e.PATCH("/api/bookings/pre-registered", handlePatchPreRegisteredBooking(bookingService), clinicianMW)
-	e.DELETE("/api/bookings/:id/blocked", handleDeleteBookingSlotBlocked(bookingService), clinicianMW)
-	e.DELETE("/api/bookings/:id", handleDeleteBooking(bookingService), clinicianMW)
+	e.GET("/api/bookings", handleGetBookingSlots(calendarReader), clinicianMW)
+	e.POST("/api/bookings/blocked", handlePostBlockedBookingSlot(bookingSlotBlocker), clinicianMW)
+	e.POST("/api/bookings", handlePostBooking(bookingRegister), clinicianMW)
+	e.POST("/api/bookings/pre-registered", handlePostPreRegisteredBooking(bookingPreRegister), clinicianMW)
+	e.PATCH("/api/bookings/pre-registered", handlePatchPreRegisteredBooking(bookingRegister), clinicianMW)
+	e.DELETE("/api/bookings/:id/blocked", handleDeleteBookingSlotBlocked(bookingSlotDeleter), clinicianMW)
+	e.DELETE("/api/bookings/:id", handleDeleteBooking(bookingSlotDeleter), clinicianMW)
 
 	e.GET("/api/bookings/unpaid", handleGetUnpaidBookings(billingService), clinicianMW)
 
@@ -134,10 +126,10 @@ func StartEchoServer(
 
 	/* PUBLIC API */
 	e.GET("/api/public/clinician-accounts", handleGetClinicianAccountPublicData(accountService))
-	e.GET("/api/public/booking-slots", handleGetFreeBookingSlots(bookingService))
-	e.POST("/api/public/bookings", handlePublicPostBooking(bookingService))
+	e.GET("/api/public/booking-slots", handleGetFreeBookingSlots(calendarReader))
+	e.POST("/api/public/bookings", handlePublicPostBooking(bookingRegister))
 	e.GET("/api/public/session-checkout", handleGetSessionCheckout(billingService))
-	e.DELETE("/api/public/bookings/:id", handleDeletePublicBooking(bookingService))
+	e.DELETE("/api/public/bookings/:id", handleDeletePublicBooking(bookingSlotDeleter))
 	e.POST("/api/public/contact-form", handlePostContactFormToClinician(contactService))
 	e.POST("/api/public/get-in-touch-form", handlePostGetInTouchForm(contactService))
 

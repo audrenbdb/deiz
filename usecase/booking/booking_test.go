@@ -72,7 +72,7 @@ func (m *mockToClinicianMailer) MailBookingToClinician(ctx context.Context, b *d
 }
 
 func (m *mockGoogleLinksBuilder) BuildGCalendarLink(start, end time.Time, subject, addressStr, details string) string {
-	return "calendar link"
+	return "readCalendar link"
 }
 
 func (m *mockGoogleLinksBuilder) BuildGMapsLink(addressStr string) string {

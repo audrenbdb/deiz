@@ -61,24 +61,27 @@ func main() {
 	gMaps := gmaps.NewService()
 	stripe := stripe.NewService()
 	crypt := crypt.NewService()
+	bookingRegister := booking.NewRegisterUsecase(
+		paris, repo, repo, repo, repo, repo, mail, gCal, gMaps)
+	bookingPreRegister := booking.NewPreRegisterUsecase(repo, repo)
 
+	calendarReader := booking.NewCalendarReaderUsecase(paris, repo, repo)
+	bookingSlotDeleter := booking.NewSlotDeleterUsecase(repo, repo, mail)
+	bookingSlotBlocker := booking.NewSlotBlockerUsecase(repo)
 	err = http.StartEchoServer(
 		//http.FirebaseCredentialsGetter(fbClient),
 		http.FakeCredentialsGetter,
 		account.NewUsecase(repo, crypt),
-		booking.NewUsecase(repo, mail, gMaps, gCal, paris),
 		patient.NewUsecase(repo),
 		billing.NewUsecase(repo, mail, pdf, crypt, stripe),
-		contact.NewUsecase(repo, mail))
-	/*err = http.StartEchoServer(
-	http.FakeCredentialsGetter,
-	accountUsecase,
-	bookingUsecase,
-	patientUsecase,
-	billingUsecase,
-	contactUsecase)
+		contact.NewUsecase(repo, mail),
+		bookingRegister,
+		bookingPreRegister,
+		bookingSlotBlocker,
+		bookingSlotDeleter,
+		calendarReader,
+	)
 
-	*/
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start echo server: %v\n", err)
 		os.Exit(1)

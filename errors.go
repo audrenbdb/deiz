@@ -2,8 +2,7 @@ package deiz
 
 const ErrorUnauthorized Error = "unauthorized"
 const ErrorStructValidation Error = "unable to validate struct"
-const ErrorBookingSlotAlreadyFilled Error = "booking slot already filled"
-const ErrorParsingTimezone Error = "unable to parse timzeone"
+const ErrorBookingSlotAlreadyFilled Error = "Le créneau choisit en chevauche un autre"
 
 type Error string
 

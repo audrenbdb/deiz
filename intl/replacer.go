@@ -3,28 +3,28 @@ package intl
 import "strings"
 
 var month = strings.NewReplacer(
-	"January", "Janvier",
-	"February", "Février",
-	"Mars", "Mars",
-	"April", "Avril",
-	"May", "Mai",
-	"June", "Juin",
-	"July", "Juillet",
-	"August", "Août",
-	"September", "Septembre",
-	"October", "Octobre",
-	"November", "Novembre",
-	"December", "Décembre",
+	"Jan", "jan.",
+	"Feb", "fév.",
+	"Mar", "mars",
+	"Apr", "avril",
+	"May", "mai",
+	"Jun", "juin",
+	"Jul", "juil.",
+	"Aug", "août",
+	"Setember", "sept.",
+	"Oct", "oct.",
+	"Nov", "nov.",
+	"Dec", "déc.",
 )
 
 var weekday = strings.NewReplacer(
-	"Monday", "Lundi",
-	"Tuesday", "Mardi",
-	"Wednesday", "Mercredi",
-	"Thursday", "Jeudi",
-	"Friday", "Vendredi",
-	"Saturday", "Samedi",
-	"Sunday", "Dimanche",
+	"Monday", "lundi",
+	"Tuesday", "mardi",
+	"Wednesday", "mercredi",
+	"Thursday", "jeudi",
+	"Friday", "vendredi",
+	"Saturday", "samedi",
+	"Sunday", "dimanche",
 )
 
 func ToFrench(timeString string) string {

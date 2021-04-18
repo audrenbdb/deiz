@@ -10,36 +10,28 @@ import (
 )
 
 type (
-	FreeBookingSlotsGetter interface {
-		GetFreeBookingSlots(ctx context.Context, start time.Time, tzName string, defaultMotiveID, defaultMotiveDuration, clinicianID int) ([]deiz.Booking, error)
+	bookingRegister interface {
+		RegisterBookingFromClinician(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient bool) error
+		RegisterBookingFromPatient(ctx context.Context, b *deiz.Booking) error
+		RegisterPreRegisteredBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient bool) error
 	}
-	BookingSlotsGetter interface {
-		GetBookingSlots(ctx context.Context, start time.Time, tzName string, defaultMotiveID, defaultMotiveDuration, clinicianID int) ([]deiz.Booking, error)
+	bookingSlotDeleter interface {
+		DeleteBlockedSlot(ctx context.Context, bookingID, clinicianID int) error
+		DeletePreRegisteredSlot(ctx context.Context, bookingID, clinicianID int) error
+		DeleteBookedSlotFromPatient(ctx context.Context, deleteID string) error
+		DeleteBookedSlotFromClinician(ctx context.Context, bookingID int, notifyPatient bool, clinicianID int) error
 	}
-	BookingSlotBlocker interface {
-		BlockBookingSlot(ctx context.Context, b *deiz.Booking, clinicianID int) error
-	}
-	BookingSlotUnlocker interface {
-		UnlockBookingSlot(ctx context.Context, bookingID, clinicianID int) error
-	}
-	PublicBookingRegister interface {
-		RegisterPublicBooking(ctx context.Context, b *deiz.Booking) error
-	}
-	BookingRegister interface {
-		RegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error
-	}
-	BookingRemover interface {
-		RemoveBooking(ctx context.Context, bookingID int, notifyPatient bool, clinicianID int) error
-	}
-	PublicBookingRemover interface {
-		RemovePublicBooking(ctx context.Context, deleteID string) error
-	}
-	BookingPreRegister interface {
+	bookingPreRegister interface {
 		PreRegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int) error
 	}
-	BookingConfirmer interface {
-		ConfirmPreRegisteredBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error
+	bookingSlotBlocker interface {
+		BlockBookingSlot(ctx context.Context, slot *deiz.Booking, clinicianID int) error
 	}
+	calendarReader interface {
+		GetPublicBookingSlots(ctx context.Context, start time.Time, defaultMotiveID, defaultMotiveDuration, clinicianID int) ([]deiz.Booking, error)
+		GetClinicianBookingSlots(ctx context.Context, start time.Time, defaultMotiveID, defaultMotiveDuration, clinicianID int) ([]deiz.Booking, error)
+	}
+
 	PatientBookingsGetter interface {
 		GetPatientBookings(ctx context.Context, clinicianID, patientID int) ([]deiz.Booking, error)
 	}
@@ -76,7 +68,7 @@ func handleGetPatientBookings(getter PatientBookingsGetter) echo.HandlerFunc {
 	}
 }
 
-func handlePatchPreRegisteredBooking(confirmer BookingConfirmer) echo.HandlerFunc {
+func handlePatchPreRegisteredBooking(register bookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -85,15 +77,11 @@ func handlePatchPreRegisteredBooking(confirmer BookingConfirmer) echo.HandlerFun
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		notifyClinician, err := strconv.ParseBool(c.QueryParam("notifyClinician"))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, err.Error())
-		}
 		var b deiz.Booking
 		if err := c.Bind(&b); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		err = confirmer.ConfirmPreRegisteredBooking(ctx, &b, clinicianID, notifyPatient, notifyClinician)
+		err = register.RegisterPreRegisteredBooking(ctx, &b, clinicianID, notifyPatient)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -101,7 +89,7 @@ func handlePatchPreRegisteredBooking(confirmer BookingConfirmer) echo.HandlerFun
 	}
 }
 
-func handlePostPreRegisteredBooking(register BookingPreRegister) echo.HandlerFunc {
+func handlePostPreRegisteredBooking(register bookingPreRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -117,7 +105,7 @@ func handlePostPreRegisteredBooking(register BookingPreRegister) echo.HandlerFun
 	}
 }
 
-func handlePostBooking(register BookingRegister) echo.HandlerFunc {
+func handlePostBooking(register bookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -126,15 +114,11 @@ func handlePostBooking(register BookingRegister) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		notifyClinician, err := strconv.ParseBool(c.QueryParam("notifyClinician"))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, err.Error())
-		}
 		var b deiz.Booking
 		if err := c.Bind(&b); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		err = register.RegisterBooking(ctx, &b, clinicianID, notifyPatient, notifyClinician)
+		err = register.RegisterBookingFromClinician(ctx, &b, clinicianID, notifyPatient)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -142,21 +126,21 @@ func handlePostBooking(register BookingRegister) echo.HandlerFunc {
 	}
 }
 
-func handlePublicPostBooking(register PublicBookingRegister) echo.HandlerFunc {
+func handlePublicPostBooking(register bookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		var b deiz.Booking
 		if err := c.Bind(&b); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		if err := register.RegisterPublicBooking(ctx, &b); err != nil {
+		if err := register.RegisterBookingFromPatient(ctx, &b); err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return nil
 	}
 }
 
-func handleDeleteBooking(remover BookingRemover) echo.HandlerFunc {
+func handleDeleteBooking(deleter bookingSlotDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -168,14 +152,14 @@ func handleDeleteBooking(remover BookingRemover) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		if err := remover.RemoveBooking(ctx, bookingID, notifyPatient, clinicianID); err != nil {
+		if err := deleter.DeleteBookedSlotFromClinician(ctx, bookingID, notifyPatient, clinicianID); err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return nil
 	}
 }
 
-func handleGetFreeBookingSlots(getter FreeBookingSlotsGetter) echo.HandlerFunc {
+func handleGetFreeBookingSlots(getter calendarReader) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID, err := strconv.Atoi(c.QueryParam("clinician"))
@@ -186,7 +170,6 @@ func handleGetFreeBookingSlots(getter FreeBookingSlotsGetter) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		tzName := c.QueryParam("tz")
 		motiveID, err := strconv.Atoi(c.QueryParam("motiveId"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -196,7 +179,7 @@ func handleGetFreeBookingSlots(getter FreeBookingSlotsGetter) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 		from := time.Unix(i, 0).UTC()
-		bookings, err := getter.GetFreeBookingSlots(ctx, from, tzName, motiveID, motiveDuration, clinicianID)
+		bookings, err := getter.GetPublicBookingSlots(ctx, from, motiveID, motiveDuration, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -204,7 +187,7 @@ func handleGetFreeBookingSlots(getter FreeBookingSlotsGetter) echo.HandlerFunc {
 	}
 }
 
-func handleGetBookingSlots(getter BookingSlotsGetter) echo.HandlerFunc {
+func handleGetBookingSlots(getter calendarReader) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -213,7 +196,6 @@ func handleGetBookingSlots(getter BookingSlotsGetter) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		tzName := c.QueryParam("tz")
 		motiveID, err := strconv.Atoi(c.QueryParam("motiveId"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -223,7 +205,7 @@ func handleGetBookingSlots(getter BookingSlotsGetter) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 		from := time.Unix(i, 0).UTC()
-		bookings, err := getter.GetBookingSlots(ctx, from, tzName, motiveID, motiveDuration, clinicianID)
+		bookings, err := getter.GetClinicianBookingSlots(ctx, from, motiveID, motiveDuration, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -231,7 +213,7 @@ func handleGetBookingSlots(getter BookingSlotsGetter) echo.HandlerFunc {
 	}
 }
 
-func handlePostBlockedBookingSlot(blocker BookingSlotBlocker) echo.HandlerFunc {
+func handlePostBlockedBookingSlot(blocker bookingSlotBlocker) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -247,7 +229,7 @@ func handlePostBlockedBookingSlot(blocker BookingSlotBlocker) echo.HandlerFunc {
 	}
 }
 
-func handleDeleteBookingSlotBlocked(unlocker BookingSlotUnlocker) echo.HandlerFunc {
+func handleDeleteBookingSlotBlocked(deleter bookingSlotDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -255,21 +237,21 @@ func handleDeleteBookingSlotBlocked(unlocker BookingSlotUnlocker) echo.HandlerFu
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		if err := unlocker.UnlockBookingSlot(ctx, bookingID, clinicianID); err != nil {
+		if err := deleter.DeleteBlockedSlot(ctx, bookingID, clinicianID); err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return nil
 	}
 }
 
-func handleDeletePublicBooking(remover PublicBookingRemover) echo.HandlerFunc {
+func handleDeletePublicBooking(deleter bookingSlotDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		deleteID := c.Param("id")
 		if len(deleteID) < 6 {
 			return c.JSON(http.StatusBadRequest, deiz.ErrorStructValidation)
 		}
-		err := remover.RemovePublicBooking(ctx, deleteID)
+		err := deleter.DeleteBookedSlotFromPatient(ctx, deleteID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}

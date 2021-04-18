@@ -90,18 +90,6 @@ func (r *repo) DeleteBooking(ctx context.Context, bookingID int, clinicianID int
 	return nil
 }
 
-func (r *repo) DeleteBookingByDeleteID(ctx context.Context, deleteID string) error {
-	const query = `DELETE FROM clinician_booking WHERE delete_id = $1`
-	cmdTag, err := r.conn.Exec(ctx, query, deleteID)
-	if err != nil {
-		return err
-	}
-	if cmdTag.RowsAffected() == 0 {
-		return errNothingDeleted
-	}
-	return nil
-}
-
 func (r *repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
 	const query = `INSERT INTO clinician_booking(address_id, blocked, remote, clinician_person_id, patient_id, booking_motive_id, during, paid, note, confirmed)
 	VALUES(NULLIF($1, 0), $2, $3, $4, NULLIF($5, 0), NULLIF($6, 0), tsrange($7, $8, '()'), $9, NULLIF($10, ''), $11)
@@ -114,7 +102,7 @@ func (r *repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
 	return nil
 }
 
-func (r *repo) DeleteOverlappingBlockedBooking(ctx context.Context, start, end time.Time, clinicianID int) error {
+func (r *repo) DeleteBlockedBookingsInTimeRange(ctx context.Context, start, end time.Time, clinicianID int) error {
 	const query = `DELETE FROM clinician_booking
 	WHERE clinician_person_id = $1 AND $2 < upper(during) AND lower(during) < $3 AND patient_id IS NULL`
 	_, err := r.conn.Exec(ctx, query, clinicianID, start, end)
@@ -122,7 +110,7 @@ func (r *repo) DeleteOverlappingBlockedBooking(ctx context.Context, start, end t
 }
 
 func (r *repo) GetBookingByDeleteID(ctx context.Context, deleteID string) (deiz.Booking, error) {
-	const query = bookingSelect + `WHERE delete_id = $1`
+	const query = bookingSelect + `WHERE b.delete_id = $1`
 	row := r.conn.QueryRow(ctx, query, deleteID)
 	b, err := scanBookingRow(row)
 	if err != nil {
@@ -171,7 +159,7 @@ func (r *repo) GetBookingsInTimeRange(ctx context.Context, from, to time.Time) (
 }
 
 func (r *repo) GetClinicianBookingsInTimeRange(ctx context.Context, from, to time.Time, clinicianID int) ([]deiz.Booking, error) {
-	const query = bookingSelect + `WHERE b.clinician_person_id = $1 AND $2 <= upper(b.during) AND lower(b.during) <= $3`
+	const query = bookingSelect + `WHERE b.clinician_person_id = $1 AND $2 <= upper(b.during) AND lower(b.during) <= $3 ORDER BY lower(b.during) ASC`
 	rows, err := r.conn.Query(ctx, query, clinicianID, from, to)
 	defer rows.Close()
 	if err != nil {

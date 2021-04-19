@@ -32,10 +32,10 @@ func TestConstraintTimeRangeWithinLimit(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			timeRange := constraintTimeRangeWithinLimit(test.lowerLimit, test.upperLimit, [2]time.Time{test.rangeStart, test.rangeEnd})
+			timeRange := constraintTimeRangeWithinLimit(test.lowerLimit, test.upperLimit, timeRange{test.rangeStart, test.rangeEnd})
 
-			assert.Equal(t, test.outLowerRange, timeRange[0], "expected: %s, got: %s", test.outLowerRange, timeRange[0])
-			assert.Equal(t, test.outUpperRange, timeRange[1], "expected: %s, got: %s", test.outLowerRange, timeRange[1])
+			assert.Equal(t, test.outLowerRange, timeRange.start, "expected: %s, got: %s", test.outLowerRange, timeRange.start)
+			assert.Equal(t, test.outUpperRange, timeRange.end, "expected: %s, got: %s", test.outLowerRange, timeRange.end)
 		})
 	}
 }
@@ -80,7 +80,7 @@ func TestConvertOfficeHoursToTimeRange(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			timeRange := u.convertOfficeHoursToTimeRange(test.start, test.end, test.h)
+			timeRange := u.convertOfficeHoursToTimeRange(timeRange{test.start, test.end}, test.h)
 			assert.Equal(t, test.outputTimerange, timeRange, "expected : %s, got : %s", test.outputTimerange, timeRange)
 		})
 	}

@@ -1,8 +1,8 @@
 package pdf
 
 import (
+	"github.com/audrenbdb/deiz/intl"
 	"github.com/jung-kurt/gofpdf"
-	"time"
 )
 
 type orientation string
@@ -16,8 +16,9 @@ const (
 	mm        unitScale   = "mm"
 )
 
-type pdf struct {
-	loc        *time.Location
+type Pdf struct {
+	intl *intl.Parser
+
 	fontFamily string
 	fontFile   string
 	fontDir    string
@@ -25,17 +26,25 @@ type pdf struct {
 	blueTheme rgb
 }
 
-func NewService(fontFamily, fontFile, fontDir string, loc *time.Location) *pdf {
+type ServiceDeps struct {
+	Intl *intl.Parser
+
+	FontFamily string
+	FontFile   string
+	FontDir    string
+}
+
+func NewService(deps ServiceDeps) *Pdf {
 	blueTheme := rgb{
 		red:   0,
 		green: 0,
 		blue:  70,
 	}
-	return &pdf{
-		loc:        loc,
-		fontFamily: fontFamily,
-		fontFile:   fontFile,
-		fontDir:    fontDir,
+	return &Pdf{
+		intl:       deps.Intl,
+		fontFamily: deps.FontFamily,
+		fontFile:   deps.FontFile,
+		fontDir:    deps.FontDir,
 
 		blueTheme: blueTheme,
 	}
@@ -48,7 +57,7 @@ func initPDF(doc *gofpdf.Fpdf, headerFunc func(), footerFunc func()) {
 	doc.AddPage()
 }
 
-func (pdf *pdf) createPDF(o orientation, u unitScale, s pageSize) *gofpdf.Fpdf {
+func (pdf *Pdf) createPDF(o orientation, u unitScale, s pageSize) *gofpdf.Fpdf {
 	doc := gofpdf.New(string(o), string(u), string(s), pdf.fontDir)
 	doc.SetMargins(20, 80, 20)
 	doc.AddUTF8Font(pdf.fontFamily, "", pdf.fontFile)

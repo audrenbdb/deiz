@@ -5,7 +5,7 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-func (r *repo) GetPaymentMethods(ctx context.Context) ([]deiz.PaymentMethod, error) {
+func (r *Repo) GetPaymentMethods(ctx context.Context) ([]deiz.PaymentMethod, error) {
 	const query = `SELECT id, name FROM payment_method`
 	rows, err := r.conn.Query(ctx, query)
 	defer rows.Close()

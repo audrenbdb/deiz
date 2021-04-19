@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (m *mailer) MailBookingInvoice(invoice *deiz.BookingInvoice, invoicePDF *bytes.Buffer, sendTo string) error {
+func (m *Mailer) MailBookingInvoice(invoice *deiz.BookingInvoice, invoicePDF *bytes.Buffer, sendTo string) error {
 	details := getInvoiceEmailDetails(invoice)
 	template, err := m.htmlTemplate("booking-invoice.html", details)
 	if err != nil {
@@ -22,7 +22,7 @@ func (m *mailer) MailBookingInvoice(invoice *deiz.BookingInvoice, invoicePDF *by
 		attachment: invoicePDF}))
 }
 
-func (m *mailer) MailInvoicesSummary(summaryPDF *bytes.Buffer, start, end time.Time, sendTo string) error {
+func (m *Mailer) MailInvoicesSummary(summaryPDF *bytes.Buffer, start, end time.Time, sendTo string) error {
 	details := m.getInvoicesEmailDetails(start, end)
 	template, err := m.htmlTemplate("invoices-summary.html", details)
 	if err != nil {
@@ -70,7 +70,7 @@ type invoiceEmailDetails struct {
 	Amount string
 }
 
-func (m *mailer) getInvoicesEmailDetails(start, end time.Time) invoicesEmailDetail {
+func (m *Mailer) getInvoicesEmailDetails(start, end time.Time) invoicesEmailDetail {
 	return invoicesEmailDetail{
 		Start: m.intl.Fr.FmtyMd(start),
 		End:   m.intl.Fr.FmtyMd(end),

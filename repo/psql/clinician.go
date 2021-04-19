@@ -49,7 +49,7 @@ func insertAdeli(ctx context.Context, db db, a *deiz.Adeli, clinicianID int) err
 }
 
 //Update clinicianPhone
-func (r *repo) UpdateClinicianPhone(ctx context.Context, phone string, clinicianID int) error {
+func (r *Repo) UpdateClinicianPhone(ctx context.Context, phone string, clinicianID int) error {
 	const query = `UPDATE person SET phone = $1 WHERE id = $2`
 	tag, err := r.conn.Exec(ctx, query, phone, clinicianID)
 	if err != nil {
@@ -61,7 +61,7 @@ func (r *repo) UpdateClinicianPhone(ctx context.Context, phone string, clinician
 	return nil
 }
 
-func (r *repo) UpdateClinicianProfession(ctx context.Context, profession string, clinicianID int) error {
+func (r *Repo) UpdateClinicianProfession(ctx context.Context, profession string, clinicianID int) error {
 	const query = `UPDATE person SET profession = $1 WHERE id = $2`
 	tag, err := r.conn.Exec(ctx, query, profession, clinicianID)
 	if err != nil {
@@ -74,7 +74,7 @@ func (r *repo) UpdateClinicianProfession(ctx context.Context, profession string,
 }
 
 //Update clinician email and clinician firebase account email if exists
-func (r *repo) UpdateClinicianEmail(ctx context.Context, newEmail string, clinicianID int) error {
+func (r *Repo) UpdateClinicianEmail(ctx context.Context, newEmail string, clinicianID int) error {
 	p, err := getPersonByID(ctx, r.conn, clinicianID)
 	if err != nil {
 		return err
@@ -106,7 +106,7 @@ func (r *repo) UpdateClinicianEmail(ctx context.Context, newEmail string, clinic
 }
 
 //UpdateClinicianRole assign a new role to the given clinician and updates firebase role if user exists
-func (r *repo) UpdateClinicianRole(ctx context.Context, role int, clinicianID int) error {
+func (r *Repo) UpdateClinicianRole(ctx context.Context, role int, clinicianID int) error {
 	p, err := getPersonByID(ctx, r.conn, clinicianID)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func (r *repo) UpdateClinicianRole(ctx context.Context, role int, clinicianID in
 	}
 	return tx.Commit(ctx)
 }
-func (r *repo) GetClinicianByEmail(ctx context.Context, email string) (deiz.Clinician, error) {
+func (r *Repo) GetClinicianByEmail(ctx context.Context, email string) (deiz.Clinician, error) {
 	const query = `SELECT p.id, p.name, p.surname, p.email, p.phone, COALESCE(p.profession, ''),
 	COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, ''),
 	COALESCE(adeli.id, 0), COALESCE(adeli.identifier, '')
@@ -154,6 +154,6 @@ func (r *repo) GetClinicianByEmail(ctx context.Context, email string) (deiz.Clin
 	return c, nil
 }
 
-func (r *repo) GetClinicianByID(ctx context.Context, clinicianID int) (deiz.Clinician, error) {
+func (r *Repo) GetClinicianByID(ctx context.Context, clinicianID int) (deiz.Clinician, error) {
 	return getClinicianByID(ctx, r.conn, clinicianID)
 }

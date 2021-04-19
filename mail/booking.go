@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func (m *mailer) MailBookingReminder(b *deiz.Booking) error {
+func (m *Mailer) MailBookingReminder(b *deiz.Booking) error {
 	details := m.getBookingEmailDetails(b, b.Clinician.FullName())
 	template, err := m.htmlTemplate("booking-reminder.html", details)
 	if err != nil {
@@ -22,7 +22,7 @@ func (m *mailer) MailBookingReminder(b *deiz.Booking) error {
 	}))
 }
 
-func (m *mailer) MailBookingToPatient(b *deiz.Booking) error {
+func (m *Mailer) MailBookingToPatient(b *deiz.Booking) error {
 	details := m.getBookingEmailDetails(b, b.Clinician.FullName())
 	template, err := m.htmlTemplate("confirmbooking-topatient.html", details)
 	if err != nil {
@@ -36,7 +36,7 @@ func (m *mailer) MailBookingToPatient(b *deiz.Booking) error {
 	}))
 }
 
-func (m *mailer) MailBookingToClinician(b *deiz.Booking) error {
+func (m *Mailer) MailBookingToClinician(b *deiz.Booking) error {
 	details := m.getBookingEmailDetails(b, b.Patient.FullName())
 	template, err := m.htmlTemplate("confirmbooking-toclinician.html", details)
 	if err != nil {
@@ -58,7 +58,7 @@ type gCalendarEvent struct {
 	details  string
 }
 
-func (m *mailer) buildGCalendarLink(event gCalendarEvent) string {
+func (m *Mailer) buildGCalendarLink(event gCalendarEvent) string {
 	startStr := fmt.Sprintf("%d%02d%02dT%02d%02d00", event.start.Year(), event.start.Month(), event.start.Day(), event.start.Hour(), event.start.Minute())
 	endStr := fmt.Sprintf("%d%02d%02dT%02d%02d00", event.end.Year(), event.end.Month(), event.end.Day(), event.end.Hour(), event.end.Minute())
 	baseURL, _ := url.Parse("https://calendar.google.com")
@@ -147,7 +147,7 @@ func (details *bookingEmailDetails) plainBodyToClinician() string {
 	`, details.BookingDate, details.Motive, details.Patient, details.Phone, details.Email, details.GCalendarLink)
 }
 
-func (m *mailer) getBookingEmailDetails(b *deiz.Booking, with string) bookingEmailDetails {
+func (m *Mailer) getBookingEmailDetails(b *deiz.Booking, with string) bookingEmailDetails {
 	return bookingEmailDetails{
 		Clinician:   b.Clinician.FullName(),
 		Patient:     b.Patient.FullName(),

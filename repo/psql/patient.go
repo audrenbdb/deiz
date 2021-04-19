@@ -7,7 +7,7 @@ import (
 )
 
 //IsPatientTiedToClinician checks if a given patient is in clinician patient list
-func (r *repo) IsPatientTiedToClinician(ctx context.Context, p *deiz.Patient, clinicianID int) (bool, error) {
+func (r *Repo) IsPatientTiedToClinician(ctx context.Context, p *deiz.Patient, clinicianID int) (bool, error) {
 	const query = `SELECT EXISTS(SELECT 1 FROM patient WHERE clinician_person_id = $1 AND id = $2)`
 	var tied bool
 	row := r.conn.QueryRow(ctx, query, clinicianID, p.ID)
@@ -17,14 +17,14 @@ func (r *repo) IsPatientTiedToClinician(ctx context.Context, p *deiz.Patient, cl
 	return tied, nil
 }
 
-func (r *repo) CreatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
+func (r *Repo) CreatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
 	const query = `INSERT INTO patient(clinician_person_id, email, name, surname, phone, address_id)
 	VALUES($1, $2, $3, $4, $5, NULLIF($6, 0)) RETURNING id`
 	row := r.conn.QueryRow(ctx, query, clinicianID, p.Email, p.Name, p.Surname, p.Phone, p.Address.ID)
 	return row.Scan(&p.ID)
 }
 
-func (r *repo) GetPatientByEmail(ctx context.Context, email string, clinicianID int) (deiz.Patient, error) {
+func (r *Repo) GetPatientByEmail(ctx context.Context, email string, clinicianID int) (deiz.Patient, error) {
 	const query = `SELECT id, name, surname, phone, email FROM patient WHERE clinician_person_id = $1 AND email = $2`
 	row := r.conn.QueryRow(ctx, query, clinicianID, email)
 	var p deiz.Patient
@@ -35,7 +35,7 @@ func (r *repo) GetPatientByEmail(ctx context.Context, email string, clinicianID 
 	return p, nil
 }
 
-func (r *repo) SearchPatient(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error) {
+func (r *Repo) SearchPatient(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error) {
 	const query = `SELECT p.id, p.email, p.name, p.surname, p.phone, COALESCE(p.note, ''),
 		COALESCE(a.id, 0) address_id, COALESCE(a.line, '') address_line, COALESCE(a.post_code, 0) address_post_code, COALESCE(a.city, '') address_city,
 		similarity(p.name, $1) AS name_sml
@@ -61,7 +61,7 @@ func (r *repo) SearchPatient(ctx context.Context, search string, clinicianID int
 	return patients, nil
 }
 
-func (r *repo) CountPatients(ctx context.Context, clinicianID int) (int, error) {
+func (r *Repo) CountPatients(ctx context.Context, clinicianID int) (int, error) {
 	const query = `SELECT count(*) FROM patient WHERE clinician_person_id = $1`
 	var count int
 	row := r.conn.QueryRow(ctx, query, clinicianID)
@@ -72,7 +72,7 @@ func (r *repo) CountPatients(ctx context.Context, clinicianID int) (int, error) 
 	return count, nil
 }
 
-func (r *repo) UpdatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
+func (r *Repo) UpdatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
 	const query = `UPDATE patient SET name = $1, surname = $2, phone = $3, email = $4, note = NULLIF($5, '') WHERE clinician_person_id = $6 AND id = $7`
 	cmdTag, err := r.conn.Exec(ctx, query, p.Name, p.Surname, p.Phone, p.Email, p.Note, clinicianID, p.ID)
 	if err != nil {
@@ -96,7 +96,7 @@ func updatePatientAddress(ctx context.Context, db db, addressID int, patientID i
 	return nil
 }
 
-func (r *repo) CreatePatientAddress(ctx context.Context, a *deiz.Address, patientID int) error {
+func (r *Repo) CreatePatientAddress(ctx context.Context, a *deiz.Address, patientID int) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
@@ -111,7 +111,7 @@ func (r *repo) CreatePatientAddress(ctx context.Context, a *deiz.Address, patien
 	return tx.Commit(ctx)
 }
 
-func (r *repo) RemovePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
+func (r *Repo) RemovePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
 	const query = `DELETE from patient WHERE clinician_person_id = $1 AND id = $2`
 	cmdTag, err := r.conn.Exec(ctx, query, clinicianID, p.ID)
 	if err != nil {

@@ -72,15 +72,15 @@ func updateAddress(ctx context.Context, db db, a *deiz.Address) error {
 	return nil
 }
 
-func (r *repo) UpdateAddress(ctx context.Context, a *deiz.Address) error {
+func (r *Repo) UpdateAddress(ctx context.Context, a *deiz.Address) error {
 	return updateAddress(ctx, r.conn, a)
 }
 
-func (r *repo) SetClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
+func (r *Repo) SetClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
 	return updatePersonAddress(ctx, r.conn, a, clinicianID)
 }
 
-func (r *repo) CreateClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
+func (r *Repo) CreateClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
@@ -101,7 +101,7 @@ func (r *repo) CreateClinicianHomeAddress(ctx context.Context, a *deiz.Address, 
 	return nil
 }
 
-func (r *repo) IsAddressToClinician(ctx context.Context, a *deiz.Address, clinicianID int) (bool, error) {
+func (r *Repo) IsAddressToClinician(ctx context.Context, a *deiz.Address, clinicianID int) (bool, error) {
 	const query = `SELECT EXISTS(SELECT 1 FROM address a
 			LEFT JOIN person p ON p.address_id = a.id LEFT JOIN office_address o ON o.address_id = a.id 
 			WHERE (p.id = $1 OR o.person_id = $1) AND a.id = $2)`
@@ -113,7 +113,7 @@ func (r *repo) IsAddressToClinician(ctx context.Context, a *deiz.Address, clinic
 	return owns, nil
 }
 
-func (r *repo) CreateClinicianOfficeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
+func (r *Repo) CreateClinicianOfficeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
@@ -134,7 +134,7 @@ func (r *repo) CreateClinicianOfficeAddress(ctx context.Context, a *deiz.Address
 	return nil
 }
 
-func (r *repo) DeleteAddress(ctx context.Context, addressID int) error {
+func (r *Repo) DeleteAddress(ctx context.Context, addressID int) error {
 	const query = `DELETE from address WHERE id = $1`
 	tag, err := r.conn.Exec(ctx, query, addressID)
 	if err != nil {
@@ -146,7 +146,7 @@ func (r *repo) DeleteAddress(ctx context.Context, addressID int) error {
 	return nil
 }
 
-func (r *repo) GetAddressByID(ctx context.Context, addressID int) (deiz.Address, error) {
+func (r *Repo) GetAddressByID(ctx context.Context, addressID int) (deiz.Address, error) {
 	const query = `SELECT a.line, a.post_code, a.city
 	FROM address WHERE id = $1`
 	row := r.conn.QueryRow(ctx, query, addressID)

@@ -39,7 +39,7 @@ func updatePersonStripeKeys(ctx context.Context, db db, k stripeKeys, personID i
 	return nil
 }
 
-func (r *repo) GetClinicianStripeSecretKey(ctx context.Context, clinicianID int) ([]byte, error) {
+func (r *Repo) GetClinicianStripeSecretKey(ctx context.Context, clinicianID int) ([]byte, error) {
 	k, err := getStripeKeysByPersonID(ctx, r.conn, clinicianID)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (r *repo) GetClinicianStripeSecretKey(ctx context.Context, clinicianID int)
 	return k.secret, nil
 }
 
-func (r *repo) UpdateClinicianStripeKeys(ctx context.Context, pk string, sk []byte, clinicianID int) error {
+func (r *Repo) UpdateClinicianStripeKeys(ctx context.Context, pk string, sk []byte, clinicianID int) error {
 	k := stripeKeys{
 		public: pk,
 		secret: sk,

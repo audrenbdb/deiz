@@ -33,7 +33,7 @@ func TestGenerateBookingInvoicePDF(t *testing.T) {
 	assert.NoError(t, err)
 
 	invoiceBytes := buffer.Bytes()
-	err = ioutil.WriteFile("test_single_invoice.pdf", invoiceBytes, 0644)
+	err = ioutil.WriteFile("test_single_invoice.Pdf", invoiceBytes, 0644)
 	assert.NoError(t, err)
 }
 
@@ -60,6 +60,6 @@ func TestGetPeriodInvoicesSummary(t *testing.T) {
 	assert.NoError(t, err)
 
 	invoiceBytes := buffer.Bytes()
-	err = ioutil.WriteFile("test_summary.pdf", invoiceBytes, 0644)
+	err = ioutil.WriteFile("test_summary.Pdf", invoiceBytes, 0644)
 	assert.NoError(t, err)
 }

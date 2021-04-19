@@ -6,7 +6,7 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-func (r *repo) IsClinicianRegistrationComplete(ctx context.Context, email string) (bool, error) {
+func (r *Repo) IsClinicianRegistrationComplete(ctx context.Context, email string) (bool, error) {
 	_, err := r.firebaseAuth.GetUserByEmail(ctx, email)
 	if err != nil {
 		if err.Error() != fmt.Sprintf("cannot find user from email: \"%s\"", email) {
@@ -17,7 +17,7 @@ func (r *repo) IsClinicianRegistrationComplete(ctx context.Context, email string
 	return true, nil
 }
 
-func (r *repo) CompleteClinicianRegistration(ctx context.Context, clinician *deiz.Clinician, password string, clinicianID int) error {
+func (r *Repo) CompleteClinicianRegistration(ctx context.Context, clinician *deiz.Clinician, password string, clinicianID int) error {
 	firebaseUser, err := createFirebaseUser(ctx, r.firebaseAuth, clinician.Email, password)
 	if err != nil {
 		return err
@@ -26,7 +26,7 @@ func (r *repo) CompleteClinicianRegistration(ctx context.Context, clinician *dei
 }
 
 //AddClinicianAccount creates a clinician and its default settings for the application to run
-func (r *repo) CreateClinicianAccount(ctx context.Context, acc *deiz.ClinicianAccount) error {
+func (r *Repo) CreateClinicianAccount(ctx context.Context, acc *deiz.ClinicianAccount) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
@@ -59,7 +59,7 @@ func (r *repo) CreateClinicianAccount(ctx context.Context, acc *deiz.ClinicianAc
 }
 
 //GetClinicianAccount gets all clinician public  required for clinicians / admin client
-func (r *repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
+func (r *Repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
 	var acc deiz.ClinicianAccount
 	var err error
 	acc.Clinician, err = getClinicianByID(ctx, r.conn, clinicianID)
@@ -103,7 +103,7 @@ func (r *repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.C
 }
 
 //GetClinicianAccountPublicData retrieves all public available data about clinician
-func (r *repo) GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error) {
+func (r *Repo) GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error) {
 	var acc deiz.ClinicianAccountPublicData
 	var err error
 	acc.Clinician, err = getClinicianByID(ctx, r.conn, clinicianID)

@@ -18,7 +18,7 @@ func setInvoiceCanceled(ctx context.Context, db db, invoiceID int, clinicianID i
 	return nil
 }
 
-func (r *repo) GetBookingsPendingPayment(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
+func (r *Repo) GetBookingsPendingPayment(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
 	const query = `SELECT b.id, lower(b.during), upper(b.during), b.remote, b.note,
 	COALESCE(m.id, 0), COALESCE(m.name, ''), COALESCE(m.duration, 0), COALESCE(m.price, 0),
 	p.id, p.name, p.surname, p.email, p.phone,
@@ -51,7 +51,7 @@ func (r *repo) GetBookingsPendingPayment(ctx context.Context, clinicianID int) (
 	return bookings, nil
 }
 
-func (r *repo) GetPeriodBookingInvoices(ctx context.Context, start time.Time, end time.Time, clinicianID int) ([]deiz.BookingInvoice, error) {
+func (r *Repo) GetPeriodBookingInvoices(ctx context.Context, start time.Time, end time.Time, clinicianID int) ([]deiz.BookingInvoice, error) {
 	const query = `SELECT
 	i.id, i.created_at, i.identifier, i.sender, i.recipient,
 	i.city_and_date, i.delivery_date,
@@ -95,7 +95,7 @@ func insertBookingInvoice(ctx context.Context, db db, i *deiz.BookingInvoice, cl
 	return err
 }
 
-func (r *repo) CreateBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, clinicianID int) error {
+func (r *Repo) CreateBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, clinicianID int) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
@@ -112,7 +112,7 @@ func (r *repo) CreateBookingInvoice(ctx context.Context, i *deiz.BookingInvoice,
 	return tx.Commit(ctx)
 }
 
-func (r *repo) CancelBookingInvoice(ctx context.Context, originalInvoiceID int, i *deiz.BookingInvoice, clinicianID int) error {
+func (r *Repo) CancelBookingInvoice(ctx context.Context, originalInvoiceID int, i *deiz.BookingInvoice, clinicianID int) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
@@ -129,7 +129,7 @@ func (r *repo) CancelBookingInvoice(ctx context.Context, originalInvoiceID int, 
 	return tx.Commit(ctx)
 }
 
-func (r *repo) CountClinicianInvoices(ctx context.Context, clinicianID int) (int, error) {
+func (r *Repo) CountClinicianInvoices(ctx context.Context, clinicianID int) (int, error) {
 	const query = `SELECT COUNT(*) FROM booking_invoice WHERE person_id = $1`
 	var count int
 	row := r.conn.QueryRow(ctx, query, clinicianID)

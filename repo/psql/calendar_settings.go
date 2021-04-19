@@ -30,7 +30,7 @@ func insertCalendarSettings(ctx context.Context, db db, s *deiz.CalendarSettings
 	return row.Scan(&s.ID)
 }
 
-func (r *repo) UpdateCalendarSettings(ctx context.Context, s *deiz.CalendarSettings, clinicianID int) error {
+func (r *Repo) UpdateCalendarSettings(ctx context.Context, s *deiz.CalendarSettings, clinicianID int) error {
 	const query = `UPDATE calendar_settings SET default_booking_motive_id = NULLIF($1, 0), remote_allowed = $2 WHERE person_id = $3`
 	tag, err := r.conn.Exec(ctx, query, s.DefaultMotive.ID, s.RemoteAllowed, clinicianID)
 	if err != nil {
@@ -42,11 +42,11 @@ func (r *repo) UpdateCalendarSettings(ctx context.Context, s *deiz.CalendarSetti
 	return nil
 }
 
-func (r *repo) GetClinicianCalendarSettings(ctx context.Context, clinicianID int) (deiz.CalendarSettings, error) {
+func (r *Repo) GetClinicianCalendarSettings(ctx context.Context, clinicianID int) (deiz.CalendarSettings, error) {
 	return getCalendarSettingsByPersonID(ctx, r.conn, clinicianID)
 }
 
-func (r *repo) GetClinicianTimezone(ctx context.Context, clinicianID int) (deiz.Timezone, error) {
+func (r *Repo) GetClinicianTimezone(ctx context.Context, clinicianID int) (deiz.Timezone, error) {
 	const query = `SELECT t.id, t.name FROM timezone t INNER JOIN calendar_settings c ON t.id = c.timezone_id WHERE c.person_id = $1`
 	row := r.conn.QueryRow(ctx, query, clinicianID)
 	var tz deiz.Timezone

@@ -13,7 +13,7 @@ type (
 	}
 )
 
-type readCalendar struct {
+type ReadCalendar struct {
 	loc               *time.Location
 	officeHoursGetter officeHoursGetter
 
@@ -26,45 +26,45 @@ type CalendarReaderDeps struct {
 	BookingsGetter    clinicianBookingsInTimeRangeGetter
 }
 
-func NewCalendarReaderUsecase(deps CalendarReaderDeps) *readCalendar {
-	return &readCalendar{
+func NewCalendarReaderUsecase(deps CalendarReaderDeps) *ReadCalendar {
+	return &ReadCalendar{
 		loc:               deps.Loc,
 		officeHoursGetter: deps.OfficeHoursGetter,
 		bookingsGetter:    deps.BookingsGetter,
 	}
 }
 
-func (r *readCalendar) GetClinicianBookingSlots(ctx context.Context, start time.Time, motiveID, motiveDuration, clinicianID int) ([]deiz.Booking, error) {
-	existingBookings, freeBookingSlots, err := r.getBookingSlots(ctx, start, motiveID, motiveDuration, clinicianID)
+func (r *ReadCalendar) GetCalendarSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error) {
+	existingBookings, freeBookingSlots, err := r.getBookingSlots(ctx, start, motive, clinicianID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get booking slots: %s", err)
 	}
 	return append(existingBookings, freeBookingSlots...), nil
 }
 
-func (r *readCalendar) GetPublicBookingSlots(ctx context.Context, start time.Time, motiveID, motiveDuration, clinicianID int) ([]deiz.Booking, error) {
-	_, freeBookingSlots, err := r.getBookingSlots(ctx, start, motiveID, motiveDuration, clinicianID)
+func (r *ReadCalendar) GetCalendarFreeSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error) {
+	_, freeBookingSlots, err := r.getBookingSlots(ctx, start, motive, clinicianID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get booking slots: %s", err)
 	}
 	return freeBookingSlots, nil
 }
 
-func (r *readCalendar) getBookingSlots(ctx context.Context, start time.Time, motiveID, motiveDuration, clinicianID int) ([]deiz.Booking, []deiz.Booking, error) {
+func (r *ReadCalendar) getBookingSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, []deiz.Booking, error) {
 	end := start.AddDate(0, 0, 7)
 	existingBookings, err := r.bookingsGetter.GetClinicianBookingsInTimeRange(ctx, start, end, clinicianID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to get bookings in given timerange: %s", err)
 	}
-	freeBookingSlots, err := r.getFreeBookingSlots(ctx, start, end, existingBookings, deiz.BookingMotive{ID: motiveID, Duration: motiveDuration}, clinicianID)
+	freeBookingSlots, err := r.getFreeBookingSlots(ctx, timeRange{start, end}, existingBookings, motive, clinicianID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to get free booking slots: %s", err)
 	}
 	return existingBookings, freeBookingSlots, nil
 }
 
-func (r *readCalendar) getFreeBookingSlots(ctx context.Context, start, end time.Time, existingBookings []deiz.Booking, defaultMotive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error) {
-	availabilities, err := r.getOfficeHoursAvailabilities(ctx, start, end, clinicianID)
+func (r *ReadCalendar) getFreeBookingSlots(ctx context.Context, timeRange timeRange, existingBookings []deiz.Booking, defaultMotive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error) {
+	availabilities, err := r.getOfficeHoursAvailabilities(ctx, timeRange, clinicianID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get clinician availabilities: %s", err)
 	}
@@ -72,38 +72,37 @@ func (r *readCalendar) getFreeBookingSlots(ctx context.Context, start, end time.
 	for _, availability := range availabilities {
 		bookingSlots = append(bookingSlots,
 			splitAvailabilityInFreeBookingSlots(availability, existingBookings,
-				defaultMotive, clinicianID, []deiz.Booking{})...)
+				defaultMotive, []deiz.Booking{})...)
 	}
 	return bookingSlots, nil
 }
 
-func splitAvailabilityInFreeBookingSlots(availability officeHoursAvailability, existingBookings []deiz.Booking, defaultMotive deiz.BookingMotive, clinicianID int, freeBookings []deiz.Booking) []deiz.Booking {
+func splitAvailabilityInFreeBookingSlots(availability officeHoursAvailability, existingBookings []deiz.Booking, motive deiz.BookingMotive, freeBookings []deiz.Booking) []deiz.Booking {
 	nextFreeBooking := deiz.Booking{
-		Start:     availability.availableTimeRange[0],
-		End:       availability.availableTimeRange[0].Add(time.Minute * time.Duration(defaultMotive.Duration)),
-		Address:   availability.hours.Address,
-		Remote:    availability.hours.Address.IsNotSet(),
-		Motive:    defaultMotive,
-		Clinician: deiz.Clinician{ID: clinicianID},
+		Start:   availability.availableTimeRange.start,
+		End:     availability.availableTimeRange.start.Add(time.Minute * time.Duration(motive.Duration)),
+		Address: availability.hours.Address,
+		Remote:  availability.hours.Address.IsNotSet(),
+		Motive:  motive,
 	}
+	//make sure next free booking time range do not overlaps with existing bookings
 	for _, booking := range existingBookings {
-		if timeRangesOverlaps([2]time.Time{nextFreeBooking.Start, nextFreeBooking.End}, [2]time.Time{booking.Start, booking.End}) {
+		if bookingsOverlap(&nextFreeBooking, &booking) {
 			nextFreeBooking.Start = booking.End
-			nextFreeBooking.End = nextFreeBooking.Start.Add(time.Minute * time.Duration(defaultMotive.Duration))
+			nextFreeBooking.End = nextFreeBooking.Start.Add(time.Minute * time.Duration(motive.Duration))
 		}
 	}
-	if nextFreeBooking.End.After(availability.availableTimeRange[1]) {
+	if nextFreeBooking.End.After(availability.availableTimeRange.end) {
 		return freeBookings
 	}
-	availability.availableTimeRange[0] = nextFreeBooking.End
+	availability.availableTimeRange.start = nextFreeBooking.End
 	return splitAvailabilityInFreeBookingSlots(
 		availability,
 		existingBookings,
-		defaultMotive,
-		clinicianID, append(freeBookings, nextFreeBooking))
+		motive, append(freeBookings, nextFreeBooking))
 }
 
-func (r *readCalendar) getOfficeHoursAvailabilities(ctx context.Context, start, end time.Time, clinicianID int) ([]officeHoursAvailability, error) {
+func (r *ReadCalendar) getOfficeHoursAvailabilities(ctx context.Context, timeRange timeRange, clinicianID int) ([]officeHoursAvailability, error) {
 	officeHours, err := r.officeHoursGetter.GetClinicianOfficeHours(ctx, clinicianID)
 	if err != nil {
 		return nil, err
@@ -113,43 +112,45 @@ func (r *readCalendar) getOfficeHoursAvailabilities(ctx context.Context, start, 
 		officeHoursRanges = append(officeHoursRanges,
 			officeHoursAvailability{
 				hours:              h,
-				availableTimeRange: r.convertOfficeHoursToTimeRange(start, end, h),
+				availableTimeRange: r.convertOfficeHoursToTimeRange(timeRange, h),
 			})
 	}
 	return officeHoursRanges, nil
 }
 
-func (r *readCalendar) convertOfficeHoursToTimeRange(start, end time.Time, h deiz.OfficeHours) [2]time.Time {
-	y, m, d := start.In(r.loc).Date()
-	if h.IsWithinDate(start.In(r.loc)) {
+func (r *ReadCalendar) convertOfficeHoursToTimeRange(limit timeRange, h deiz.OfficeHours) timeRange {
+	y, m, d := limit.start.In(r.loc).Date()
+	if h.IsWithinDate(limit.start.In(r.loc)) {
 		officeOpensAt := time.Date(y, m, d, h.StartMn/60, h.StartMn%60, 0, 0, r.loc).UTC()
 		officeClosesAt := time.Date(y, m, d, h.EndMn/60, h.EndMn%60, 0, 0, r.loc).UTC()
-		return constraintTimeRangeWithinLimit(start, end, [2]time.Time{officeOpensAt, officeClosesAt})
+		return constraintTimeRangeWithinLimit(limit, timeRange{start: officeOpensAt, end: officeClosesAt})
 	}
-	if start.After(end) {
-		return [2]time.Time{time.Time{}, time.Time{}}
+	if limit.start.After(limit.end) {
+		return timeRange{}
 	}
-	return r.convertOfficeHoursToTimeRange(time.Date(y, m, d+1, 0, 0, 0, 0, time.UTC), end, h)
+	return r.convertOfficeHoursToTimeRange(timeRange{
+		start: time.Date(y, m, d+1, 0, 0, 0, 0, time.UTC),
+		end:   limit.end}, h)
 }
 
-func constraintTimeRangeWithinLimit(lowerLimit, upperLimit time.Time, timeRange [2]time.Time) [2]time.Time {
-	if !timeRangesOverlaps([2]time.Time{lowerLimit, upperLimit}, timeRange) {
-		return [2]time.Time{time.Time{}, time.Time{}}
+func constraintTimeRangeWithinLimit(limit timeRange, tr timeRange) timeRange {
+	if !timeRangesOverlaps(timeRange{limit.start, limit.end}, tr) {
+		return timeRange{}
 	}
-	if timeRange[0].Before(lowerLimit) {
-		timeRange[0] = lowerLimit
+	if tr.start.Before(limit.start) {
+		tr.start = limit.start
 	}
-	if timeRange[1].After(upperLimit) {
-		timeRange[1] = upperLimit
+	if tr.end.After(limit.end) {
+		tr.end = limit.end
 	}
-	return timeRange
+	return tr
 }
 
-func timeRangesOverlaps(timeRangeA, timeRangeB [2]time.Time) bool {
-	return timeRangeA[0].Before(timeRangeB[1]) && timeRangeB[0].Before(timeRangeA[1])
+func timeRangesOverlaps(trA, trB timeRange) bool {
+	return trA.start.Before(trB.end) && trB.start.Before(trA.end)
 }
 
 type officeHoursAvailability struct {
 	hours              deiz.OfficeHours
-	availableTimeRange [2]time.Time
+	availableTimeRange timeRange
 }

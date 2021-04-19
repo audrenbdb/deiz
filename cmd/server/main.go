@@ -45,62 +45,37 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unable to start database pool : %v\n", err)
 		os.Exit(1)
 	}
-
-	paris, err := time.LoadLocation("Europe/Paris")
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to load location: %v\n", err)
-		os.Exit(1)
-	}
-
 	repo := psql.NewRepo(psqlDB, fbClient)
-	pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "../../assets", "fonts"), paris)
-	//mail := mail.NewService(parseEmailTemplates(path), mail.NewPostFixClient(), paris)
+	paris, _ := time.LoadLocation("Europe/Paris")
+	intl := intl.NewIntlParser("Fr", paris)
+	pdf := pdf.NewService(pdf.ServiceDeps{
+		FontFamily: "oxygen",
+		FontFile:   "oxygen.ttf",
+		FontDir:    filepath.Join(path, "../../assets", "fonts"),
+		Intl:       intl,
+	})
 	mail := mail.NewService(mail.Deps{
 		Templates: parseEmailTemplates(path),
-		Client:    mail.NewGmailClient(),
-		Intl:      intl.NewIntlParser("Fr", paris),
+		Client:    mail.NewPostFixClient(), //mail.NewGmailClient(),
+		Intl:      intl,
 	})
 	stripe := stripe.NewService()
 	crypt := crypt.NewService()
-
-	bookingRegister := booking.NewRegisterUsecase(booking.RegisterDeps{
-		Loc:            paris,
-		PatientGetter:  repo,
-		PatientCreater: repo,
-		BookingCreater: repo,
-		BookingUpdater: repo,
-		BookingGetter:  repo,
-		BookingMailer:  mail,
-	})
-	bookingPreRegister := booking.NewPreRegisterUsecase(booking.PreRegisterDeps{
-		BookingGetter:  repo,
-		BookingCreater: repo,
-	})
-	calendarReader := booking.NewCalendarReaderUsecase(booking.CalendarReaderDeps{
-		Loc:               paris,
-		OfficeHoursGetter: repo,
-		BookingsGetter:    repo,
-	})
-	bookingSlotDeleter := booking.NewSlotDeleterUsecase(booking.SlotDeleterDeps{
-		BookingGetter:  repo,
-		BookingDeleter: repo,
-		CancelMailer:   mail,
-	})
-	bookingSlotBlocker := booking.NewSlotBlockerUsecase(booking.SlotBlockerDeps{
-		Blocker: repo,
-	})
+	bookingUsecases := newBookingUsecases(paris, repo, mail)
 	err = http.StartEchoServer(
-		//http.FirebaseCredentialsGetter(fbClient),
-		http.FakeCredentialsGetter,
+		http.FirebaseCredentialsGetter(fbClient),
+		//http.FakeCredentialsGetter,
 		account.NewUsecase(repo, crypt),
 		patient.NewUsecase(repo),
 		billing.NewUsecase(repo, mail, pdf, crypt, stripe),
 		contact.NewUsecase(repo, mail),
-		bookingRegister,
-		bookingPreRegister,
-		bookingSlotBlocker,
-		bookingSlotDeleter,
-		calendarReader,
+		http.BookingUsecases{
+			Register:       bookingUsecases.register,
+			PreRegister:    bookingUsecases.preRegister,
+			CalendarReader: bookingUsecases.calendarReader,
+			SlotDeleter:    bookingUsecases.slotDeleter,
+			SlotBlocker:    bookingUsecases.slotBlocker,
+		},
 	)
 
 	if err != nil {
@@ -128,4 +103,48 @@ func getPath() (string, error) {
 		return "", err
 	}
 	return filepath.Dir(ex), nil
+}
+
+type bookingUsecases struct {
+	register       *booking.Register
+	preRegister    *booking.PreRegister
+	calendarReader *booking.ReadCalendar
+	slotDeleter    *booking.SlotDeleter
+	slotBlocker    *booking.SlotBlocker
+}
+
+func newBookingUsecases(paris *time.Location, repo *psql.Repo, mailer *mail.Mailer) bookingUsecases {
+	bookingRegister := booking.NewRegisterUsecase(booking.RegisterDeps{
+		Loc:            paris,
+		PatientGetter:  repo,
+		PatientCreater: repo,
+		BookingCreater: repo,
+		BookingUpdater: repo,
+		BookingGetter:  repo,
+		BookingMailer:  mailer,
+	})
+	bookingPreRegister := booking.NewPreRegisterUsecase(booking.PreRegisterDeps{
+		BookingGetter:  repo,
+		BookingCreater: repo,
+	})
+	calendarReader := booking.NewCalendarReaderUsecase(booking.CalendarReaderDeps{
+		Loc:               paris,
+		OfficeHoursGetter: repo,
+		BookingsGetter:    repo,
+	})
+	bookingSlotDeleter := booking.NewSlotDeleterUsecase(booking.SlotDeleterDeps{
+		BookingGetter:  repo,
+		BookingDeleter: repo,
+		CancelMailer:   mailer,
+	})
+	bookingSlotBlocker := booking.NewSlotBlockerUsecase(booking.SlotBlockerDeps{
+		Blocker: repo,
+	})
+	return bookingUsecases{
+		register:       bookingRegister,
+		preRegister:    bookingPreRegister,
+		calendarReader: calendarReader,
+		slotDeleter:    bookingSlotDeleter,
+		slotBlocker:    bookingSlotBlocker,
+	}
 }

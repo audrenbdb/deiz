@@ -41,7 +41,7 @@ func scanBookingRow(row pgx.Row) (deiz.Booking, error) {
 	return b, err
 }
 
-func (r *repo) GetUnpaidBookings(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
+func (r *Repo) GetUnpaidBookings(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
 	const query = `SELECT b.id, b.delete_id, lower(b.during), upper(b.during),
 	COALESCE(m.id, 0), COALESCE(m.name, ''), COALESCE(m.duration, 0), COALESCE(m.price, 0), COALESCE(m.public, false),
 	c.id, c.surname, c.name, c.phone,
@@ -78,7 +78,7 @@ func (r *repo) GetUnpaidBookings(ctx context.Context, clinicianID int) ([]deiz.B
 	return bookings, nil
 }
 
-func (r *repo) DeleteBooking(ctx context.Context, bookingID int, clinicianID int) error {
+func (r *Repo) DeleteBooking(ctx context.Context, bookingID int, clinicianID int) error {
 	const query = `DELETE FROM clinician_booking WHERE clinician_person_id = $1 AND id = $2`
 	cmdTag, err := r.conn.Exec(ctx, query, clinicianID, bookingID)
 	if err != nil {
@@ -90,7 +90,7 @@ func (r *repo) DeleteBooking(ctx context.Context, bookingID int, clinicianID int
 	return nil
 }
 
-func (r *repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
+func (r *Repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
 	const query = `INSERT INTO clinician_booking(address_id, blocked, remote, clinician_person_id, patient_id, booking_motive_id, during, paid, note, confirmed)
 	VALUES(NULLIF($1, 0), $2, $3, $4, NULLIF($5, 0), NULLIF($6, 0), tsrange($7, $8, '()'), $9, NULLIF($10, ''), $11)
 	RETURNING id, delete_id`
@@ -102,14 +102,14 @@ func (r *repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
 	return nil
 }
 
-func (r *repo) DeleteBlockedBookingsInTimeRange(ctx context.Context, start, end time.Time, clinicianID int) error {
+func (r *Repo) DeleteBlockedBookingsInTimeRange(ctx context.Context, start, end time.Time, clinicianID int) error {
 	const query = `DELETE FROM clinician_booking
 	WHERE clinician_person_id = $1 AND $2 < upper(during) AND lower(during) < $3 AND patient_id IS NULL`
 	_, err := r.conn.Exec(ctx, query, clinicianID, start, end)
 	return err
 }
 
-func (r *repo) GetBookingByDeleteID(ctx context.Context, deleteID string) (deiz.Booking, error) {
+func (r *Repo) GetBookingByDeleteID(ctx context.Context, deleteID string) (deiz.Booking, error) {
 	const query = bookingSelect + `WHERE b.delete_id = $1`
 	row := r.conn.QueryRow(ctx, query, deleteID)
 	b, err := scanBookingRow(row)
@@ -119,7 +119,7 @@ func (r *repo) GetBookingByDeleteID(ctx context.Context, deleteID string) (deiz.
 	return b, nil
 }
 
-func (r *repo) GetBookingByID(ctx context.Context, bookingID int) (deiz.Booking, error) {
+func (r *Repo) GetBookingByID(ctx context.Context, bookingID int) (deiz.Booking, error) {
 	const query = bookingSelect + `WHERE b.id = $1`
 	row := r.conn.QueryRow(ctx, query, bookingID)
 	b, err := scanBookingRow(row)
@@ -129,7 +129,7 @@ func (r *repo) GetBookingByID(ctx context.Context, bookingID int) (deiz.Booking,
 	return b, nil
 }
 
-func (r *repo) GetBookingsInTimeRange(ctx context.Context, from, to time.Time) ([]deiz.Booking, error) {
+func (r *Repo) GetBookingsInTimeRange(ctx context.Context, from, to time.Time) ([]deiz.Booking, error) {
 	const query = `SELECT b.id, b.delete_id, lower(b.during), upper(b.during),
 	COALESCE(m.id, 0), COALESCE(m.name, ''), COALESCE(m.duration, 0), COALESCE(m.price, 0), COALESCE(m.public, false),
 	c.id, c.surname, c.name, c.phone,
@@ -158,7 +158,7 @@ func (r *repo) GetBookingsInTimeRange(ctx context.Context, from, to time.Time) (
 	return bookingSlots, nil
 }
 
-func (r *repo) GetClinicianBookingsInTimeRange(ctx context.Context, from, to time.Time, clinicianID int) ([]deiz.Booking, error) {
+func (r *Repo) GetClinicianBookingsInTimeRange(ctx context.Context, from, to time.Time, clinicianID int) ([]deiz.Booking, error) {
 	const query = bookingSelect + `WHERE b.clinician_person_id = $1 AND $2 <= upper(b.during) AND lower(b.during) <= $3 ORDER BY lower(b.during) ASC`
 	rows, err := r.conn.Query(ctx, query, clinicianID, from, to)
 	defer rows.Close()
@@ -176,7 +176,7 @@ func (r *repo) GetClinicianBookingsInTimeRange(ctx context.Context, from, to tim
 	return bookingSlots, nil
 }
 
-func (r *repo) GetPatientBookings(ctx context.Context, clinicianID int, patientID int) ([]deiz.Booking, error) {
+func (r *Repo) GetPatientBookings(ctx context.Context, clinicianID int, patientID int) ([]deiz.Booking, error) {
 	const query = bookingSelect + `WHERE b.clinician_person_id = $1 AND b.patient_id = $2`
 	rows, err := r.conn.Query(ctx, query, clinicianID, patientID)
 	defer rows.Close()
@@ -194,7 +194,7 @@ func (r *repo) GetPatientBookings(ctx context.Context, clinicianID int, patientI
 	return bookings, nil
 }
 
-func (r *repo) UpdateBooking(ctx context.Context, b *deiz.Booking) error {
+func (r *Repo) UpdateBooking(ctx context.Context, b *deiz.Booking) error {
 	const query = `UPDATE clinician_booking 
 	SET address_id = NULLIF($1, 0), blocked = $2, remote = $3, clinician_person_id = $4, patient_id = $5,
 	booking_motive_id = NULLIF($6, 0), during = tsrange($7, $8, '()'), paid = $9, note = NULLIF($10, ''), confirmed = $11 WHERE id = $12`
@@ -209,7 +209,7 @@ func (r *repo) UpdateBooking(ctx context.Context, b *deiz.Booking) error {
 	return nil
 }
 
-func (r *repo) IsBookingSlotAvailable(ctx context.Context, from, to time.Time, clinicianID int) (bool, error) {
+func (r *Repo) IsBookingSlotAvailable(ctx context.Context, from, to time.Time, clinicianID int) (bool, error) {
 	const query = `SELECT EXISTS(
 		SELECT 1 FROM clinician_booking b 
 		WHERE clinician_person_id = $1 

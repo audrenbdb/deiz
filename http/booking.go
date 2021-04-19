@@ -28,8 +28,8 @@ type (
 		BlockBookingSlot(ctx context.Context, slot *deiz.Booking, clinicianID int) error
 	}
 	calendarReader interface {
-		GetPublicBookingSlots(ctx context.Context, start time.Time, defaultMotiveID, defaultMotiveDuration, clinicianID int) ([]deiz.Booking, error)
-		GetClinicianBookingSlots(ctx context.Context, start time.Time, defaultMotiveID, defaultMotiveDuration, clinicianID int) ([]deiz.Booking, error)
+		GetCalendarFreeSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error)
+		GetCalendarSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error)
 	}
 
 	PatientBookingsGetter interface {
@@ -72,7 +72,6 @@ func handlePatchPreRegisteredBooking(register bookingRegister) echo.HandlerFunc 
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
-
 		notifyPatient, err := strconv.ParseBool(c.QueryParam("notifyPatient"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -166,20 +165,15 @@ func handleGetFreeBookingSlots(getter calendarReader) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		i, err := strconv.ParseInt(c.QueryParam("from"), 10, 64)
+		from, err := getTimeFromParam(c)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		motiveID, err := strconv.Atoi(c.QueryParam("motiveId"))
+		motive, err := getMotiveFromParam(c)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		motiveDuration, err := strconv.Atoi(c.QueryParam("motiveDuration"))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, err.Error())
-		}
-		from := time.Unix(i, 0).UTC()
-		bookings, err := getter.GetPublicBookingSlots(ctx, from, motiveID, motiveDuration, clinicianID)
+		bookings, err := getter.GetCalendarFreeSlots(ctx, from, motive, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -191,26 +185,40 @@ func handleGetBookingSlots(getter calendarReader) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
-
-		i, err := strconv.ParseInt(c.QueryParam("from"), 10, 64)
+		from, err := getTimeFromParam(c)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		motiveID, err := strconv.Atoi(c.QueryParam("motiveId"))
+		motive, err := getMotiveFromParam(c)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		motiveDuration, err := strconv.Atoi(c.QueryParam("motiveDuration"))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, err.Error())
-		}
-		from := time.Unix(i, 0).UTC()
-		bookings, err := getter.GetClinicianBookingSlots(ctx, from, motiveID, motiveDuration, clinicianID)
+		bookings, err := getter.GetCalendarSlots(ctx, from, motive, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return c.JSON(http.StatusOK, bookings)
 	}
+}
+
+func getTimeFromParam(c echo.Context) (time.Time, error) {
+	i, err := strconv.ParseInt(c.QueryParam("from"), 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(i, 0).UTC(), nil
+}
+
+func getMotiveFromParam(c echo.Context) (deiz.BookingMotive, error) {
+	motiveID, err := strconv.Atoi(c.QueryParam("motiveId"))
+	if err != nil {
+		return deiz.BookingMotive{}, err
+	}
+	motiveDuration, err := strconv.Atoi(c.QueryParam("motiveDuration"))
+	if err != nil {
+		return deiz.BookingMotive{}, err
+	}
+	return deiz.BookingMotive{ID: motiveID, Duration: motiveDuration}, nil
 }
 
 func handlePostBlockedBookingSlot(blocker bookingSlotBlocker) echo.HandlerFunc {

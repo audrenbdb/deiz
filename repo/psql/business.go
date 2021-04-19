@@ -31,7 +31,7 @@ func getBusinessByPersonID(ctx context.Context, db db, personID int) (deiz.Busin
 	return b, nil
 }
 
-func (r *repo) UpdateClinicianBusiness(ctx context.Context, b *deiz.Business, clinicianID int) error {
+func (r *Repo) UpdateClinicianBusiness(ctx context.Context, b *deiz.Business, clinicianID int) error {
 	const query = `UPDATE business SET name = $1, identifier = $2, tax_exemption_id = NULLIF($3, 0) WHERE person_id = $4`
 	cmdTag, err := r.conn.Exec(ctx, query, b.Name, b.Identifier, b.TaxExemption.ID, clinicianID)
 	if err != nil {

@@ -12,7 +12,7 @@ import (
 
 const noReplyAddress = "noreply@deiz.fr"
 
-type mailer struct {
+type Mailer struct {
 	tmpl   *template.Template
 	intl   *intl.Parser
 	client client
@@ -40,8 +40,8 @@ type Deps struct {
 	Intl      *intl.Parser
 }
 
-func NewService(deps Deps) *mailer {
-	return &mailer{
+func NewService(deps Deps) *Mailer {
+	return &Mailer{
 		tmpl:   deps.Templates,
 		client: deps.Client,
 		intl:   deps.Intl,
@@ -123,7 +123,7 @@ func createMail(mail mail) *gomail.Message {
 	return m
 }
 
-func (m *mailer) htmlTemplate(name string, details interface{}) (*bytes.Buffer, error) {
+func (m *Mailer) htmlTemplate(name string, details interface{}) (*bytes.Buffer, error) {
 	var emailBuffer bytes.Buffer
 	return &emailBuffer, m.tmpl.ExecuteTemplate(&emailBuffer, name, details)
 }

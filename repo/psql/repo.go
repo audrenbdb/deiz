@@ -23,14 +23,14 @@ type auth interface {
 	UpdateUser(ctx context.Context, uid string, user *firebaseAuth.UserToUpdate) (*firebaseAuth.UserRecord, error)
 }
 
-//ALl functions used by this repo has to be implemented
-type repo struct {
+//ALl functions used by this Repo has to be implemented
+type Repo struct {
 	conn         *pgxpool.Pool
 	firebaseAuth *firebaseAuth.Client
 }
 
-func NewRepo(conn *pgxpool.Pool, authClient *firebaseAuth.Client) *repo {
-	return &repo{
+func NewRepo(conn *pgxpool.Pool, authClient *firebaseAuth.Client) *Repo {
+	return &Repo{
 		conn:         conn,
 		firebaseAuth: authClient,
 	}

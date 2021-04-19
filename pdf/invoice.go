@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (pdf *pdf) CreateBookingInvoicePDF(i *deiz.BookingInvoice) (*bytes.Buffer, error) {
+func (pdf *Pdf) CreateBookingInvoicePDF(i *deiz.BookingInvoice) (*bytes.Buffer, error) {
 	doc := pdf.createPDF(portrait, mm, A4)
 	p := message.NewPrinter(language.French)
 	initPDF(doc,
@@ -90,20 +90,15 @@ func (pdf *pdf) CreateBookingInvoicePDF(i *deiz.BookingInvoice) (*bytes.Buffer, 
 	return &buffer, nil
 }
 
-func (pdf *pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, end time.Time) (*bytes.Buffer, error) {
+func (pdf *Pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, end time.Time) (*bytes.Buffer, error) {
 	doc := pdf.createPDF(landscape, mm, A4)
 	p := message.NewPrinter(language.French)
+	totalBeforeTax, totalAfterTax := getInvoicesAmountSummary(invoices)
 
-	var totalBeforeTax int64
-	var totalAfterTax int64
-	for _, i := range invoices {
-		totalBeforeTax = totalBeforeTax + i.PriceBeforeTax
-		totalAfterTax = totalAfterTax + i.PriceAfterTax
-	}
 	initPDF(doc,
 		headerAsPeriodEarningsSummary(doc,
-			start.In(pdf.loc).Format("02/01/2006"),
-			end.In(pdf.loc).Format("02/01/2006"), totalBeforeTax, totalAfterTax, pdf.blueTheme, 20),
+			pdf.intl.Fr.FmtyMd(start),
+			pdf.intl.Fr.FmtyMd(end), totalBeforeTax, totalAfterTax, pdf.blueTheme, 20),
 		footerFunc(doc, pdf.blueTheme),
 	)
 
@@ -112,9 +107,9 @@ func (pdf *pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, 
 		doc.SetTextColor(pdf.blueTheme.red, pdf.blueTheme.green, pdf.blueTheme.blue)
 		doc.SetDrawColor(pdf.blueTheme.red, pdf.blueTheme.green, pdf.blueTheme.blue)
 		doc.Cell(10, 0, "")
-		doc.CellFormat(33, 4, i.CreatedAt.In(pdf.loc).Format("02/01/2006"), "", 0, "C", false, 0, "")
+		doc.CellFormat(33, 4, pdf.intl.Fr.FmtyMd(i.CreatedAt), "", 0, "C", false, 0, "")
 		doc.Cell(1, 0, "")
-		doc.CellFormat(33, 4, i.DeliveryDate.In(pdf.loc).Format("02/01/2006"), "", 0, "C", false, 0, "")
+		doc.CellFormat(33, 4, pdf.intl.Fr.FmtyMd(i.DeliveryDate), "", 0, "C", false, 0, "")
 		doc.Cell(1, 0, "")
 		doc.CellFormat(33, 4, i.Identifier, "", 0, "C", false, 0, "")
 		doc.Cell(1, 0, "")
@@ -131,4 +126,14 @@ func (pdf *pdf) CreateInvoicesSummaryPDF(invoices []deiz.BookingInvoice, start, 
 		return &bytes.Buffer{}, err
 	}
 	return &buffer, nil
+}
+
+func getInvoicesAmountSummary(invoices []deiz.BookingInvoice) (int64, int64) {
+	var totalBeforeTax int64
+	var totalAfterTax int64
+	for _, i := range invoices {
+		totalBeforeTax = totalBeforeTax + i.PriceBeforeTax
+		totalAfterTax = totalAfterTax + i.PriceAfterTax
+	}
+	return totalBeforeTax, totalAfterTax
 }

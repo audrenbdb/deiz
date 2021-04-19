@@ -5,7 +5,7 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-func (m *mailer) MailCancelBookingToPatient(b *deiz.Booking) error {
+func (m *Mailer) MailCancelBookingToPatient(b *deiz.Booking) error {
 	details := m.getCancelEmailDetails(b)
 	template, err := m.htmlTemplate("cancelappointment-topatient.html", details)
 	if err != nil {
@@ -18,7 +18,7 @@ func (m *mailer) MailCancelBookingToPatient(b *deiz.Booking) error {
 	}))
 }
 
-func (m *mailer) MailCancelBookingToClinician(b *deiz.Booking) error {
+func (m *Mailer) MailCancelBookingToClinician(b *deiz.Booking) error {
 	details := m.getCancelEmailDetails(b)
 	template, err := m.htmlTemplate("cancelappointment-toclinician.html", details)
 	if err != nil {
@@ -34,7 +34,7 @@ func (m *mailer) MailCancelBookingToClinician(b *deiz.Booking) error {
 	}))
 }
 
-func (m *mailer) getCancelEmailDetails(b *deiz.Booking) cancelEmailDetails {
+func (m *Mailer) getCancelEmailDetails(b *deiz.Booking) cancelEmailDetails {
 	return cancelEmailDetails{
 		BookingDate: m.intl.Fr.FmtMMMEEEEd(b.Start),
 		Name:        b.Patient.Surname + " " + b.Patient.Name,

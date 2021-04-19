@@ -5,7 +5,7 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-type preRegister struct {
+type PreRegister struct {
 	bookingGetter  clinicianBookingsInTimeRangeGetter
 	bookingCreater bookingCreater
 }
@@ -15,14 +15,14 @@ type PreRegisterDeps struct {
 	BookingCreater bookingCreater
 }
 
-func NewPreRegisterUsecase(deps PreRegisterDeps) *preRegister {
-	return &preRegister{
+func NewPreRegisterUsecase(deps PreRegisterDeps) *PreRegister {
+	return &PreRegister{
 		bookingGetter:  deps.BookingGetter,
 		bookingCreater: deps.BookingCreater,
 	}
 }
 
-func (r *preRegister) PreRegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int) error {
+func (r *PreRegister) PreRegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int) error {
 	if r.preRegistrationInvalid(b, clinicianID) {
 		return deiz.ErrorStructValidation
 	}
@@ -36,6 +36,6 @@ func (r *preRegister) PreRegisterBooking(ctx context.Context, b *deiz.Booking, c
 	return r.bookingCreater.CreateBooking(ctx, b)
 }
 
-func (r *preRegister) preRegistrationInvalid(b *deiz.Booking, clinicianID int) bool {
+func (r *PreRegister) preRegistrationInvalid(b *deiz.Booking, clinicianID int) bool {
 	return b.Confirmed || b.End.Before(b.Start) || b.Blocked || b.Clinician.ID != clinicianID
 }

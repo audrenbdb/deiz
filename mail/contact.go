@@ -6,7 +6,7 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-func (m *mailer) MailContactForm(ctx context.Context, to string, form deiz.ContactForm) error {
+func (m *Mailer) MailContactForm(ctx context.Context, to string, form deiz.ContactForm) error {
 	details := contactEmailDetails{
 		Name:    form.Name,
 		Email:   form.Email,
@@ -25,7 +25,7 @@ func (m *mailer) MailContactForm(ctx context.Context, to string, form deiz.Conta
 	}))
 }
 
-func (m *mailer) MailGetInTouchForm(ctx context.Context, form deiz.GetInTouchForm) error {
+func (m *Mailer) MailGetInTouchForm(ctx context.Context, form deiz.GetInTouchForm) error {
 	template, err := m.htmlTemplate("get-in-touch.html", form)
 	if err != nil {
 		return err

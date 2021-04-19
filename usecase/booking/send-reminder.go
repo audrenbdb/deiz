@@ -16,7 +16,7 @@ type (
 	}
 )
 
-type reminder struct {
+type Reminder struct {
 	getter bookingsInTimeRangeGetter
 	mailer reminderMailer
 }
@@ -26,14 +26,14 @@ type ReminderDeps struct {
 	Mailer reminderMailer
 }
 
-func NewReminderUsecase(deps ReminderDeps) *reminder {
-	return &reminder{
+func NewReminderUsecase(deps ReminderDeps) *Reminder {
+	return &Reminder{
 		getter: deps.Getter,
 		mailer: deps.Mailer,
 	}
 }
 
-func (r *reminder) SendReminders(ctx context.Context) error {
+func (r *Reminder) SendReminders(ctx context.Context) error {
 	rangeToFetch := getReminderRange()
 	bookings, err := r.getter.GetBookingsInTimeRange(ctx, rangeToFetch.start, rangeToFetch.end)
 	if err != nil {

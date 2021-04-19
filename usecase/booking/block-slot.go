@@ -5,7 +5,7 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-type slotBlocker struct {
+type SlotBlocker struct {
 	blocker bookingCreater
 }
 
@@ -13,13 +13,13 @@ type SlotBlockerDeps struct {
 	Blocker bookingCreater
 }
 
-func NewSlotBlockerUsecase(deps SlotBlockerDeps) *slotBlocker {
-	return &slotBlocker{
+func NewSlotBlockerUsecase(deps SlotBlockerDeps) *SlotBlocker {
+	return &SlotBlocker{
 		blocker: deps.Blocker,
 	}
 }
 
-func (b *slotBlocker) BlockBookingSlot(ctx context.Context, slot *deiz.Booking, clinicianID int) error {
+func (b *SlotBlocker) BlockBookingSlot(ctx context.Context, slot *deiz.Booking, clinicianID int) error {
 	if slot.Clinician.ID != clinicianID {
 		return deiz.ErrorUnauthorized
 	}

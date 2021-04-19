@@ -20,11 +20,17 @@ type readCalendar struct {
 	bookingsGetter clinicianBookingsInTimeRangeGetter
 }
 
-func NewCalendarReaderUsecase(loc *time.Location, officeHoursGetter officeHoursGetter, bookingsGetter clinicianBookingsInTimeRangeGetter) *readCalendar {
+type CalendarReaderDeps struct {
+	Loc               *time.Location
+	OfficeHoursGetter officeHoursGetter
+	BookingsGetter    clinicianBookingsInTimeRangeGetter
+}
+
+func NewCalendarReaderUsecase(deps CalendarReaderDeps) *readCalendar {
 	return &readCalendar{
-		loc:               loc,
-		officeHoursGetter: officeHoursGetter,
-		bookingsGetter:    bookingsGetter,
+		loc:               deps.Loc,
+		officeHoursGetter: deps.OfficeHoursGetter,
+		bookingsGetter:    deps.BookingsGetter,
 	}
 }
 

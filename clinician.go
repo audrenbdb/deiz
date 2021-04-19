@@ -15,3 +15,7 @@ type Adeli struct {
 	ID         int    `json:"id"`
 	Identifier string `json:"identifier"`
 }
+
+func (c *Clinician) FullName() string {
+	return c.Surname + " " + c.Name
+}

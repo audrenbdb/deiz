@@ -13,6 +13,10 @@ type Patient struct {
 	Address Address `json:"address"`
 }
 
+func (p *Patient) FullName() string {
+	return p.Surname + " " + p.Name
+}
+
 func (p *Patient) IsSet() bool {
 	return p.ID != 0
 }

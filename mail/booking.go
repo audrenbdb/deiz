@@ -1,161 +1,116 @@
 package mail
 
 import (
-	"bytes"
-	"context"
 	"fmt"
 	"github.com/audrenbdb/deiz"
-	"github.com/audrenbdb/deiz/intl"
+	"net/url"
+	"time"
 )
 
-func (m *mailer) MailCancelBookingToPatient(ctx context.Context, b *deiz.Booking) error {
-	var emailBuffer bytes.Buffer
-	emailData := struct {
-		BookingDateStr string
-	}{
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
-	}
-	err := m.tmpl.ExecuteTemplate(&emailBuffer, "cancelappointment-topatient.html", emailData)
+func (m *mailer) MailBookingReminder(b *deiz.Booking) error {
+	details := m.getBookingEmailDetails(b, b.Clinician.FullName())
+	template, err := m.htmlTemplate("booking-reminder.html", details)
 	if err != nil {
 		return err
 	}
-	plainBody := fmt.Sprintf(`Annulation\n\n
-	La consultation du %s a été supprimée\n
-	Pour toute question, veuillez contacter le clinicien concerné.\n
-	\n
-	Deiz\n
-	Application de gestion pour thérapeutes\n
-	https://deiz.fr`, emailData.BookingDateStr)
-	return m.sender.Send(ctx, createMail(b.Patient.Email,
-		noReplyAddress,
-		fmt.Sprintf("RDV du %s annulé", emailData.BookingDateStr),
-		&emailBuffer, plainBody,
-		nil,
-	))
+	plainBody := details.plainBodyToPatient()
+	return m.client.Send(createMail(mail{
+		to:       b.Patient.Email,
+		from:     noReplyAddress,
+		subject:  "Rappel de rdv : " + details.BookingDate,
+		template: template, plainBody: plainBody,
+	}))
 }
 
-func (m *mailer) MailCancelBookingToClinician(ctx context.Context, b *deiz.Booking) error {
-	var emailBuffer bytes.Buffer
-	emailData := struct {
-		BookingDateStr string
-		Name           string
-		Phone          string
-		Email          string
-		Motive         string
-	}{
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
-		Name:           b.Patient.Surname + " " + b.Patient.Name,
-		Phone:          b.Patient.Phone,
-		Email:          b.Patient.Email,
-		Motive:         b.Motive.Name,
-	}
-	err := m.tmpl.ExecuteTemplate(&emailBuffer, "cancelappointment-toclinician.html", emailData)
+func (m *mailer) MailBookingToPatient(b *deiz.Booking) error {
+	details := m.getBookingEmailDetails(b, b.Clinician.FullName())
+	template, err := m.htmlTemplate("confirmbooking-topatient.html", details)
 	if err != nil {
 		return err
 	}
-	plainBody := fmt.Sprintf(`Annulation\n\n
-	RDV prévu %s annulé\n
-	Motif %s\n
-	Patient :\n
-	%s\n
-	%s\n
-	%s\n
-	Pour toute question, veuillez contacter le clinicien concerné.\n
-	\n
-	Deiz\n
-	Application de gestion pour thérapeutes\n
-	https://deiz.fr`, emailData.BookingDateStr, emailData.Motive, emailData.Name, emailData.Phone, emailData.Email)
-	return m.sender.Send(ctx, createMail(b.Patient.Email,
-		noReplyAddress,
-		fmt.Sprintf("RDV du %s avec %s annulé", emailData.BookingDateStr, emailData.Name),
-		&emailBuffer, plainBody,
-		nil,
-	))
+	plainBody := details.plainBodyToPatient()
+	return m.client.Send(createMail(mail{to: b.Patient.Email,
+		from:     noReplyAddress,
+		subject:  "RDV confirmé " + details.BookingDate,
+		template: template, plainBody: plainBody,
+	}))
 }
 
-func (m *mailer) MailBookingReminder(ctx context.Context, b *deiz.Booking, gCalendarLink, gMapsLink, cancelURL string) error {
-	var emailBuffer bytes.Buffer
-	emailData := struct {
-		Name           string
-		Phone          string
-		BookingDateStr string
-		GCalendarLink  string
-		GMapsLink      string
-		CancelLink     string
-		AddressLine    string
-		AddressCity    string
-		Remote         bool
-	}{
-		Name:           b.Clinician.Surname + " " + b.Clinician.Name,
-		Phone:          b.Clinician.Phone,
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
-		GCalendarLink:  gCalendarLink,
-		GMapsLink:      gMapsLink,
-		CancelLink:     cancelURL,
-		AddressLine:    b.Address.Line,
-		AddressCity:    fmt.Sprintf("%d %s", b.Address.PostCode, b.Address.City),
-		Remote:         b.Remote,
-	}
-
-	err := m.tmpl.ExecuteTemplate(&emailBuffer, "booking-reminder.html", emailData)
+func (m *mailer) MailBookingToClinician(b *deiz.Booking) error {
+	details := m.getBookingEmailDetails(b, b.Patient.FullName())
+	template, err := m.htmlTemplate("confirmbooking-toclinician.html", details)
 	if err != nil {
 		return err
 	}
-	plainBody := fmt.Sprintf(`Deiz\n
-	Rappel de RDV\n
-	Avec %s\n
-	%s\n
-	%s\n
-	\n
-	Ajouter à Google Calendar : %s\n
-	Annuler : %s\n
-	\n
-	%s\n
-	%s\n
-	Itinéraire : %s\n
-	\n
-	Deiz\n
-	Agenda pour thérapeutes\n
-	https://deiz.fr
-	`, emailData.Name, emailData.Phone, emailData.BookingDateStr, emailData.GCalendarLink,
-		emailData.CancelLink, emailData.AddressLine, emailData.AddressCity, emailData.GMapsLink)
-	return m.sender.Send(ctx, createMail(b.Patient.Email,
-		noReplyAddress,
-		"Rappel de rdv : "+emailData.BookingDateStr,
-		&emailBuffer, plainBody,
-		nil,
-	))
+	plainBody := details.plainBodyToClinician()
+	return m.client.Send(createMail(mail{to: b.Clinician.Email,
+		from:     noReplyAddress,
+		subject:  fmt.Sprintf("RDV confirmé avec %s %s", details.Patient, details.BookingDate),
+		template: template, plainBody: plainBody,
+	}))
 }
 
-func (m *mailer) MailBookingToPatient(ctx context.Context, b *deiz.Booking, gCalendarLink, gMapsLink, cancelURL string) error {
-	var emailBuffer bytes.Buffer
-	emailData := struct {
-		Name           string
-		Phone          string
-		BookingDateStr string
-		GCalendarLink  string
-		GMapsLink      string
-		CancelLink     string
-		AddressLine    string
-		AddressCity    string
-		Remote         bool
-	}{
-		Name:           b.Clinician.Surname + " " + b.Clinician.Name,
-		Phone:          b.Clinician.Phone,
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
-		GCalendarLink:  gCalendarLink,
-		GMapsLink:      gMapsLink,
-		CancelLink:     cancelURL,
-		AddressLine:    b.Address.Line,
-		AddressCity:    fmt.Sprintf("%d %s", b.Address.PostCode, b.Address.City),
-		Remote:         b.Remote,
-	}
+type gCalendarEvent struct {
+	start    time.Time
+	end      time.Time
+	title    string
+	location string
+	details  string
+}
 
-	err := m.tmpl.ExecuteTemplate(&emailBuffer, "confirmbooking-topatient.html", emailData)
-	if err != nil {
-		return err
-	}
-	plainBody := fmt.Sprintf(`Deiz\n
+func (m *mailer) buildGCalendarLink(event gCalendarEvent) string {
+	startStr := fmt.Sprintf("%d%02d%02dT%02d%02d00", event.start.Year(), event.start.Month(), event.start.Day(), event.start.Hour(), event.start.Minute())
+	endStr := fmt.Sprintf("%d%02d%02dT%02d%02d00", event.end.Year(), event.end.Month(), event.end.Day(), event.end.Hour(), event.end.Minute())
+	baseURL, _ := url.Parse("https://calendar.google.com")
+	baseURL.Path += "calendar/event"
+	params := url.Values{}
+	params.Add("action", "TEMPLATE")
+	params.Add("dates", fmt.Sprintf("%s/%s", startStr, endStr))
+	params.Add("text", event.title)
+	params.Add("details", event.details)
+	params.Add("location", event.location)
+
+	baseURL.RawQuery = params.Encode()
+	return baseURL.String()
+}
+
+func buildGMapsLink(address string) string {
+	baseURL, _ := url.Parse("https://www.google.com")
+	baseURL.Path += "maps/search/"
+	params := url.Values{}
+	params.Add("api", "1")
+	params.Add("query", address)
+
+	baseURL.RawQuery = params.Encode()
+	return baseURL.String()
+}
+
+func buildCancelURL(deleteID string) *url.URL {
+	cancelURL, _ := url.Parse("https://deiz.fr")
+	cancelURL.Path += "bookings/delete"
+	params := url.Values{}
+	params.Add("id", deleteID)
+	cancelURL.RawQuery = params.Encode()
+	return cancelURL
+}
+
+type bookingEmailDetails struct {
+	Clinician     string
+	Patient       string
+	Phone         string
+	BookingDate   string
+	GCalendarLink string
+	GMapsLink     string
+	CancelLink    string
+	AddressLine   string
+	AddressCity   string
+	Remote        bool
+	Motive        string
+	Email         string
+}
+
+func (details *bookingEmailDetails) plainBodyToPatient() string {
+	return fmt.Sprintf(`Deiz\n
 	RDV confirmé\n
 	Avec %s\n
 	%s\n
@@ -171,40 +126,12 @@ func (m *mailer) MailBookingToPatient(ctx context.Context, b *deiz.Booking, gCal
 	Deiz\n
 	Agenda pour thérapeutes\n
 	https://deiz.fr
-	`, emailData.Name, emailData.Phone, emailData.BookingDateStr, emailData.GCalendarLink,
-		emailData.CancelLink, emailData.AddressLine, emailData.AddressCity, emailData.GMapsLink)
-	return m.sender.Send(ctx, createMail(b.Patient.Email,
-		noReplyAddress,
-		"RDV confirmé "+emailData.BookingDateStr,
-		&emailBuffer, plainBody,
-		nil,
-	))
+	`, details.Clinician, details.Phone, details.BookingDate, details.GCalendarLink,
+		details.CancelLink, details.AddressLine, details.AddressCity, details.GMapsLink)
 }
 
-func (m *mailer) MailBookingToClinician(ctx context.Context, b *deiz.Booking, gCalendarLink string) error {
-	var emailBuffer bytes.Buffer
-	emailData := struct {
-		Name           string
-		Phone          string
-		BookingDateStr string
-		Motive         string
-		Email          string
-		GCalendarLink  string
-		Remote         bool
-	}{
-		Name:           b.Patient.Surname + " " + b.Patient.Name,
-		Phone:          b.Patient.Phone,
-		BookingDateStr: intl.ToFrench(b.Start.In(m.loc).Format("le Monday 02 Jan à 15h04")),
-		Motive:         b.Motive.Name,
-		Email:          b.Patient.Email,
-		GCalendarLink:  gCalendarLink,
-		Remote:         b.Remote,
-	}
-	err := m.tmpl.ExecuteTemplate(&emailBuffer, "confirmbooking-toclinician.html", emailData)
-	if err != nil {
-		return err
-	}
-	plainBody := fmt.Sprintf(`Deiz\n
+func (details *bookingEmailDetails) plainBodyToClinician() string {
+	return fmt.Sprintf(`Deiz\n
 	RDV confirmé\n
 	%s\n
 	%s\n
@@ -217,11 +144,25 @@ func (m *mailer) MailBookingToClinician(ctx context.Context, b *deiz.Booking, gC
 	Deiz\n
 	Agenda pour thérapeutes\n
 	https://deiz.fr
-	`, emailData.BookingDateStr, emailData.Motive, emailData.Name, emailData.Phone, emailData.Email, emailData.GCalendarLink)
-	return m.sender.Send(ctx, createMail(b.Clinician.Email,
-		noReplyAddress,
-		fmt.Sprintf("RDV confirmé avec %s %s", emailData.Name, emailData.BookingDateStr),
-		&emailBuffer, plainBody,
-		nil,
-	))
+	`, details.BookingDate, details.Motive, details.Patient, details.Phone, details.Email, details.GCalendarLink)
+}
+
+func (m *mailer) getBookingEmailDetails(b *deiz.Booking, with string) bookingEmailDetails {
+	return bookingEmailDetails{
+		Clinician:   b.Clinician.FullName(),
+		Patient:     b.Patient.FullName(),
+		Phone:       b.Clinician.Phone,
+		BookingDate: m.intl.Fr.FmtMMMEEEEd(b.Start),
+		GCalendarLink: m.buildGCalendarLink(gCalendarEvent{
+			start:    b.Start,
+			end:      b.End,
+			title:    fmt.Sprintf("Consultation avec %s", with),
+			location: b.Address.ToString(),
+		}),
+		GMapsLink:   buildGMapsLink(b.Address.ToString()),
+		CancelLink:  buildCancelURL(b.DeleteID).String(),
+		AddressLine: b.Address.Line,
+		AddressCity: fmt.Sprintf("%d %s", b.Address.PostCode, b.Address.City),
+		Remote:      b.Remote,
+	}
 }

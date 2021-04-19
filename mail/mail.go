@@ -2,21 +2,20 @@ package mail
 
 import (
 	"bytes"
-	"context"
+	"github.com/audrenbdb/deiz/intl"
 	"gopkg.in/gomail.v2"
 	"io"
 	"os"
 	"os/exec"
 	"text/template"
-	"time"
 )
 
 const noReplyAddress = "noreply@deiz.fr"
 
 type mailer struct {
 	tmpl   *template.Template
-	loc    *time.Location
-	sender sender
+	intl   *intl.Parser
+	client client
 }
 
 type PostFix struct {
@@ -31,15 +30,21 @@ type Gmail struct {
 	ReplyTo  string
 }
 
-type sender interface {
-	Send(ctx context.Context, m *gomail.Message) error
+type client interface {
+	Send(m *gomail.Message) error
 }
 
-func NewService(tmpl *template.Template, sender sender, loc *time.Location) *mailer {
+type Deps struct {
+	Templates *template.Template
+	Client    client
+	Intl      *intl.Parser
+}
+
+func NewService(deps Deps) *mailer {
 	return &mailer{
-		tmpl:   tmpl,
-		sender: sender,
-		loc:    loc,
+		tmpl:   deps.Templates,
+		client: deps.Client,
+		intl:   deps.Intl,
 	}
 }
 
@@ -59,8 +64,8 @@ func NewGmailClient() *Gmail {
 	}
 }
 
-func (mail *PostFix) Send(ctx context.Context, m *gomail.Message) error {
-	cmd := exec.Command(mail.BinPath, "-t")
+func (mailer *PostFix) Send(m *gomail.Message) error {
+	cmd := exec.Command(mailer.BinPath, "-t")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -86,25 +91,39 @@ func (mail *PostFix) Send(ctx context.Context, m *gomail.Message) error {
 	return err
 }
 
-func (mail *Gmail) Send(ctx context.Context, m *gomail.Message) error {
-	dialer := gomail.NewDialer(mail.Server, mail.Port, mail.Address, mail.Password)
+func (mailer *Gmail) Send(m *gomail.Message) error {
+	dialer := gomail.NewDialer(mailer.Server, mailer.Port, mailer.Address, mailer.Password)
 	return dialer.DialAndSend(m)
 }
 
-func createMail(to string, from string, subject string, tmpl *bytes.Buffer, plainBody string, attachment *bytes.Buffer) *gomail.Message {
-	body := tmpl.String()
+type mail struct {
+	to         string
+	from       string
+	subject    string
+	template   *bytes.Buffer
+	plainBody  string
+	attachment *bytes.Buffer
+}
+
+func createMail(mail mail) *gomail.Message {
+	body := mail.template.String()
 	m := gomail.NewMessage()
 	m.SetAddressHeader("From", noReplyAddress, "Deiz")
-	m.SetHeader("Reply-To", from)
-	m.SetHeader("To", to)
-	m.SetHeader("Subject", subject)
-	m.SetBody("text/plain", plainBody)
+	m.SetHeader("Reply-To", mail.from)
+	m.SetHeader("To", mail.to)
+	m.SetHeader("Subject", mail.subject)
+	m.SetBody("text/plain", mail.plainBody)
 	m.AddAlternative("text/html", body)
-	if attachment != nil {
+	if mail.attachment != nil {
 		m.Attach("doc.pdf", gomail.SetCopyFunc(func(w io.Writer) error {
-			_, err := io.Copy(w, attachment)
+			_, err := io.Copy(w, mail.attachment)
 			return err
 		}))
 	}
 	return m
+}
+
+func (m *mailer) htmlTemplate(name string, details interface{}) (*bytes.Buffer, error) {
+	var emailBuffer bytes.Buffer
+	return &emailBuffer, m.tmpl.ExecuteTemplate(&emailBuffer, name, details)
 }

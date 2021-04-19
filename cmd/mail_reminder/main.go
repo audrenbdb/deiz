@@ -3,8 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/audrenbdb/deiz/gcalendar"
-	"github.com/audrenbdb/deiz/gmaps"
+	"github.com/audrenbdb/deiz/intl"
 	"github.com/audrenbdb/deiz/mail"
 	"github.com/audrenbdb/deiz/repo/psql"
 	"github.com/audrenbdb/deiz/usecase/booking"
@@ -36,13 +35,17 @@ func main() {
 	}
 
 	repo := psql.NewRepo(psqlDB, nil)
-	gCal := gcalendar.NewService()
-	gMaps := gmaps.NewService()
-	mail := mail.NewService(parseEmailTemplates(path), mail.NewPostFixClient(), paris)
+	mail := mail.NewService(mail.Deps{
+		Templates: parseEmailTemplates(path),
+		Client:    mail.NewPostFixClient(),
+		Intl:      intl.NewIntlParser("Fr", paris),
+	})
 	//mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient(), paris)
-	bookingUsecase := booking.NewUsecase(repo, mail, gMaps, gCal, paris)
-	bookingUsecase.SendReminders(ctx)
-
+	reminder := booking.NewReminderUsecase(booking.ReminderDeps{
+		Getter: repo,
+		Mailer: mail,
+	})
+	reminder.SendReminders(ctx)
 }
 
 func getPath() (string, error) {

@@ -1,5 +1,7 @@
 package deiz
 
+import "strings"
+
 type ContactForm struct {
 	ClinicianID int    `json:"clinicianId"`
 	Name        string `json:"name"`
@@ -13,6 +15,10 @@ type GetInTouchForm struct {
 	Phone string `json:"phone"`
 	Job   string `json:"job"`
 	City  string `json:"city"`
+}
+
+func (f *ContactForm) HtmlMessage() string {
+	return strings.Replace(f.Message, "\n", "<br>", -1)
 }
 
 func (f *ContactForm) Valid() bool {

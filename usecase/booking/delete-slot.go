@@ -14,8 +14,8 @@ type (
 		DeleteBooking(ctx context.Context, bookingID, clinicianID int) error
 	}
 	cancelMailer interface {
-		MailCancelBookingToClinician(ctx context.Context, b *deiz.Booking) error
-		MailCancelBookingToPatient(ctx context.Context, b *deiz.Booking) error
+		MailCancelBookingToClinician(b *deiz.Booking) error
+		MailCancelBookingToPatient(b *deiz.Booking) error
 	}
 )
 
@@ -25,15 +25,17 @@ type slotDeleter struct {
 	cancelMailer   cancelMailer
 }
 
-func NewSlotDeleterUsecase(
-	bookingGetter bookingGetter,
-	bookingDeleter bookingDeleter,
-	cancelMailer cancelMailer,
-) *slotDeleter {
+type SlotDeleterDeps struct {
+	BookingGetter  bookingGetter
+	BookingDeleter bookingDeleter
+	CancelMailer   cancelMailer
+}
+
+func NewSlotDeleterUsecase(deps SlotDeleterDeps) *slotDeleter {
 	return &slotDeleter{
-		bookingGetter:  bookingGetter,
-		bookingDeleter: bookingDeleter,
-		cancelMailer:   cancelMailer,
+		bookingGetter:  deps.BookingGetter,
+		bookingDeleter: deps.BookingDeleter,
+		cancelMailer:   deps.CancelMailer,
 	}
 }
 
@@ -53,7 +55,7 @@ func (d *slotDeleter) DeleteBookedSlotFromPatient(ctx context.Context, deleteID 
 	if err := d.bookingDeleter.DeleteBooking(ctx, booking.ID, booking.Clinician.ID); err != nil {
 		return err
 	}
-	return d.cancelMailer.MailCancelBookingToClinician(ctx, &booking)
+	return d.cancelMailer.MailCancelBookingToClinician(&booking)
 }
 
 func (d *slotDeleter) DeleteBookedSlotFromClinician(ctx context.Context, bookingID int, notifyPatient bool, clinicianID int) error {
@@ -65,7 +67,7 @@ func (d *slotDeleter) DeleteBookedSlotFromClinician(ctx context.Context, booking
 		return err
 	}
 	if notifyPatient {
-		return d.cancelMailer.MailCancelBookingToPatient(ctx, &booking)
+		return d.cancelMailer.MailCancelBookingToPatient(&booking)
 	}
 	return nil
 }

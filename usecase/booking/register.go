@@ -10,9 +10,6 @@ type (
 	bookingUpdater interface {
 		UpdateBooking(ctx context.Context, b *deiz.Booking) error
 	}
-	gMapsLinkBuilder interface {
-		BuildGMapsLink(addressStr string) string
-	}
 	patientGetter interface {
 		GetPatientByEmail(ctx context.Context, email string, clinicianID int) (deiz.Patient, error)
 	}
@@ -31,32 +28,28 @@ type register struct {
 	bookingUpdater bookingUpdater
 	bookingGetter  clinicianBookingsInTimeRangeGetter
 
-	bookingMailer        bookingMailer
-	gCalendarLinkBuilder gCalendarLinkBuilder
-	gMapsLinkBuilder     gMapsLinkBuilder
+	bookingMailer bookingMailer
 }
 
-func NewRegisterUsecase(
-	loc *time.Location,
-	patientGetter patientGetter,
-	patientCreater patientCreater,
-	bookingCreater bookingCreater,
-	bookingUpdater bookingUpdater,
-	bookingGetter clinicianBookingsInTimeRangeGetter,
-	bookingMailer bookingMailer,
-	gCalendarLinkBuilder gCalendarLinkBuilder,
-	gMapsLinkBuilder gMapsLinkBuilder,
-) *register {
+type RegisterDeps struct {
+	Loc            *time.Location
+	PatientGetter  patientGetter
+	PatientCreater patientCreater
+	BookingCreater bookingCreater
+	BookingUpdater bookingUpdater
+	BookingGetter  clinicianBookingsInTimeRangeGetter
+	BookingMailer  bookingMailer
+}
+
+func NewRegisterUsecase(deps RegisterDeps) *register {
 	return &register{
-		loc:                  loc,
-		patientGetter:        patientGetter,
-		patientCreater:       patientCreater,
-		bookingCreater:       bookingCreater,
-		bookingUpdater:       bookingUpdater,
-		bookingGetter:        bookingGetter,
-		bookingMailer:        bookingMailer,
-		gCalendarLinkBuilder: gCalendarLinkBuilder,
-		gMapsLinkBuilder:     gMapsLinkBuilder,
+		loc:            deps.Loc,
+		patientGetter:  deps.PatientGetter,
+		patientCreater: deps.PatientCreater,
+		bookingCreater: deps.BookingCreater,
+		bookingUpdater: deps.BookingUpdater,
+		bookingGetter:  deps.BookingGetter,
+		bookingMailer:  deps.BookingMailer,
 	}
 }
 
@@ -70,7 +63,7 @@ func (r *register) RegisterBookingFromPatient(ctx context.Context, b *deiz.Booki
 	if err := r.bookingCreater.CreateBooking(ctx, b); err != nil {
 		return err
 	}
-	return r.notifyRegistration(ctx, b, true, true)
+	return r.notifyRegistration(b, true, true)
 }
 
 func (r *register) RegisterBookingFromClinician(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient bool) error {
@@ -87,7 +80,7 @@ func (r *register) RegisterBookingFromClinician(ctx context.Context, b *deiz.Boo
 	if err := r.bookingCreater.CreateBooking(ctx, b); err != nil {
 		return err
 	}
-	return r.notifyRegistration(ctx, b, notifyPatient, false)
+	return r.notifyRegistration(b, notifyPatient, false)
 }
 
 func (r *register) RegisterPreRegisteredBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient bool) error {
@@ -104,7 +97,7 @@ func (r *register) RegisterPreRegisteredBooking(ctx context.Context, b *deiz.Boo
 	if err := r.bookingUpdater.UpdateBooking(ctx, b); err != nil {
 		return err
 	}
-	return r.notifyRegistration(ctx, b, notifyPatient, false)
+	return r.notifyRegistration(b, notifyPatient, false)
 
 }
 
@@ -125,14 +118,14 @@ func (r *register) setBookingPatient(ctx context.Context, b *deiz.Booking) error
 	return nil
 }
 
-func (r *register) notifyRegistration(ctx context.Context, b *deiz.Booking, notifyPatient, notifyClinician bool) error {
+func (r *register) notifyRegistration(b *deiz.Booking, notifyPatient, notifyClinician bool) error {
 	if notifyClinician {
-		if err := mailBookingToClinician(ctx, b, r.loc, r.bookingMailer, r.gCalendarLinkBuilder); err != nil {
+		if err := r.bookingMailer.MailBookingToClinician(b); err != nil {
 			return err
 		}
 	}
 	if notifyPatient {
-		if err := mailBookingToPatient(ctx, b, r.loc, r.bookingMailer, r.gCalendarLinkBuilder, r.gMapsLinkBuilder); err != nil {
+		if err := r.bookingMailer.MailBookingToPatient(b); err != nil {
 			return err
 		}
 	}

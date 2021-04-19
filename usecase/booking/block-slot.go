@@ -9,9 +9,13 @@ type slotBlocker struct {
 	blocker bookingCreater
 }
 
-func NewSlotBlockerUsecase(blocker bookingCreater) *slotBlocker {
+type SlotBlockerDeps struct {
+	Blocker bookingCreater
+}
+
+func NewSlotBlockerUsecase(deps SlotBlockerDeps) *slotBlocker {
 	return &slotBlocker{
-		blocker: blocker,
+		blocker: deps.Blocker,
 	}
 }
 

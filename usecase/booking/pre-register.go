@@ -10,11 +10,15 @@ type preRegister struct {
 	bookingCreater bookingCreater
 }
 
-func NewPreRegisterUsecase(getter clinicianBookingsInTimeRangeGetter,
-	creater bookingCreater) *preRegister {
+type PreRegisterDeps struct {
+	BookingGetter  clinicianBookingsInTimeRangeGetter
+	BookingCreater bookingCreater
+}
+
+func NewPreRegisterUsecase(deps PreRegisterDeps) *preRegister {
 	return &preRegister{
-		bookingGetter:  getter,
-		bookingCreater: creater,
+		bookingGetter:  deps.BookingGetter,
+		bookingCreater: deps.BookingCreater,
 	}
 }
 

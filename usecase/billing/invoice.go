@@ -22,10 +22,10 @@ type (
 		IsPatientTiedToClinician(ctx context.Context, p *deiz.Patient, clinicianID int) (bool, error)
 	}
 	BookingInvoiceMailer interface {
-		MailBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, invoicePDF *bytes.Buffer, sendTo string) error
+		MailBookingInvoice(i *deiz.BookingInvoice, invoicePDF *bytes.Buffer, sendTo string) error
 	}
 	InvoicesSummaryMailer interface {
-		MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buffer, start, end time.Time, sendTo string) error
+		MailInvoicesSummary(summaryPDF *bytes.Buffer, start, end time.Time, sendTo string) error
 	}
 	InvoicesCounter interface {
 		CountClinicianInvoices(ctx context.Context, clinicianID int) (int, error)
@@ -93,7 +93,7 @@ func (u *Usecase) MailBookingInvoice(ctx context.Context, i *deiz.BookingInvoice
 	if err != nil {
 		return err
 	}
-	return u.BookingInvoiceMailer.MailBookingInvoice(ctx, i, invoicePDF, sendTo)
+	return u.BookingInvoiceMailer.MailBookingInvoice(i, invoicePDF, sendTo)
 }
 
 func (u *Usecase) MailPeriodInvoicesSummary(ctx context.Context, start, end time.Time, sendTo string, clinicianID int) error {
@@ -105,5 +105,5 @@ func (u *Usecase) MailPeriodInvoicesSummary(ctx context.Context, start, end time
 	if err != nil {
 		return err
 	}
-	return u.InvoicesSummaryMailer.MailInvoicesSummary(ctx, pdf, start, end, sendTo)
+	return u.InvoicesSummaryMailer.MailInvoicesSummary(pdf, start, end, sendTo)
 }

@@ -41,7 +41,7 @@ func TestConstraintTimeRangeWithinLimit(t *testing.T) {
 }
 
 func TestConvertOfficeHoursToTimeRange(t *testing.T) {
-	u := NewCalendarReaderUsecase(time.UTC, nil, nil)
+	u := NewCalendarReaderUsecase(CalendarReaderDeps{Loc: time.UTC})
 
 	var tests = []struct {
 		description string

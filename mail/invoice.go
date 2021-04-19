@@ -2,29 +2,44 @@ package mail
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"github.com/audrenbdb/deiz"
 	"time"
 )
 
-func (m *mailer) MailBookingInvoice(ctx context.Context, invoice *deiz.BookingInvoice, invoicePDF *bytes.Buffer, sendTo string) error {
-	b := invoice.Booking
-	var emailBuffer bytes.Buffer
-	emailData := struct {
-		Name   string
-		Date   string
-		Amount string
-	}{
-		Name:   b.Clinician.Surname + " " + b.Clinician.Name,
-		Date:   invoice.DeliveryDateStr,
-		Amount: fmt.Sprintf("%.2f€", float64(invoice.PriceAfterTax)/100),
-	}
-	err := m.tmpl.ExecuteTemplate(&emailBuffer, "booking-invoice.html", emailData)
+func (m *mailer) MailBookingInvoice(invoice *deiz.BookingInvoice, invoicePDF *bytes.Buffer, sendTo string) error {
+	details := getInvoiceEmailDetails(invoice)
+	template, err := m.htmlTemplate("booking-invoice.html", details)
 	if err != nil {
 		return err
 	}
-	plainBody := fmt.Sprintf(`Deiz\n
+	plainBody := details.plainBody()
+	return m.client.Send(createMail(mail{
+		to:       sendTo,
+		from:     noReplyAddress,
+		subject:  "Facture de consultation",
+		template: template, plainBody: plainBody,
+		attachment: invoicePDF}))
+}
+
+func (m *mailer) MailInvoicesSummary(summaryPDF *bytes.Buffer, start, end time.Time, sendTo string) error {
+	details := m.getInvoicesEmailDetails(start, end)
+	template, err := m.htmlTemplate("invoices-summary.html", details)
+	if err != nil {
+		return err
+	}
+	plainBody := details.plainBody()
+	return m.client.Send(createMail(mail{
+		to:       sendTo,
+		from:     noReplyAddress,
+		subject:  "Résumé de factures",
+		template: template, plainBody: plainBody,
+		attachment: summaryPDF,
+	}))
+}
+
+func (details *invoiceEmailDetails) plainBody() string {
+	return fmt.Sprintf(`Deiz\n
 	Nouvelle facture\n
 	\n
 	De %s\n
@@ -33,29 +48,37 @@ func (m *mailer) MailBookingInvoice(ctx context.Context, invoice *deiz.BookingIn
 	\n
 	Deiz\n
 	\Agenda pour thérapeutes\n
-	https://deiz.fr`, emailData.Name, emailData.Amount, emailData.Date)
-	return m.sender.Send(ctx, createMail(
-		sendTo,
-		noReplyAddress,
-		"Facture de consultation",
-		&emailBuffer, plainBody,
-		invoicePDF))
+	https://deiz.fr`, details.Name, details.Amount, details.Date)
 }
 
-func (m *mailer) MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buffer, start, end time.Time, sendTo string) error {
-	var emailBuffer bytes.Buffer
-	emailData := struct {
-		Start string
-		End   string
-	}{
-		Start: start.In(m.loc).Format("02/01/2006"),
-		End:   end.In(m.loc).Format("02/01/2006"),
+func getInvoiceEmailDetails(invoice *deiz.BookingInvoice) invoiceEmailDetails {
+	return invoiceEmailDetails{
+		Name:   invoice.Booking.Clinician.FullName(),
+		Date:   invoice.DeliveryDateStr,
+		Amount: fmt.Sprintf("%.2f€", float64(invoice.PriceAfterTax)/100),
 	}
-	err := m.tmpl.ExecuteTemplate(&emailBuffer, "invoices-summary.html", emailData)
-	if err != nil {
-		return err
+}
+
+type invoicesEmailDetail struct {
+	Start string
+	End   string
+}
+
+type invoiceEmailDetails struct {
+	Name   string
+	Date   string
+	Amount string
+}
+
+func (m *mailer) getInvoicesEmailDetails(start, end time.Time) invoicesEmailDetail {
+	return invoicesEmailDetail{
+		Start: m.intl.Fr.FmtyMd(start),
+		End:   m.intl.Fr.FmtyMd(end),
 	}
-	plainBody := fmt.Sprintf(`Deiz\n
+}
+
+func (details *invoicesEmailDetail) plainBody() string {
+	return fmt.Sprintf(`Deiz\n
 	Résumé de factures\n
 	\n
 	Du %s\n
@@ -63,11 +86,5 @@ func (m *mailer) MailInvoicesSummary(ctx context.Context, summaryPDF *bytes.Buff
 	\n
 	Deiz\n
 	\Agenda pour thérapeutes\n
-	https://deiz.fr`, emailData.Start, emailData.End)
-	return m.sender.Send(ctx, createMail(
-		sendTo,
-		noReplyAddress,
-		"Résumé de factures",
-		&emailBuffer, plainBody,
-		summaryPDF))
+	https://deiz.fr`, details.Start, details.End)
 }

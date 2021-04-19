@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/audrenbdb/deiz/crypt"
-	"github.com/audrenbdb/deiz/gcalendar"
-	"github.com/audrenbdb/deiz/gmaps"
 	"github.com/audrenbdb/deiz/http"
+	"github.com/audrenbdb/deiz/intl"
 	"github.com/audrenbdb/deiz/mail"
 	"github.com/audrenbdb/deiz/pdf"
 	"github.com/audrenbdb/deiz/repo/psql"
@@ -56,18 +55,40 @@ func main() {
 	repo := psql.NewRepo(psqlDB, fbClient)
 	pdf := pdf.NewService("oxygen", "oxygen.ttf", filepath.Join(path, "../../assets", "fonts"), paris)
 	//mail := mail.NewService(parseEmailTemplates(path), mail.NewPostFixClient(), paris)
-	mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient(), paris)
-	gCal := gcalendar.NewService()
-	gMaps := gmaps.NewService()
+	mail := mail.NewService(mail.Deps{
+		Templates: parseEmailTemplates(path),
+		Client:    mail.NewGmailClient(),
+		Intl:      intl.NewIntlParser("Fr", paris),
+	})
 	stripe := stripe.NewService()
 	crypt := crypt.NewService()
-	bookingRegister := booking.NewRegisterUsecase(
-		paris, repo, repo, repo, repo, repo, mail, gCal, gMaps)
-	bookingPreRegister := booking.NewPreRegisterUsecase(repo, repo)
 
-	calendarReader := booking.NewCalendarReaderUsecase(paris, repo, repo)
-	bookingSlotDeleter := booking.NewSlotDeleterUsecase(repo, repo, mail)
-	bookingSlotBlocker := booking.NewSlotBlockerUsecase(repo)
+	bookingRegister := booking.NewRegisterUsecase(booking.RegisterDeps{
+		Loc:            paris,
+		PatientGetter:  repo,
+		PatientCreater: repo,
+		BookingCreater: repo,
+		BookingUpdater: repo,
+		BookingGetter:  repo,
+		BookingMailer:  mail,
+	})
+	bookingPreRegister := booking.NewPreRegisterUsecase(booking.PreRegisterDeps{
+		BookingGetter:  repo,
+		BookingCreater: repo,
+	})
+	calendarReader := booking.NewCalendarReaderUsecase(booking.CalendarReaderDeps{
+		Loc:               paris,
+		OfficeHoursGetter: repo,
+		BookingsGetter:    repo,
+	})
+	bookingSlotDeleter := booking.NewSlotDeleterUsecase(booking.SlotDeleterDeps{
+		BookingGetter:  repo,
+		BookingDeleter: repo,
+		CancelMailer:   mail,
+	})
+	bookingSlotBlocker := booking.NewSlotBlockerUsecase(booking.SlotBlockerDeps{
+		Blocker: repo,
+	})
 	err = http.StartEchoServer(
 		//http.FirebaseCredentialsGetter(fbClient),
 		http.FakeCredentialsGetter,

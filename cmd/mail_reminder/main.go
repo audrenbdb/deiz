@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/audrenbdb/deiz/booking"
 	"github.com/audrenbdb/deiz/intl"
 	"github.com/audrenbdb/deiz/mail"
 	"github.com/audrenbdb/deiz/repo/psql"
-	"github.com/audrenbdb/deiz/usecase/booking"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"os"
 	"path/filepath"

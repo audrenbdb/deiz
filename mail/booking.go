@@ -3,6 +3,8 @@ package mail
 import (
 	"fmt"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/gcal"
+	"github.com/audrenbdb/deiz/gmaps"
 	"net/url"
 	"time"
 )
@@ -56,33 +58,6 @@ type gCalendarEvent struct {
 	title    string
 	location string
 	details  string
-}
-
-func (m *Mailer) buildGCalendarLink(event gCalendarEvent) string {
-	startStr := fmt.Sprintf("%d%02d%02dT%02d%02d00", event.start.Year(), event.start.Month(), event.start.Day(), event.start.Hour(), event.start.Minute())
-	endStr := fmt.Sprintf("%d%02d%02dT%02d%02d00", event.end.Year(), event.end.Month(), event.end.Day(), event.end.Hour(), event.end.Minute())
-	baseURL, _ := url.Parse("https://calendar.google.com")
-	baseURL.Path += "calendar/event"
-	params := url.Values{}
-	params.Add("action", "TEMPLATE")
-	params.Add("dates", fmt.Sprintf("%s/%s", startStr, endStr))
-	params.Add("text", event.title)
-	params.Add("details", event.details)
-	params.Add("location", event.location)
-
-	baseURL.RawQuery = params.Encode()
-	return baseURL.String()
-}
-
-func buildGMapsLink(address string) string {
-	baseURL, _ := url.Parse("https://www.google.com")
-	baseURL.Path += "maps/search/"
-	params := url.Values{}
-	params.Add("api", "1")
-	params.Add("query", address)
-
-	baseURL.RawQuery = params.Encode()
-	return baseURL.String()
 }
 
 func buildCancelURL(deleteID string) *url.URL {
@@ -153,13 +128,13 @@ func (m *Mailer) getBookingEmailDetails(b *deiz.Booking, with string) bookingEma
 		Patient:     b.Patient.FullName(),
 		Phone:       b.Clinician.Phone,
 		BookingDate: m.intl.Fr.FmtMMMEEEEd(b.Start),
-		GCalendarLink: m.buildGCalendarLink(gCalendarEvent{
-			start:    b.Start,
-			end:      b.End,
-			title:    fmt.Sprintf("Consultation avec %s", with),
-			location: b.Address.ToString(),
+		GCalendarLink: gcal.NewLink(gcal.Event{
+			Start:    b.Start,
+			End:      b.End,
+			Title:    fmt.Sprintf("Consultation avec %s", with),
+			Location: b.Address.ToString(),
 		}),
-		GMapsLink:   buildGMapsLink(b.Address.ToString()),
+		GMapsLink:   gmaps.CreateLink(b.Address.ToString()),
 		CancelLink:  buildCancelURL(b.DeleteID).String(),
 		AddressLine: b.Address.Line,
 		AddressCity: fmt.Sprintf("%d %s", b.Address.PostCode, b.Address.City),

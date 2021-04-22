@@ -48,7 +48,7 @@ func getInTouchPlainBody(form deiz.GetInTouchForm) string {
 	\n
 	Coordonnées :\n
 	Nom : %s\n
-	Email : %s\n
+	EmailUpdater : %s\n
 	Téléphone : %s\n
 	Ville : %s\n
 	Métier : %s\n

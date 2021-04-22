@@ -35,7 +35,7 @@ func createHash(key string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func (d *service) CryptStringToBytes(str string) ([]byte, error) {
+func (crypter *service) StringToBytes(str string) ([]byte, error) {
 	var b []byte
 
 	hashedPhrase, err := getHashedPassphrase()
@@ -62,7 +62,7 @@ func (d *service) CryptStringToBytes(str string) ([]byte, error) {
 	return strBytes, err
 }
 
-func (d *service) DecryptBytes(strBytes []byte) (string, error) {
+func (crypter *service) BytesToString(strBytes []byte) (string, error) {
 	hashedPhrase, err := getHashedPassphrase()
 	if err != nil {
 		return "", err

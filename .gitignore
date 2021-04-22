@@ -1,4 +1,4 @@
 #Firebase API keys
-cmd/server/firebase.json
+cmd/http_server/firebase.json
 cert/*
 schema/*

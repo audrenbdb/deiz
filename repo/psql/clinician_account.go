@@ -6,7 +6,7 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-func (r *Repo) IsClinicianRegistrationComplete(ctx context.Context, email string) (bool, error) {
+func (r *Repo) IsClinicianAuthenticationEnabled(ctx context.Context, email string) (bool, error) {
 	_, err := r.firebaseAuth.GetUserByEmail(ctx, email)
 	if err != nil {
 		if err.Error() != fmt.Sprintf("cannot find user from email: \"%s\"", email) {
@@ -17,7 +17,7 @@ func (r *Repo) IsClinicianRegistrationComplete(ctx context.Context, email string
 	return true, nil
 }
 
-func (r *Repo) CompleteClinicianRegistration(ctx context.Context, clinician *deiz.Clinician, password string, clinicianID int) error {
+func (r *Repo) EnableClinicianAuthentication(ctx context.Context, clinician *deiz.Clinician, password string) error {
 	firebaseUser, err := createFirebaseUser(ctx, r.firebaseAuth, clinician.Email, password)
 	if err != nil {
 		return err
@@ -99,32 +99,5 @@ func (r *Repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.C
 	if err != nil {
 		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get tax exemption codes: %s", err)
 	}
-	return acc, nil
-}
-
-//GetClinicianAccountPublicData retrieves all public available data about clinician
-func (r *Repo) GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error) {
-	var acc deiz.ClinicianAccountPublicData
-	var err error
-	acc.Clinician, err = getClinicianByID(ctx, r.conn, clinicianID)
-	if err != nil {
-		return deiz.ClinicianAccountPublicData{}, err
-	}
-	acc.Clinician.Address = deiz.Address{}
-	acc.PublicMotives, err = getPublicMotives(ctx, r.conn, clinicianID)
-	if err != nil {
-		return deiz.ClinicianAccountPublicData{}, err
-	}
-	settings, err := getCalendarSettingsByPersonID(ctx, r.conn, clinicianID)
-	if err != nil {
-		return deiz.ClinicianAccountPublicData{}, err
-	}
-	acc.ClinicianTz = settings.Timezone.Name
-	acc.RemoteAllowed = settings.RemoteAllowed
-	keys, err := getStripeKeysByPersonID(ctx, r.conn, clinicianID)
-	if err != nil {
-		return deiz.ClinicianAccountPublicData{}, err
-	}
-	acc.StripePublicKey = keys.public
 	return acc, nil
 }

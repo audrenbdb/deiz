@@ -36,26 +36,6 @@ func getBookingMotivesByPersonID(ctx context.Context, db db, clinicianID int) ([
 	return motives, nil
 }
 
-func getPublicMotives(ctx context.Context, db db, clinicianID int) ([]deiz.BookingMotive, error) {
-	const query = `SELECT id, name, duration, price FROM booking_motive WHERE person_id = $1 AND public = true`
-	rows, err := db.Query(ctx, query, clinicianID)
-	defer rows.Close()
-	if err != nil {
-		return nil, err
-	}
-	motives := []deiz.BookingMotive{}
-	for rows.Next() {
-		var m deiz.BookingMotive
-		err := rows.Scan(&m.ID, &m.Name, &m.Duration, &m.Price)
-		if err != nil {
-			return nil, err
-		}
-		m.Public = true
-		motives = append(motives, m)
-	}
-	return motives, nil
-}
-
 func (r *Repo) UpdateBookingMotive(ctx context.Context, m *deiz.BookingMotive, clinicianID int) error {
 	const query = `UPDATE booking_motive SET duration = $1, price = $2, name = $3, public = $4 WHERE id = $5 AND person_id = $6`
 	tag, err := r.conn.Exec(ctx, query, m.Duration, m.Price, m.Name, m.Public, m.ID, clinicianID)

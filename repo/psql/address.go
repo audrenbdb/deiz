@@ -101,18 +101,6 @@ func (r *Repo) CreateClinicianHomeAddress(ctx context.Context, a *deiz.Address, 
 	return nil
 }
 
-func (r *Repo) IsAddressToClinician(ctx context.Context, a *deiz.Address, clinicianID int) (bool, error) {
-	const query = `SELECT EXISTS(SELECT 1 FROM address a
-			LEFT JOIN person p ON p.address_id = a.id LEFT JOIN office_address o ON o.address_id = a.id 
-			WHERE (p.id = $1 OR o.person_id = $1) AND a.id = $2)`
-	var owns bool
-	row := r.conn.QueryRow(ctx, query, clinicianID, a.ID)
-	if err := row.Scan(&owns); err != nil {
-		return false, err
-	}
-	return owns, nil
-}
-
 func (r *Repo) CreateClinicianOfficeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)

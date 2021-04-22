@@ -82,47 +82,48 @@ func (r *Repo) GetPeriodBookingInvoices(ctx context.Context, start time.Time, en
 	return invoices, nil
 }
 
-func insertBookingInvoice(ctx context.Context, db db, i *deiz.BookingInvoice, clinicianID int) error {
+func insertBookingInvoice(ctx context.Context, db db, i *deiz.BookingInvoice) error {
 	const query = `INSERT INTO booking_invoice
 	(person_id, booking_id, created_at, identifier, sender, recipient,
 	city_and_date, label, price_before_tax, price_after_tax, delivery_date,
 	delivery_date_str, tax_fee, exemption, payment_method_id)
 	VALUES($1, NULLIF($2, 0), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`
-	row := db.QueryRow(ctx, query, clinicianID, i.Booking.ID, i.CreatedAt, i.Identifier, i.Sender,
+	row := db.QueryRow(ctx, query, i.Booking.Clinician.ID, i.Booking.ID, i.CreatedAt, i.Identifier, i.Sender,
 		i.Recipient, i.CityAndDate, i.Label, i.PriceBeforeTax, i.PriceAfterTax, i.DeliveryDate,
 		i.DeliveryDateStr, i.TaxFee, i.Exemption, i.PaymentMethod.ID)
 	err := row.Scan(&i.ID)
 	return err
 }
 
-func (r *Repo) CreateBookingInvoice(ctx context.Context, i *deiz.BookingInvoice, clinicianID int) error {
+func (r *Repo) SaveBookingInvoice(ctx context.Context, i *deiz.BookingInvoice) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
 		return err
 	}
-	err = insertBookingInvoice(ctx, tx, i, clinicianID)
+	err = insertBookingInvoice(ctx, tx, i)
 	if err != nil {
 		return err
 	}
-	err = updateBookingPaidStatus(ctx, tx, true, i.Booking.ID, clinicianID)
+	err = updateBookingPaidStatus(ctx, tx, true, i.Booking.ID, i.Booking.Clinician.ID)
 	if err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
 }
 
-func (r *Repo) CancelBookingInvoice(ctx context.Context, originalInvoiceID int, i *deiz.BookingInvoice, clinicianID int) error {
+func (r *Repo) SaveCorrectingBookingInvoice(ctx context.Context, i *deiz.BookingInvoice) error {
+	originalInvoiceID := i.ID
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
 		return err
 	}
-	err = insertBookingInvoice(ctx, tx, i, clinicianID)
+	err = insertBookingInvoice(ctx, tx, i)
 	if err != nil {
 		return err
 	}
-	err = setInvoiceCanceled(ctx, tx, originalInvoiceID, clinicianID)
+	err = setInvoiceCanceled(ctx, tx, originalInvoiceID, i.Booking.Clinician.ID)
 	if err != nil {
 		return err
 	}

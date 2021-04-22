@@ -13,7 +13,7 @@ const (
 
 type service struct{}
 
-func (s *service) CreateStripePaymentSession(ctx context.Context, amount int64, sk string) (string, error) {
+func (s *service) CreateSession(ctx context.Context, amount int64, sk string) (string, error) {
 	sc := &client.API{}
 	sc.Init(sk, nil)
 	params := &stripe.CheckoutSessionParams{

@@ -8,12 +8,12 @@ import (
 )
 
 func (r *SendReminderUsecase) SendReminders(ctx context.Context) error {
-	bookings, err := getBookingsAwaitingRecall(ctx, r.getter)
+	bookings, err := getBookingsAwaitingRecall(ctx, r.Getter)
 	if err != nil {
 		return err
 	}
 	for _, b := range bookings {
-		err := r.mailer.MailBookingReminder(&b)
+		err := r.Mailer.MailBookingReminder(&b)
 		if err != nil {
 			return err
 		}
@@ -55,18 +55,6 @@ type (
 )
 
 type SendReminderUsecase struct {
-	getter bookingsInTimeRangeGetter
-	mailer reminderMailer
-}
-
-type ReminderDeps struct {
 	Getter bookingsInTimeRangeGetter
 	Mailer reminderMailer
-}
-
-func NewReminderUsecase(deps ReminderDeps) *SendReminderUsecase {
-	return &SendReminderUsecase{
-		getter: deps.Getter,
-		mailer: deps.Mailer,
-	}
 }

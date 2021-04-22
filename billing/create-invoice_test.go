@@ -48,7 +48,7 @@ func TestGenerate(t *testing.T) {
 			errorOutput:  deiz.GenericError,
 
 			usecase: CreateInvoiceUsecase{
-				counter: &mockInvoicesCounter{err: deiz.GenericError},
+				Counter: &mockInvoicesCounter{err: deiz.GenericError},
 			},
 		},
 		{
@@ -58,8 +58,8 @@ func TestGenerate(t *testing.T) {
 			errorOutput:  deiz.GenericError,
 
 			usecase: CreateInvoiceUsecase{
-				counter: &mockInvoicesCounter{},
-				saver:   &mockInvoiceSaver{err: deiz.GenericError},
+				Counter: &mockInvoicesCounter{},
+				Saver:   &mockInvoiceSaver{err: deiz.GenericError},
 			},
 		},
 		{
@@ -71,9 +71,9 @@ func TestGenerate(t *testing.T) {
 			errorOutput: deiz.GenericError,
 
 			usecase: CreateInvoiceUsecase{
-				counter:    &mockInvoicesCounter{},
-				saver:      &mockInvoiceSaver{},
-				pdfCreater: &mockPDFCreater{err: deiz.GenericError},
+				Counter:    &mockInvoicesCounter{},
+				Saver:      &mockInvoiceSaver{},
+				PdfCreater: &mockPDFCreater{err: deiz.GenericError},
 			},
 		},
 		{
@@ -85,10 +85,10 @@ func TestGenerate(t *testing.T) {
 			errorOutput: deiz.GenericError,
 
 			usecase: CreateInvoiceUsecase{
-				counter:    &mockInvoicesCounter{},
-				saver:      &mockInvoiceSaver{},
-				pdfCreater: &mockPDFCreater{},
-				mailer:     &mockInvoiceSender{err: deiz.GenericError},
+				Counter:    &mockInvoicesCounter{},
+				Saver:      &mockInvoiceSaver{},
+				PdfCreater: &mockPDFCreater{},
+				Mailer:     &mockInvoiceSender{err: deiz.GenericError},
 			},
 		},
 	}

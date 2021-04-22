@@ -14,24 +14,10 @@ type (
 )
 
 type ReadCalendarUsecase struct {
-	loc               *time.Location
-	officeHoursGetter officeHoursGetter
-
-	bookingsGetter clinicianBookingsInTimeRangeGetter
-}
-
-type CalendarReaderDeps struct {
 	Loc               *time.Location
 	OfficeHoursGetter officeHoursGetter
-	BookingsGetter    clinicianBookingsInTimeRangeGetter
-}
 
-func NewCalendarReaderUsecase(deps CalendarReaderDeps) *ReadCalendarUsecase {
-	return &ReadCalendarUsecase{
-		loc:               deps.Loc,
-		officeHoursGetter: deps.OfficeHoursGetter,
-		bookingsGetter:    deps.BookingsGetter,
-	}
+	BookingsGetter clinicianBookingsInTimeRangeGetter
 }
 
 func (r *ReadCalendarUsecase) GetCalendarSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error) {
@@ -52,7 +38,7 @@ func (r *ReadCalendarUsecase) GetCalendarFreeSlots(ctx context.Context, start ti
 
 func (r *ReadCalendarUsecase) getBookingSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, []deiz.Booking, error) {
 	end := start.AddDate(0, 0, 7)
-	existingBookings, err := r.bookingsGetter.GetClinicianBookingsInTimeRange(ctx, start, end, clinicianID)
+	existingBookings, err := r.BookingsGetter.GetClinicianBookingsInTimeRange(ctx, start, end, clinicianID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to get bookings in given timerange: %s", err)
 	}
@@ -103,7 +89,7 @@ func splitAvailabilityInFreeBookingSlots(availability officeHoursAvailability, e
 }
 
 func (r *ReadCalendarUsecase) getOfficeHoursAvailabilities(ctx context.Context, timeRange timeRange, clinicianID int) ([]officeHoursAvailability, error) {
-	officeHours, err := r.officeHoursGetter.GetClinicianOfficeHours(ctx, clinicianID)
+	officeHours, err := r.OfficeHoursGetter.GetClinicianOfficeHours(ctx, clinicianID)
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +105,10 @@ func (r *ReadCalendarUsecase) getOfficeHoursAvailabilities(ctx context.Context, 
 }
 
 func (r *ReadCalendarUsecase) convertOfficeHoursToTimeRange(limit timeRange, h deiz.OfficeHours) timeRange {
-	y, m, d := limit.start.In(r.loc).Date()
-	if h.IsWithinDate(limit.start.In(r.loc)) {
-		officeOpensAt := time.Date(y, m, d, h.StartMn/60, h.StartMn%60, 0, 0, r.loc).UTC()
-		officeClosesAt := time.Date(y, m, d, h.EndMn/60, h.EndMn%60, 0, 0, r.loc).UTC()
+	y, m, d := limit.start.In(r.Loc).Date()
+	if h.IsWithinDate(limit.start.In(r.Loc)) {
+		officeOpensAt := time.Date(y, m, d, h.StartMn/60, h.StartMn%60, 0, 0, r.Loc).UTC()
+		officeClosesAt := time.Date(y, m, d, h.EndMn/60, h.EndMn%60, 0, 0, r.Loc).UTC()
 		return constraintTimeRangeWithinLimit(limit, timeRange{start: officeOpensAt, end: officeClosesAt})
 	}
 	if limit.start.After(limit.end) {

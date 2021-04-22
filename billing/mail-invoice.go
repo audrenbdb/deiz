@@ -10,22 +10,22 @@ import (
 func (m *MailInvoiceUsecase) MailInvoice(invoice *deiz.BookingInvoice, recipient string) error {
 	return mailInvoice(mailInvoiceDeps{
 		invoice:    invoice,
-		mailer:     m.invoiceMailer,
-		pdfCreater: m.pdfInvoiceCreater,
+		mailer:     m.InvoiceMailer,
+		pdfCreater: m.PdfInvoiceCreater,
 		recipient:  recipient,
 	})
 }
 
 func (m *MailInvoiceUsecase) MailInvoicesSummary(ctx context.Context, start, end time.Time, recipient string, clinicianID int) error {
-	invoices, err := m.invoicesGetter.GetPeriodBookingInvoices(ctx, start, end, clinicianID)
+	invoices, err := m.InvoicesGetter.GetPeriodBookingInvoices(ctx, start, end, clinicianID)
 	if err != nil {
 		return err
 	}
-	invoicesPDF, err := m.pdfInvoicesSummaryCreater.CreateInvoicesSummaryPDF(invoices, start, end)
+	invoicesPDF, err := m.PdfInvoicesSummaryCreater.CreateInvoicesSummaryPDF(invoices, start, end)
 	if err != nil {
 		return err
 	}
-	return m.invoicesSummaryMailer.MailInvoicesSummary(invoicesPDF, start, end, recipient)
+	return m.InvoicesSummaryMailer.MailInvoicesSummary(invoicesPDF, start, end, recipient)
 }
 
 type (
@@ -37,28 +37,10 @@ type (
 	}
 )
 
-func NewMailInvoiceUsecase(deps MailInvoiceDeps) *MailInvoiceUsecase {
-	return &MailInvoiceUsecase{
-		invoiceMailer:             deps.InvoiceMailer,
-		pdfInvoiceCreater:         deps.PdfInvoiceCreater,
-		pdfInvoicesSummaryCreater: deps.PdfInvoicesSummaryCreater,
-		invoicesGetter:            deps.InvoicesGetter,
-		invoicesSummaryMailer:     deps.InvoicesSummaryMailer,
-	}
-}
-
-type MailInvoiceDeps struct {
-	InvoiceMailer             invoiceMailer
-	InvoicesSummaryMailer     invoicesSummaryMailer
-	PdfInvoicesSummaryCreater invoicesSummaryPDFCreater
-	PdfInvoiceCreater         pdfInvoiceCreater
-	InvoicesGetter            periodInvoicesGetter
-}
-
 type MailInvoiceUsecase struct {
-	invoiceMailer             invoiceMailer
-	pdfInvoiceCreater         pdfInvoiceCreater
-	pdfInvoicesSummaryCreater invoicesSummaryPDFCreater
-	invoicesGetter            periodInvoicesGetter
-	invoicesSummaryMailer     invoicesSummaryMailer
+	InvoiceMailer             invoiceMailer
+	PdfInvoiceCreater         pdfInvoiceCreater
+	PdfInvoicesSummaryCreater invoicesSummaryPDFCreater
+	InvoicesGetter            periodInvoicesGetter
+	InvoicesSummaryMailer     invoicesSummaryMailer
 }

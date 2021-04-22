@@ -14,15 +14,15 @@ func (u *CreateStripeSessionUsecase) CreateStripePaymentSession(ctx context.Cont
 	if err != nil {
 		return "", err
 	}
-	return u.stripeSessionCreater.CreateSession(ctx, amount, key)
+	return u.StripeSessionCreater.CreateSession(ctx, amount, key)
 }
 
 func (u *CreateStripeSessionUsecase) getDecryptedStripeKey(ctx context.Context, clinicianID int) (string, error) {
-	k, err := u.secretKeyGetter.GetClinicianStripeSecretKey(ctx, clinicianID)
+	k, err := u.SecretKeyGetter.GetClinicianStripeSecretKey(ctx, clinicianID)
 	if err != nil {
 		return "", err
 	}
-	return decryptKey(u.crypter, k)
+	return decryptKey(u.Crypter, k)
 }
 
 func decryptKey(crypter crypter, k []byte) (string, error) {
@@ -37,23 +37,9 @@ func decryptKey(crypter crypter, k []byte) (string, error) {
 }
 
 type CreateStripeSessionUsecase struct {
-	crypter              crypter
-	secretKeyGetter      stripeSecretKeyGetter
-	stripeSessionCreater stripeSessionCreater
-}
-
-type CreateStripeSessionDeps struct {
-	Crypter         crypter
-	SecretKeyGetter stripeSecretKeyGetter
-	SessionCreater  stripeSessionCreater
-}
-
-func NewCreateStripeSessionUsecase(deps CreateStripeSessionDeps) *CreateStripeSessionUsecase {
-	return &CreateStripeSessionUsecase{
-		crypter:              deps.Crypter,
-		secretKeyGetter:      deps.SecretKeyGetter,
-		stripeSessionCreater: deps.SessionCreater,
-	}
+	Crypter              crypter
+	SecretKeyGetter      stripeSecretKeyGetter
+	StripeSessionCreater stripeSessionCreater
 }
 
 type (

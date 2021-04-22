@@ -243,37 +243,37 @@ type billingUsecases struct {
 	invoiceMailer        *billing.MailInvoiceUsecase
 	periodInvoicesGetter *billing.GetPeriodInvoicesUsecase
 	stripeSessionCreater *billing.CreateStripeSessionUsecase
-	unpaidBookingsGetter *billing.GetUnpaidBookings
+	unpaidBookingsGetter *billing.GetUnpaidBookingsUsecase
 }
 
 func newBillingUsecases(repo *psql.Repo, mailer *mail.Mailer, pdf *pdf.Pdf) billingUsecases {
 	stripe := stripe.NewService()
 	crypt := crypt.NewService()
 	return billingUsecases{
-		invoiceCreater: billing.NewCreateInvoiceUsecase(billing.CreateInvoiceDeps{
+		invoiceCreater: &billing.CreateInvoiceUsecase{
 			Counter:    repo,
 			Saver:      repo,
 			PdfCreater: pdf,
 			Mailer:     mailer,
-		}),
-		invoiceCanceler: billing.NewCancelInvoiceUsecase(billing.CancelInvoiceDeps{
+		},
+		invoiceCanceler: &billing.CancelInvoiceUsecase{
 			Counter: repo,
 			Saver:   repo,
-		}),
-		invoiceMailer: billing.NewMailInvoiceUsecase(billing.MailInvoiceDeps{
+		},
+		invoiceMailer: &billing.MailInvoiceUsecase{
 			InvoiceMailer:             mailer,
 			InvoicesSummaryMailer:     mailer,
 			PdfInvoicesSummaryCreater: pdf,
 			PdfInvoiceCreater:         pdf,
 			InvoicesGetter:            repo,
-		}),
-		periodInvoicesGetter: billing.NewPeriodInvoicesGetterUsecase(repo),
-		stripeSessionCreater: billing.NewCreateStripeSessionUsecase(billing.CreateStripeSessionDeps{
-			Crypter:         crypt,
-			SessionCreater:  stripe,
-			SecretKeyGetter: repo,
-		}),
-		unpaidBookingsGetter: billing.NewGetUnpaidBookings(repo),
+		},
+		periodInvoicesGetter: &billing.GetPeriodInvoicesUsecase{Getter: repo},
+		stripeSessionCreater: &billing.CreateStripeSessionUsecase{
+			Crypter:              crypt,
+			StripeSessionCreater: stripe,
+			SecretKeyGetter:      repo,
+		},
+		unpaidBookingsGetter: &billing.GetUnpaidBookingsUsecase{Getter: repo},
 	}
 }
 
@@ -286,7 +286,7 @@ type bookingUsecases struct {
 }
 
 func newBookingUsecases(paris *time.Location, repo *psql.Repo, mailer *mail.Mailer) bookingUsecases {
-	bookingRegister := booking.NewRegisterUsecase(booking.RegisterDeps{
+	bookingRegister := &booking.RegisterUsecase{
 		Loc:            paris,
 		PatientGetter:  repo,
 		PatientCreater: repo,
@@ -294,24 +294,24 @@ func newBookingUsecases(paris *time.Location, repo *psql.Repo, mailer *mail.Mail
 		BookingUpdater: repo,
 		BookingGetter:  repo,
 		BookingMailer:  mailer,
-	})
-	bookingPreRegister := booking.NewPreRegisterUsecase(booking.PreRegisterDeps{
+	}
+	bookingPreRegister := &booking.PreRegisterUsecase{
 		BookingGetter:  repo,
 		BookingCreater: repo,
-	})
-	calendarReader := booking.NewCalendarReaderUsecase(booking.CalendarReaderDeps{
+	}
+	calendarReader := &booking.ReadCalendarUsecase{
 		Loc:               paris,
 		OfficeHoursGetter: repo,
 		BookingsGetter:    repo,
-	})
-	bookingSlotDeleter := booking.NewSlotDeleterUsecase(booking.SlotDeleterDeps{
+	}
+	bookingSlotDeleter := &booking.DeleteSlotUsecase{
 		BookingGetter:  repo,
 		BookingDeleter: repo,
 		CancelMailer:   mailer,
-	})
-	bookingSlotBlocker := booking.NewSlotBlockerUsecase(booking.SlotBlockerDeps{
+	}
+	bookingSlotBlocker := &booking.BlockSlotUsecase{
 		Blocker: repo,
-	})
+	}
 	return bookingUsecases{
 		register:       bookingRegister,
 		preRegister:    bookingPreRegister,

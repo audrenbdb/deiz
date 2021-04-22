@@ -42,7 +42,7 @@ func TestCreateStripePaymentSession(t *testing.T) {
 			errorOutput: deiz.GenericError,
 
 			usecase: CreateStripeSessionUsecase{
-				secretKeyGetter: &mockStripeKeyGetter{err: deiz.GenericError},
+				SecretKeyGetter: &mockStripeKeyGetter{err: deiz.GenericError},
 			},
 		},
 	}

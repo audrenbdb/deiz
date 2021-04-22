@@ -50,8 +50,8 @@ func TestMailInvoice(t *testing.T) {
 			errorOutput: deiz.GenericError,
 
 			usecase: MailInvoiceUsecase{
-				pdfInvoiceCreater: &mockPDFCreater{},
-				invoiceMailer:     &mockInvoiceSender{err: deiz.GenericError},
+				PdfInvoiceCreater: &mockPDFCreater{},
+				InvoiceMailer:     &mockInvoiceSender{err: deiz.GenericError},
 			},
 		},
 		{
@@ -60,16 +60,16 @@ func TestMailInvoice(t *testing.T) {
 			errorOutput: deiz.GenericError,
 
 			usecase: MailInvoiceUsecase{
-				pdfInvoiceCreater: &mockPDFCreater{err: deiz.GenericError},
-				invoiceMailer:     &mockInvoiceSender{},
+				PdfInvoiceCreater: &mockPDFCreater{err: deiz.GenericError},
+				InvoiceMailer:     &mockInvoiceSender{},
 			},
 		},
 		{
 			description: "should succeed",
 
 			usecase: MailInvoiceUsecase{
-				pdfInvoiceCreater: &mockPDFCreater{},
-				invoiceMailer:     &mockInvoiceSender{},
+				PdfInvoiceCreater: &mockPDFCreater{},
+				InvoiceMailer:     &mockInvoiceSender{},
 			},
 		},
 	}
@@ -96,7 +96,7 @@ func TestMailInvoicesSummary(t *testing.T) {
 			errorOutput: deiz.GenericError,
 
 			usecase: MailInvoiceUsecase{
-				invoicesGetter: &mockPeriodInvoicesGetter{err: deiz.GenericError},
+				InvoicesGetter: &mockPeriodInvoicesGetter{err: deiz.GenericError},
 			},
 		},
 		{
@@ -104,8 +104,8 @@ func TestMailInvoicesSummary(t *testing.T) {
 			errorOutput: deiz.GenericError,
 
 			usecase: MailInvoiceUsecase{
-				invoicesGetter:            &mockPeriodInvoicesGetter{},
-				pdfInvoicesSummaryCreater: &mockInvoicesSummaryPDFCreater{err: deiz.GenericError},
+				InvoicesGetter:            &mockPeriodInvoicesGetter{},
+				PdfInvoicesSummaryCreater: &mockInvoicesSummaryPDFCreater{err: deiz.GenericError},
 			},
 		},
 		{
@@ -113,9 +113,9 @@ func TestMailInvoicesSummary(t *testing.T) {
 			errorOutput: deiz.GenericError,
 
 			usecase: MailInvoiceUsecase{
-				invoicesGetter:            &mockPeriodInvoicesGetter{},
-				pdfInvoicesSummaryCreater: &mockInvoicesSummaryPDFCreater{},
-				invoicesSummaryMailer:     &mockInvoicesSummaryMailer{err: deiz.GenericError},
+				InvoicesGetter:            &mockPeriodInvoicesGetter{},
+				PdfInvoicesSummaryCreater: &mockInvoicesSummaryPDFCreater{},
+				InvoicesSummaryMailer:     &mockInvoicesSummaryMailer{err: deiz.GenericError},
 			},
 		},
 	}

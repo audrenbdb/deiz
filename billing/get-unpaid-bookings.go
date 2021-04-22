@@ -11,16 +11,10 @@ type (
 	}
 )
 
-type GetUnpaidBookings struct {
-	getter unpaidBookingsGetter
+type GetUnpaidBookingsUsecase struct {
+	Getter unpaidBookingsGetter
 }
 
-func NewGetUnpaidBookings(getter unpaidBookingsGetter) *GetUnpaidBookings {
-	return &GetUnpaidBookings{
-		getter: getter,
-	}
-}
-
-func (u *GetUnpaidBookings) GetUnpaidBookings(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
-	return u.getter.GetUnpaidBookings(ctx, clinicianID)
+func (u *GetUnpaidBookingsUsecase) GetUnpaidBookings(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
+	return u.Getter.GetUnpaidBookings(ctx, clinicianID)
 }

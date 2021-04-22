@@ -6,34 +6,22 @@ import (
 )
 
 type PreRegisterUsecase struct {
-	bookingGetter  clinicianBookingsInTimeRangeGetter
-	bookingCreater bookingCreater
-}
-
-type PreRegisterDeps struct {
 	BookingGetter  clinicianBookingsInTimeRangeGetter
 	BookingCreater bookingCreater
-}
-
-func NewPreRegisterUsecase(deps PreRegisterDeps) *PreRegisterUsecase {
-	return &PreRegisterUsecase{
-		bookingGetter:  deps.BookingGetter,
-		bookingCreater: deps.BookingCreater,
-	}
 }
 
 func (r *PreRegisterUsecase) PreRegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int) error {
 	if r.preRegistrationInvalid(b, clinicianID) {
 		return deiz.ErrorStructValidation
 	}
-	available, err := bookingSlotAvailable(ctx, b, r.bookingGetter)
+	available, err := bookingSlotAvailable(ctx, b, r.BookingGetter)
 	if err != nil {
 		return err
 	}
 	if !available {
 		return deiz.ErrorBookingSlotAlreadyFilled
 	}
-	return r.bookingCreater.CreateBooking(ctx, b)
+	return r.BookingCreater.CreateBooking(ctx, b)
 }
 
 func (r *PreRegisterUsecase) preRegistrationInvalid(b *deiz.Booking, clinicianID int) bool {

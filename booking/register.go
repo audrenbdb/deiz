@@ -19,38 +19,16 @@ type (
 )
 
 type RegisterUsecase struct {
-	loc *time.Location
+	Loc *time.Location
 
-	patientGetter  patientGetter
-	patientCreater patientCreater
-
-	bookingCreater bookingCreater
-	bookingUpdater bookingUpdater
-	bookingGetter  clinicianBookingsInTimeRangeGetter
-
-	bookingMailer bookingMailer
-}
-
-type RegisterDeps struct {
-	Loc            *time.Location
 	PatientGetter  patientGetter
 	PatientCreater patientCreater
+
 	BookingCreater bookingCreater
 	BookingUpdater bookingUpdater
 	BookingGetter  clinicianBookingsInTimeRangeGetter
-	BookingMailer  bookingMailer
-}
 
-func NewRegisterUsecase(deps RegisterDeps) *RegisterUsecase {
-	return &RegisterUsecase{
-		loc:            deps.Loc,
-		patientGetter:  deps.PatientGetter,
-		patientCreater: deps.PatientCreater,
-		bookingCreater: deps.BookingCreater,
-		bookingUpdater: deps.BookingUpdater,
-		bookingGetter:  deps.BookingGetter,
-		bookingMailer:  deps.BookingMailer,
-	}
+	BookingMailer bookingMailer
 }
 
 func (r *RegisterUsecase) RegisterBookingFromPatient(ctx context.Context, b *deiz.Booking) error {
@@ -60,7 +38,7 @@ func (r *RegisterUsecase) RegisterBookingFromPatient(ctx context.Context, b *dei
 	if r.registrationInvalid(b, b.Clinician.ID) {
 		return deiz.ErrorStructValidation
 	}
-	if err := r.bookingCreater.CreateBooking(ctx, b); err != nil {
+	if err := r.BookingCreater.CreateBooking(ctx, b); err != nil {
 		return err
 	}
 	return r.notifyRegistration(b, true, true)
@@ -70,14 +48,14 @@ func (r *RegisterUsecase) RegisterBookingFromClinician(ctx context.Context, b *d
 	if r.registrationInvalid(b, clinicianID) {
 		return deiz.ErrorStructValidation
 	}
-	available, err := bookingSlotAvailable(ctx, b, r.bookingGetter)
+	available, err := bookingSlotAvailable(ctx, b, r.BookingGetter)
 	if err != nil {
 		return err
 	}
 	if !available {
 		return deiz.ErrorBookingSlotAlreadyFilled
 	}
-	if err := r.bookingCreater.CreateBooking(ctx, b); err != nil {
+	if err := r.BookingCreater.CreateBooking(ctx, b); err != nil {
 		return err
 	}
 	return r.notifyRegistration(b, notifyPatient, false)
@@ -87,14 +65,14 @@ func (r *RegisterUsecase) RegisterPreRegisteredBooking(ctx context.Context, b *d
 	if r.registrationInvalid(b, clinicianID) {
 		return deiz.ErrorStructValidation
 	}
-	available, err := bookingSlotAvailable(ctx, b, r.bookingGetter)
+	available, err := bookingSlotAvailable(ctx, b, r.BookingGetter)
 	if err != nil {
 		return err
 	}
 	if !available {
 		return deiz.ErrorBookingSlotAlreadyFilled
 	}
-	if err := r.bookingUpdater.UpdateBooking(ctx, b); err != nil {
+	if err := r.BookingUpdater.UpdateBooking(ctx, b); err != nil {
 		return err
 	}
 	return r.notifyRegistration(b, notifyPatient, false)
@@ -103,12 +81,12 @@ func (r *RegisterUsecase) RegisterPreRegisteredBooking(ctx context.Context, b *d
 
 func (r *RegisterUsecase) setBookingPatient(ctx context.Context, b *deiz.Booking) error {
 	b.Patient.Sanitize()
-	patient, err := r.patientGetter.GetPatientByEmail(ctx, b.Patient.Email, b.Clinician.ID)
+	patient, err := r.PatientGetter.GetPatientByEmail(ctx, b.Patient.Email, b.Clinician.ID)
 	if err != nil {
 		return err
 	}
 	if patient.IsNotSet() {
-		err := r.patientCreater.CreatePatient(ctx, &b.Patient, b.Clinician.ID)
+		err := r.PatientCreater.CreatePatient(ctx, &b.Patient, b.Clinician.ID)
 		if err != nil {
 			return err
 		}
@@ -120,12 +98,12 @@ func (r *RegisterUsecase) setBookingPatient(ctx context.Context, b *deiz.Booking
 
 func (r *RegisterUsecase) notifyRegistration(b *deiz.Booking, notifyPatient, notifyClinician bool) error {
 	if notifyClinician {
-		if err := r.bookingMailer.MailBookingToClinician(b); err != nil {
+		if err := r.BookingMailer.MailBookingToClinician(b); err != nil {
 			return err
 		}
 	}
 	if notifyPatient {
-		if err := r.bookingMailer.MailBookingToPatient(b); err != nil {
+		if err := r.BookingMailer.MailBookingToPatient(b); err != nil {
 			return err
 		}
 	}

@@ -1,6 +1,9 @@
 package deiz
 
-import "strings"
+import (
+	"github.com/audrenbdb/deiz/valid"
+	"strings"
+)
 
 //Patient uses the application to book clinician appointment
 type Patient struct {
@@ -23,6 +26,14 @@ func (p *Patient) IsSet() bool {
 
 func (p *Patient) IsNotSet() bool {
 	return !p.IsSet()
+}
+
+func (p *Patient) IsValid() bool {
+	return len(p.Name) >= 2 && len(p.Surname) >= 2 && valid.Phone(p.Phone) && valid.Email(p.Email)
+}
+
+func (p *Patient) IsInvalid() bool {
+	return !p.IsValid()
 }
 
 func (p *Patient) Sanitize() {

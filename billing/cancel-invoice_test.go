@@ -29,8 +29,8 @@ func TestCancelInvoice(t *testing.T) {
 			invoiceInput: &deiz.BookingInvoice{Booking: deiz.Booking{ID: 1}},
 
 			usecase: CancelInvoiceUsecase{
-				counter: &mockInvoicesCounter{},
-				saver:   &mockCorrectingInvoiceSaver{},
+				Counter: &mockInvoicesCounter{},
+				Saver:   &mockCorrectingInvoiceSaver{},
 			},
 		},
 		{
@@ -40,7 +40,7 @@ func TestCancelInvoice(t *testing.T) {
 			errorOutput:  deiz.GenericError,
 
 			usecase: CancelInvoiceUsecase{
-				counter: &mockInvoicesCounter{err: deiz.GenericError},
+				Counter: &mockInvoicesCounter{err: deiz.GenericError},
 			},
 		},
 		{
@@ -50,8 +50,8 @@ func TestCancelInvoice(t *testing.T) {
 			errorOutput:  deiz.GenericError,
 
 			usecase: CancelInvoiceUsecase{
-				counter: &mockInvoicesCounter{},
-				saver:   &mockCorrectingInvoiceSaver{err: deiz.GenericError},
+				Counter: &mockInvoicesCounter{},
+				Saver:   &mockCorrectingInvoiceSaver{err: deiz.GenericError},
 			},
 		},
 		{
@@ -59,8 +59,8 @@ func TestCancelInvoice(t *testing.T) {
 
 			invoiceInput: &validInvoice,
 			usecase: CancelInvoiceUsecase{
-				counter: &mockInvoicesCounter{},
-				saver:   &mockCorrectingInvoiceSaver{},
+				Counter: &mockInvoicesCounter{},
+				Saver:   &mockCorrectingInvoiceSaver{},
 			},
 		},
 	}

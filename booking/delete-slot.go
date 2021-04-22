@@ -20,54 +20,40 @@ type (
 )
 
 type DeleteSlotUsecase struct {
-	bookingGetter  bookingGetter
-	bookingDeleter bookingDeleter
-	cancelMailer   cancelMailer
-}
-
-type SlotDeleterDeps struct {
 	BookingGetter  bookingGetter
 	BookingDeleter bookingDeleter
 	CancelMailer   cancelMailer
 }
 
-func NewSlotDeleterUsecase(deps SlotDeleterDeps) *DeleteSlotUsecase {
-	return &DeleteSlotUsecase{
-		bookingGetter:  deps.BookingGetter,
-		bookingDeleter: deps.BookingDeleter,
-		cancelMailer:   deps.CancelMailer,
-	}
-}
-
 func (d *DeleteSlotUsecase) DeleteBlockedSlot(ctx context.Context, bookingID, clinicianID int) error {
-	return d.bookingDeleter.DeleteBooking(ctx, bookingID, clinicianID)
+	return d.BookingDeleter.DeleteBooking(ctx, bookingID, clinicianID)
 }
 
 func (d *DeleteSlotUsecase) DeletePreRegisteredSlot(ctx context.Context, bookingID, clinicianID int) error {
-	return d.bookingDeleter.DeleteBooking(ctx, bookingID, clinicianID)
+	return d.BookingDeleter.DeleteBooking(ctx, bookingID, clinicianID)
 }
 
 func (d *DeleteSlotUsecase) DeleteBookedSlotFromPatient(ctx context.Context, deleteID string) error {
-	booking, err := d.bookingGetter.GetBookingByDeleteID(ctx, deleteID)
+	booking, err := d.BookingGetter.GetBookingByDeleteID(ctx, deleteID)
 	if err != nil {
 		return err
 	}
-	if err := d.bookingDeleter.DeleteBooking(ctx, booking.ID, booking.Clinician.ID); err != nil {
+	if err := d.BookingDeleter.DeleteBooking(ctx, booking.ID, booking.Clinician.ID); err != nil {
 		return err
 	}
-	return d.cancelMailer.MailCancelBookingToClinician(&booking)
+	return d.CancelMailer.MailCancelBookingToClinician(&booking)
 }
 
 func (d *DeleteSlotUsecase) DeleteBookedSlotFromClinician(ctx context.Context, bookingID int, notifyPatient bool, clinicianID int) error {
-	booking, err := d.bookingGetter.GetBookingByID(ctx, bookingID)
+	booking, err := d.BookingGetter.GetBookingByID(ctx, bookingID)
 	if err != nil {
 		return err
 	}
-	if err := d.bookingDeleter.DeleteBooking(ctx, booking.ID, clinicianID); err != nil {
+	if err := d.BookingDeleter.DeleteBooking(ctx, booking.ID, clinicianID); err != nil {
 		return err
 	}
 	if notifyPatient {
-		return d.cancelMailer.MailCancelBookingToPatient(&booking)
+		return d.CancelMailer.MailCancelBookingToPatient(&booking)
 	}
 	return nil
 }

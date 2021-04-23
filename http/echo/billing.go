@@ -88,6 +88,7 @@ func handlePostBookingInvoice(creater usecase.InvoiceCreater) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 		invoice, err := getInvoiceFromRequest(c)
+		invoice.ClinicianID = getCredFromEchoCtx(c).userID
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -103,6 +104,7 @@ func handlePostCancelInvoice(canceler usecase.InvoiceCanceler) echo.HandlerFunc 
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		invoice, err := getInvoiceFromRequest(c)
+		invoice.ClinicianID = getCredFromEchoCtx(c).userID
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}

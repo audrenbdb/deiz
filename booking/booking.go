@@ -29,7 +29,7 @@ func bookingSlotAvailable(ctx context.Context, b *deiz.Booking, getter clinician
 		return false, err
 	}
 	for _, booking := range bookings {
-		if bookingsOverlap(b, &booking) {
+		if bookingsOverlap(b, &booking) && booking.ID != b.ID {
 			return false, nil
 		}
 	}

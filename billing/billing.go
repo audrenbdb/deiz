@@ -40,10 +40,10 @@ func mailInvoice(s mailInvoiceDeps) error {
 }
 
 func setInvoiceIdentifier(ctx context.Context, invoice *deiz.BookingInvoice, counter invoicesCounter) error {
-	count, err := counter.CountClinicianInvoices(ctx, invoice.Booking.Clinician.ID)
+	count, err := counter.CountClinicianInvoices(ctx, invoice.ClinicianID)
 	if err != nil {
 		return err
 	}
-	invoice.Identifier = fmt.Sprintf(invoiceIDFormat, invoice.Booking.Clinician.ID, count+1)
+	invoice.Identifier = fmt.Sprintf(invoiceIDFormat, invoice.ClinicianID, count+1)
 	return nil
 }

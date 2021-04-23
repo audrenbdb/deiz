@@ -70,10 +70,10 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.POST("/api/booking-invoices/canceled", handlePostCancelInvoice(deps.BillingUsecases.InvoiceCanceler), clinicianMW)
 	e.GET("/api/booking-invoices", handleGetPeriodInvoices(deps.BillingUsecases.InvoicesGetter), clinicianMW)
 
-	e.PATCH("/api/clinician-accounts/settings", handlePatchCalendarSettings(deps.AccountUsecases.CalendarSettingsUsecases), clinicianMW)
+	e.PATCH("/api/clinician-accounts/calendar-settings", handlePatchCalendarSettings(deps.AccountUsecases.CalendarSettingsUsecases), clinicianMW)
 
-	e.POST("/api/officehours", handlePostOfficeHours(deps.AccountUsecases.OfficeHoursUsecases.OfficeHoursAdder), clinicianMW)
-	e.DELETE("/api/officehours/:id", handleDeleteOfficeHours(deps.AccountUsecases.OfficeHoursUsecases.OfficeHoursRemover), clinicianMW)
+	e.POST("/api/office-hours", handlePostOfficeHours(deps.AccountUsecases.OfficeHoursUsecases.OfficeHoursAdder), clinicianMW)
+	e.DELETE("/api/office-hours/:id", handleDeleteOfficeHours(deps.AccountUsecases.OfficeHoursUsecases.OfficeHoursRemover), clinicianMW)
 
 	e.POST("/api/booking-motives", handlePostBookingMotive(deps.AccountUsecases.MotiveUsecases.MotiveAdder), clinicianMW)
 	e.PATCH("/api/booking-motives/:id", handlePatchBookingMotive(deps.AccountUsecases.MotiveUsecases.MotiveEditer), clinicianMW)

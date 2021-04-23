@@ -64,16 +64,18 @@ func main() {
 	})
 	mail := mail.NewService(mail.Deps{
 		Templates: parseEmailTemplates(path),
-		Client:    mail.NewPostFixClient(), //mail.NewGmailClient(),
-		Intl:      intl,
+		//Client:    mail.NewPostFixClient(),
+		Client: mail.NewGmailClient(),
+		Intl:   intl,
 	})
 	err = echo.StartEchoServer(echo.EchoServerDeps{
 		ContactService:    contact.NewUsecase(repo, mail),
 		CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
-		AccountUsecases:   newAccountUsecases(repo),
-		PatientUsecases:   newPatientUsecases(repo),
-		BookingUsecases:   newBookingUsecases(paris, repo, mail),
-		BillingUsecases:   newBillingUsecases(repo, mail, pdf),
+		//CCredentialsGetter: http.FirebaseCredentialsGetter(fbClient),
+		AccountUsecases: newAccountUsecases(repo),
+		PatientUsecases: newPatientUsecases(repo),
+		BookingUsecases: newBookingUsecases(paris, repo, mail),
+		BillingUsecases: newBillingUsecases(repo, mail, pdf),
 	})
 
 	if err != nil {
@@ -104,6 +106,7 @@ func getPath() (string, error) {
 }
 
 func newAccountUsecases(repo *psql.Repo) usecase.AccountUsecases {
+	crypt := crypt.NewService()
 	motiveUc := &motive.BookingMotiveUsecase{
 		MotiveUpdater: repo,
 		MotiveDeleter: repo,
@@ -112,6 +115,12 @@ func newAccountUsecases(repo *psql.Repo) usecase.AccountUsecases {
 	officeHoursUc := &officehours.Usecase{
 		Deleter: repo,
 		Creater: repo,
+	}
+	clinicianUc := &clinician.EditUsecase{
+		PhoneUpdater:      repo,
+		EmailUpdater:      repo,
+		AdeliUpdater:      repo,
+		ProfessionUpdater: repo,
 	}
 	return usecase.AccountUsecases{
 		AccountDataGetter: &account.GetDataUsecase{AccountDataGetter: repo},
@@ -122,19 +131,17 @@ func newAccountUsecases(repo *psql.Repo) usecase.AccountUsecases {
 		},
 		AccountAdder: &account.AddAccountUsecase{AccountCreater: repo},
 		ClinicianUsecases: usecase.ClinicianUsecases{
-			ProfessionEditer: &clinician.EditUsecase{
-				PhoneUpdater:      repo,
-				EmailUpdater:      repo,
-				AdeliUpdater:      repo,
-				ProfessionUpdater: repo,
-			},
+			ProfessionEditer: clinicianUc,
+			PhoneEditer:      clinicianUc,
+			EmailEditer:      clinicianUc,
+			AdeliEditer:      clinicianUc,
 		},
 		BusinessUsecases: &business.UpdateUsecase{
 			BusinessUpdater: repo,
 		},
 		AccountAddressUsecases: usecase.AccountAddressUsecases{
 			OfficeAddressAdder: &address.AddAddressUsecase{AddressCreater: repo},
-			AddressDeleter:     &address.DeleteAddressUsecase{AddressDeleter: repo},
+			AddressDeleter:     &address.DeleteAddressUsecase{AccountGetter: repo, AddressDeleter: repo},
 			HomeAddressSetter:  &address.SetHomeUsecase{HomeAddressSetter: repo},
 			AddressEditer:      &address.EditAddressUsecase{AddressUpdater: repo, AccountGetter: repo},
 		},
@@ -151,6 +158,7 @@ func newAccountUsecases(repo *psql.Repo) usecase.AccountUsecases {
 			SettingsUpdater: repo,
 		},
 		StripeKeysUsecases: &stripekeys.Usecase{
+			Crypter:           crypt,
 			StripeKeysUpdater: repo,
 		},
 	}

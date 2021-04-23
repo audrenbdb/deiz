@@ -88,7 +88,7 @@ func insertBookingInvoice(ctx context.Context, db db, i *deiz.BookingInvoice) er
 	city_and_date, label, price_before_tax, price_after_tax, delivery_date,
 	delivery_date_str, tax_fee, exemption, payment_method_id)
 	VALUES($1, NULLIF($2, 0), $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING id`
-	row := db.QueryRow(ctx, query, i.Booking.Clinician.ID, i.Booking.ID, i.CreatedAt, i.Identifier, i.Sender,
+	row := db.QueryRow(ctx, query, i.ClinicianID, i.Booking.ID, i.CreatedAt, i.Identifier, i.Sender,
 		i.Recipient, i.CityAndDate, i.Label, i.PriceBeforeTax, i.PriceAfterTax, i.DeliveryDate,
 		i.DeliveryDateStr, i.TaxFee, i.Exemption, i.PaymentMethod.ID)
 	err := row.Scan(&i.ID)
@@ -105,7 +105,7 @@ func (r *Repo) SaveBookingInvoice(ctx context.Context, i *deiz.BookingInvoice) e
 	if err != nil {
 		return err
 	}
-	err = updateBookingPaidStatus(ctx, tx, true, i.Booking.ID, i.Booking.Clinician.ID)
+	err = updateBookingPaidStatus(ctx, tx, true, i.Booking.ID, i.ClinicianID)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (r *Repo) SaveCorrectingBookingInvoice(ctx context.Context, i *deiz.Booking
 	if err != nil {
 		return err
 	}
-	err = setInvoiceCanceled(ctx, tx, originalInvoiceID, i.Booking.Clinician.ID)
+	err = setInvoiceCanceled(ctx, tx, originalInvoiceID, i.ClinicianID)
 	if err != nil {
 		return err
 	}

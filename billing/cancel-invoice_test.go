@@ -11,7 +11,7 @@ type mockCorrectingInvoiceSaver struct {
 	err error
 }
 
-func (m *mockCorrectingInvoiceSaver) SaveCorrectingBookingInvoice(ctx context.Context, correctiveInvoice *deiz.BookingInvoice) error {
+func (m *mockCorrectingInvoiceSaver) SaveCorrectingBookingInvoice(ctx context.Context, correctiveInvoice *deiz.BookingInvoice, clinicianID int) error {
 	return m.err
 }
 func TestCancelInvoice(t *testing.T) {
@@ -66,7 +66,7 @@ func TestCancelInvoice(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		err := test.usecase.CancelInvoice(context.Background(), test.invoiceInput)
+		err := test.usecase.CancelInvoice(context.Background(), test.invoiceInput, 0)
 		assert.Equal(t, test.errorOutput, err)
 		assert.True(t, test.invoiceInput.Booking.ID == 0)
 	}

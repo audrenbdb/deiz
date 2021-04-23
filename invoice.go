@@ -9,6 +9,7 @@ const invoiceIDFormat = "DEIZ-%d-%08d"
 
 type BookingInvoice struct {
 	ID              int           `json:"id"`
+	ClinicianID     int           `json:"clinicianId"`
 	Booking         Booking       `json:"booking"`
 	CreatedAt       time.Time     `json:"createdAt"`
 	Identifier      string        `json:"identifier"`

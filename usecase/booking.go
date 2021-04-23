@@ -1,3 +1,6 @@
+/*
+Package usecase references all usecases to be implemented
+*/
 package usecase
 
 import (

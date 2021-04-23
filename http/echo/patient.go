@@ -1,32 +1,14 @@
 package echo
 
 import (
-	"context"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
 	"strconv"
 )
 
-type (
-	PatientSearcher interface {
-		SearchPatient(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error)
-	}
-	PatientAdder interface {
-		AddPatient(ctx context.Context, p *deiz.Patient, clinicianID int) error
-	}
-	PatientEditer interface {
-		EditPatient(ctx context.Context, p *deiz.Patient, clinicianID int) error
-	}
-	PatientAddressAdder interface {
-		AddPatientAddress(ctx context.Context, a *deiz.Address, patientID int, clinicianID int) error
-	}
-	PatientAddressEditer interface {
-		EditPatientAddress(ctx context.Context, a *deiz.Address, patientID int, clinicianID int) error
-	}
-)
-
-func handlePatchPatientAddress(addressEditer PatientAddressEditer) echo.HandlerFunc {
+func handlePatchPatientAddress(addressEditer usecase.PatientAddressEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -45,7 +27,7 @@ func handlePatchPatientAddress(addressEditer PatientAddressEditer) echo.HandlerF
 	}
 }
 
-func handlePostPatientAddress(adder PatientAddressAdder) echo.HandlerFunc {
+func handlePostPatientAddress(adder usecase.PatientAddressAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -64,7 +46,7 @@ func handlePostPatientAddress(adder PatientAddressAdder) echo.HandlerFunc {
 	}
 }
 
-func handlePatchPatient(editer PatientEditer) echo.HandlerFunc {
+func handlePatchPatient(editer usecase.PatientEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -79,7 +61,7 @@ func handlePatchPatient(editer PatientEditer) echo.HandlerFunc {
 	}
 }
 
-func handleGetPatients(searcher PatientSearcher) echo.HandlerFunc {
+func handleGetPatients(searcher usecase.PatientSearcher) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -95,7 +77,7 @@ func handleGetPatients(searcher PatientSearcher) echo.HandlerFunc {
 	}
 }
 
-func handlePostPatient(adder PatientAdder) echo.HandlerFunc {
+func handlePostPatient(adder usecase.PatientAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID

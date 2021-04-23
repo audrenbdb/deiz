@@ -1,37 +1,14 @@
 package echo
 
 import (
-	"context"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
 	"strconv"
-	"time"
 )
 
-type (
-	invoiceCreater interface {
-		CreateInvoice(ctx context.Context, invoice *deiz.BookingInvoice, sendToPatient bool) error
-	}
-	invoiceCanceler interface {
-		CancelInvoice(ctx context.Context, invoice *deiz.BookingInvoice) error
-	}
-	invoiceMailer interface {
-		MailInvoice(invoice *deiz.BookingInvoice, recipient string) error
-		MailInvoicesSummary(ctx context.Context, start, end time.Time, recipient string, clinicianID int) error
-	}
-	invoicesGetter interface {
-		GetPeriodInvoices(ctx context.Context, start, end time.Time, clinicianID int) ([]deiz.BookingInvoice, error)
-	}
-	stripeSessionCreater interface {
-		CreateStripePaymentSession(ctx context.Context, amount int64, clinicianID int) (string, error)
-	}
-	unpaidBookingsGetter interface {
-		GetUnpaidBookings(ctx context.Context, clinicianID int) ([]deiz.Booking, error)
-	}
-)
-
-func handleGetUnpaidBookings(getter unpaidBookingsGetter) echo.HandlerFunc {
+func handleGetUnpaidBookings(getter usecase.UnpaidBookingsGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -43,7 +20,7 @@ func handleGetUnpaidBookings(getter unpaidBookingsGetter) echo.HandlerFunc {
 	}
 }
 
-func handleGetSessionCheckout(creater stripeSessionCreater) echo.HandlerFunc {
+func handleGetSessionCheckout(creater usecase.StripeSessionCreater) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID, err := strconv.Atoi(c.QueryParam("clinicianId"))
@@ -62,7 +39,7 @@ func handleGetSessionCheckout(creater stripeSessionCreater) echo.HandlerFunc {
 	}
 }
 
-func handlePostPDFBookingInvoicesPeriodSummary(mailer invoiceMailer) echo.HandlerFunc {
+func handlePostPDFBookingInvoicesPeriodSummary(mailer usecase.InvoiceMailer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -85,7 +62,7 @@ func handlePostPDFBookingInvoicesPeriodSummary(mailer invoiceMailer) echo.Handle
 	}
 }
 
-func handlePostPDFBookingInvoice(mailer invoiceMailer) echo.HandlerFunc {
+func handlePostPDFBookingInvoice(mailer usecase.InvoiceMailer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		type post struct {
 			SendTo  string              `json:"sendTo"`
@@ -103,7 +80,7 @@ func handlePostPDFBookingInvoice(mailer invoiceMailer) echo.HandlerFunc {
 	}
 }
 
-func handlePostBookingInvoice(creater invoiceCreater) echo.HandlerFunc {
+func handlePostBookingInvoice(creater usecase.InvoiceCreater) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		sendToPatient, err := strconv.ParseBool(c.QueryParam("sendToPatient"))
@@ -122,7 +99,7 @@ func handlePostBookingInvoice(creater invoiceCreater) echo.HandlerFunc {
 	}
 }
 
-func handlePostCancelInvoice(canceler invoiceCanceler) echo.HandlerFunc {
+func handlePostCancelInvoice(canceler usecase.InvoiceCanceler) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		invoice, err := getInvoiceFromRequest(c)
@@ -137,7 +114,7 @@ func handlePostCancelInvoice(canceler invoiceCanceler) echo.HandlerFunc {
 	}
 }
 
-func handleGetPeriodInvoices(getter invoicesGetter) echo.HandlerFunc {
+func handleGetPeriodInvoices(getter usecase.InvoicesGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID

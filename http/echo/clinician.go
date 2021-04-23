@@ -1,31 +1,13 @@
 package echo
 
 import (
-	"context"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
 )
 
-type (
-	clinicianPhoneEditer interface {
-		EditClinicianPhone(ctx context.Context, phone string, clinicianID int) error
-	}
-	clinicianEmailEditer interface {
-		EditClinicianEmail(ctx context.Context, email string, clinicianID int) error
-	}
-	addressEditer interface {
-		EditAddress(ctx context.Context, address *deiz.Address, clinicianID int) error
-	}
-	clinicianAdeliEditer interface {
-		EditClinicianAdeli(ctx context.Context, identifier string, clinicianID int) error
-	}
-	clinicianProfessionEditer interface {
-		EditClinicianProfession(ctx context.Context, profession string, clinicianID int) error
-	}
-)
-
-func handlePatchClinicianProfession(edit clinicianProfessionEditer) echo.HandlerFunc {
+func handlePatchClinicianProfession(edit usecase.ClinicianProfessionEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -43,7 +25,7 @@ func handlePatchClinicianProfession(edit clinicianProfessionEditer) echo.Handler
 	}
 }
 
-func handlePatchClinicianPhone(edit clinicianPhoneEditer) echo.HandlerFunc {
+func handlePatchClinicianPhone(edit usecase.ClinicianPhoneEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -61,7 +43,7 @@ func handlePatchClinicianPhone(edit clinicianPhoneEditer) echo.HandlerFunc {
 	}
 }
 
-func handlePatchClinicianEmail(edit clinicianEmailEditer) echo.HandlerFunc {
+func handlePatchClinicianEmail(edit usecase.ClinicianEmailEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -80,7 +62,7 @@ func handlePatchClinicianEmail(edit clinicianEmailEditer) echo.HandlerFunc {
 	}
 }
 
-func handlePatchClinicianAddress(edit addressEditer) echo.HandlerFunc {
+func handlePatchClinicianAddress(edit usecase.AddressEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -96,7 +78,7 @@ func handlePatchClinicianAddress(edit addressEditer) echo.HandlerFunc {
 	}
 }
 
-func handlePatchClinicianAdeli(edit clinicianAdeliEditer) echo.HandlerFunc {
+func handlePatchClinicianAdeli(edit usecase.ClinicianAdeliEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID

@@ -2,6 +2,7 @@ package echo
 
 import (
 	"context"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"strconv"
@@ -9,63 +10,6 @@ import (
 )
 
 type (
-	BookingUsecases struct {
-		Register       bookingRegister
-		PreRegister    bookingPreRegister
-		CalendarReader calendarReader
-		SlotDeleter    bookingSlotDeleter
-		SlotBlocker    bookingSlotBlocker
-	}
-	BillingUsecases struct {
-		InvoiceCreater       invoiceCreater
-		InvoiceCanceler      invoiceCanceler
-		InvoiceMailer        invoiceMailer
-		InvoicesGetter       invoicesGetter
-		StripeSessionCreater stripeSessionCreater
-		UnpaidBookingsGetter unpaidBookingsGetter
-	}
-	AccountUsecases struct {
-		AccountAdder      accountAdder
-		LoginAllower      loginAllower
-		AccountDataGetter accountDataGetter
-
-		AccountAddressUsecases   AccountAddressUsecases
-		BusinessUsecases         businessEditer
-		ClinicianUsecases        ClinicianUsecases
-		MotiveUsecases           MotiveUsecases
-		OfficeHoursUsecases      OfficeHoursUsecases
-		CalendarSettingsUsecases calendarSettingsEditer
-		StripeKeysUsecases       stripeKeysSetter
-	}
-	AccountAddressUsecases struct {
-		OfficeAddressAdder officeAddressAdder
-		AddressDeleter     addressDeleter
-		HomeAddressSetter  homeAddressSetter
-		AddressEditer      addressEditer
-	}
-	ClinicianUsecases struct {
-		PhoneEditer      clinicianPhoneEditer
-		EmailEditer      clinicianEmailEditer
-		ProfessionEditer clinicianProfessionEditer
-		AdeliEditer      clinicianAdeliEditer
-	}
-	MotiveUsecases struct {
-		MotiveAdder   bookingMotiveAdder
-		MotiveEditer  bookingMotiveEditer
-		MotiveRemover bookingMotiveRemover
-	}
-	OfficeHoursUsecases struct {
-		OfficeHoursAdder   officeHoursAdder
-		OfficeHoursRemover officeHoursRemover
-	}
-	PatientUsecases interface {
-		PatientSearcher
-		PatientAdder
-		PatientEditer
-		PatientAddressAdder
-		PatientAddressEditer
-		PatientBookingsGetter
-	}
 	ContactService interface {
 		ContactFormToClinicianSender
 		GetInTouchSender
@@ -73,12 +17,12 @@ type (
 )
 
 type EchoServerDeps struct {
-	CredentialsGetter credentialsGetter
-	AccountUsecases   AccountUsecases
-	PatientUsecases   PatientUsecases
+	AccountUsecases   usecase.AccountUsecases
+	PatientUsecases   usecase.PatientUsecases
+	BookingUsecases   usecase.BookingUsecases
+	BillingUsecases   usecase.BillingUsecases
 	ContactService    ContactService
-	BookingUsecases   BookingUsecases
-	BillingUsecases   BillingUsecases
+	CredentialsGetter credentialsGetter
 }
 
 func StartEchoServer(deps EchoServerDeps) error {
@@ -113,12 +57,12 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.POST("/api/clinicians/:id/addresses", handlePostClinicianAddress(deps.AccountUsecases.AccountAddressUsecases.OfficeAddressAdder, deps.AccountUsecases.AccountAddressUsecases.HomeAddressSetter), clinicianMW)
 	e.DELETE("/api/clinicians/:id/addresses/:aid", handleDeleteClinicianAddress(deps.AccountUsecases.AccountAddressUsecases.AddressDeleter), clinicianMW)
 
-	e.GET("/api/patients", handleGetPatients(deps.PatientUsecases), clinicianMW)
-	e.POST("/api/patients", handlePostPatient(deps.PatientUsecases), clinicianMW)
-	e.PATCH("/api/patients", handlePatchPatient(deps.PatientUsecases), clinicianMW)
-	e.POST("/api/patients/:id/address", handlePostPatientAddress(deps.PatientUsecases), clinicianMW)
-	e.PATCH("/api/patients/:id/address", handlePatchPatientAddress(deps.PatientUsecases), clinicianMW)
-	e.GET("/api/patients/:id/bookings", handleGetPatientBookings(deps.PatientUsecases), clinicianMW)
+	e.GET("/api/patients", handleGetPatients(deps.PatientUsecases.Searcher), clinicianMW)
+	e.POST("/api/patients", handlePostPatient(deps.PatientUsecases.Adder), clinicianMW)
+	e.PATCH("/api/patients", handlePatchPatient(deps.PatientUsecases.Editer), clinicianMW)
+	e.POST("/api/patients/:id/address", handlePostPatientAddress(deps.PatientUsecases.AddressAdder), clinicianMW)
+	e.PATCH("/api/patients/:id/address", handlePatchPatientAddress(deps.PatientUsecases.AddressEditer), clinicianMW)
+	e.GET("/api/patients/:id/bookings", handleGetPatientBookings(deps.PatientUsecases.BookingsGetter), clinicianMW)
 
 	e.POST("/api/pdf-booking-invoices/:id", handlePostPDFBookingInvoice(deps.BillingUsecases.InvoiceMailer), clinicianMW)
 	e.POST("/api/pdf-booking-invoices", handlePostPDFBookingInvoicesPeriodSummary(deps.BillingUsecases.InvoiceMailer), clinicianMW)

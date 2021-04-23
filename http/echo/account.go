@@ -1,27 +1,14 @@
 package echo
 
 import (
-	"context"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
 	"strconv"
 )
 
-type (
-	accountDataGetter interface {
-		GetClinicianAccountData(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error)
-		GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error)
-	}
-	accountAdder interface {
-		AddAccount(ctx context.Context, acc *deiz.ClinicianAccount) error
-	}
-	loginAllower interface {
-		AllowLogin(ctx context.Context, loginCredentials deiz.Credentials) error
-	}
-)
-
-func handlePostRegistration(allower loginAllower) echo.HandlerFunc {
+func handlePostRegistration(allower usecase.LoginAllower) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		var f deiz.Credentials
@@ -36,7 +23,7 @@ func handlePostRegistration(allower loginAllower) echo.HandlerFunc {
 	}
 }
 
-func handlePostClinicianAccount(adder accountAdder) echo.HandlerFunc {
+func handlePostClinicianAccount(adder usecase.AccountAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		var acc deiz.ClinicianAccount
@@ -50,7 +37,7 @@ func handlePostClinicianAccount(adder accountAdder) echo.HandlerFunc {
 	}
 }
 
-func handleGetClinicianAccount(getter accountDataGetter) echo.HandlerFunc {
+func handleGetClinicianAccount(getter usecase.AccountDataGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -62,7 +49,7 @@ func handleGetClinicianAccount(getter accountDataGetter) echo.HandlerFunc {
 	}
 }
 
-func handleGetClinicianAccountPublicData(getter accountDataGetter) echo.HandlerFunc {
+func handleGetClinicianAccountPublicData(getter usecase.AccountDataGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID, err := strconv.Atoi(c.QueryParam("clinicianId"))

@@ -1,26 +1,14 @@
 package echo
 
 import (
-	"context"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
 	"strconv"
 )
 
-type (
-	bookingMotiveEditer interface {
-		EditBookingMotive(ctx context.Context, m *deiz.BookingMotive, clinicianID int) error
-	}
-	bookingMotiveRemover interface {
-		RemoveBookingMotive(ctx context.Context, mID, clinicianID int) error
-	}
-	bookingMotiveAdder interface {
-		AddBookingMotive(ctx context.Context, m *deiz.BookingMotive, clinicianID int) error
-	}
-)
-
-func handlePatchBookingMotive(editer bookingMotiveEditer) echo.HandlerFunc {
+func handlePatchBookingMotive(editer usecase.BookingMotiveEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -37,7 +25,7 @@ func handlePatchBookingMotive(editer bookingMotiveEditer) echo.HandlerFunc {
 	}
 }
 
-func handlePostBookingMotive(adder bookingMotiveAdder) echo.HandlerFunc {
+func handlePostBookingMotive(adder usecase.BookingMotiveAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -54,7 +42,7 @@ func handlePostBookingMotive(adder bookingMotiveAdder) echo.HandlerFunc {
 	}
 }
 
-func handleDeleteBookingMotive(remover bookingMotiveRemover) echo.HandlerFunc {
+func handleDeleteBookingMotive(remover usecase.BookingMotiveRemover) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID

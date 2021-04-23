@@ -1,18 +1,12 @@
 package echo
 
 import (
-	"context"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
 )
 
-type (
-	stripeKeysSetter interface {
-		SetClinicianStripeKeys(ctx context.Context, pk, sk string, clinicianID int) error
-	}
-)
-
-func handlePatchStripeKeys(setter stripeKeysSetter) echo.HandlerFunc {
+func handlePatchStripeKeys(setter usecase.StripeKeysSetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID

@@ -22,6 +22,7 @@ import (
 	"github.com/audrenbdb/deiz/pdf"
 	"github.com/audrenbdb/deiz/repo/psql"
 	"github.com/audrenbdb/deiz/stripe"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"os"
 	"path/filepath"
@@ -66,67 +67,13 @@ func main() {
 		Client:    mail.NewPostFixClient(), //mail.NewGmailClient(),
 		Intl:      intl,
 	})
-	bookingUsecases := newBookingUsecases(paris, repo, mail)
-	billingUsecases := newBillingUsecases(repo, mail, pdf)
-	accountUsecases := newAccountUsecases(repo)
 	err = echo.StartEchoServer(echo.EchoServerDeps{
+		ContactService:    contact.NewUsecase(repo, mail),
 		CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
-		AccountUsecases: echo.AccountUsecases{
-			AccountAdder:      accountUsecases.accountAdder,
-			LoginAllower:      accountUsecases.loginAllower,
-			AccountDataGetter: accountUsecases.accountDataGetter,
-
-			AccountAddressUsecases: echo.AccountAddressUsecases{
-				OfficeAddressAdder: accountUsecases.addressUsecases.adder,
-				AddressDeleter:     accountUsecases.addressUsecases.deleter,
-				HomeAddressSetter:  accountUsecases.addressUsecases.homeSetter,
-				AddressEditer:      accountUsecases.addressUsecases.editer,
-			},
-			BusinessUsecases: accountUsecases.businessUsecases.updater,
-			ClinicianUsecases: echo.ClinicianUsecases{
-				PhoneEditer:      accountUsecases.clinicianUsecases.editer,
-				EmailEditer:      accountUsecases.clinicianUsecases.editer,
-				ProfessionEditer: accountUsecases.clinicianUsecases.editer,
-				AdeliEditer:      accountUsecases.clinicianUsecases.editer,
-			},
-			MotiveUsecases: echo.MotiveUsecases{
-				MotiveAdder:   accountUsecases.motiveUsecases,
-				MotiveEditer:  accountUsecases.motiveUsecases,
-				MotiveRemover: accountUsecases.motiveUsecases,
-			},
-			OfficeHoursUsecases: echo.OfficeHoursUsecases{
-				OfficeHoursAdder:   accountUsecases.officeHoursUsecases,
-				OfficeHoursRemover: accountUsecases.officeHoursUsecases,
-			},
-			StripeKeysUsecases:       accountUsecases.stripeKeysUsecases,
-			CalendarSettingsUsecases: accountUsecases.calendarSettingsUsecases,
-		},
-		PatientUsecases: &patient.Usecase{
-			Searcher:              repo,
-			Creater:               repo,
-			Updater:               repo,
-			GetterByEmail:         repo,
-			ClinicianBoundChecker: repo,
-			AddressCreater:        repo,
-			AddressUpdater:        repo,
-			BookingsGetter:        repo,
-		},
-		ContactService: contact.NewUsecase(repo, mail),
-		BookingUsecases: echo.BookingUsecases{
-			Register:       bookingUsecases.register,
-			PreRegister:    bookingUsecases.preRegister,
-			CalendarReader: bookingUsecases.calendarReader,
-			SlotDeleter:    bookingUsecases.slotDeleter,
-			SlotBlocker:    bookingUsecases.slotBlocker,
-		},
-		BillingUsecases: echo.BillingUsecases{
-			InvoiceCreater:       billingUsecases.invoiceCreater,
-			InvoiceMailer:        billingUsecases.invoiceMailer,
-			InvoiceCanceler:      billingUsecases.invoiceCanceler,
-			InvoicesGetter:       billingUsecases.periodInvoicesGetter,
-			StripeSessionCreater: billingUsecases.stripeSessionCreater,
-			UnpaidBookingsGetter: billingUsecases.unpaidBookingsGetter,
-		},
+		AccountUsecases:   newAccountUsecases(repo),
+		PatientUsecases:   newPatientUsecases(repo),
+		BookingUsecases:   newBookingUsecases(paris, repo, mail),
+		BillingUsecases:   newBillingUsecases(repo, mail, pdf),
 	})
 
 	if err != nil {
@@ -156,145 +103,112 @@ func getPath() (string, error) {
 	return filepath.Dir(ex), nil
 }
 
-type accountUsecases struct {
-	accountDataGetter *account.GetDataUsecase
-	loginAllower      *account.AllowLoginUsecase
-	accountAdder      *account.AddAccountUsecase
-
-	clinicianUsecases        clinicianUsecases
-	businessUsecases         businessUsecases
-	addressUsecases          addressUsecases
-	motiveUsecases           *motive.BookingMotiveUsecase
-	officeHoursUsecases      *officehours.Usecase
-	calendarSettingsUsecases *settings.CalendarSettingsUsecase
-	stripeKeysUsecases       *stripekeys.Usecase
-}
-
-func newAccountUsecases(repo *psql.Repo) accountUsecases {
-	return accountUsecases{
-		accountDataGetter: &account.GetDataUsecase{AccountDataGetter: repo},
-		loginAllower: &account.AllowLoginUsecase{
+func newAccountUsecases(repo *psql.Repo) usecase.AccountUsecases {
+	motiveUc := &motive.BookingMotiveUsecase{
+		MotiveUpdater: repo,
+		MotiveDeleter: repo,
+		MotiveCreater: repo,
+	}
+	officeHoursUc := &officehours.Usecase{
+		Deleter: repo,
+		Creater: repo,
+	}
+	return usecase.AccountUsecases{
+		AccountDataGetter: &account.GetDataUsecase{AccountDataGetter: repo},
+		LoginAllower: &account.AllowLoginUsecase{
 			ClinicianGetter: repo,
 			AuthChecker:     repo,
 			AuthEnabler:     repo,
 		},
-		accountAdder:      &account.AddAccountUsecase{AccountCreater: repo},
-		clinicianUsecases: newClinicianUsecases(repo),
-		businessUsecases:  newBusinessUsecases(repo),
-		addressUsecases:   newAddressUsecases(repo),
-		motiveUsecases: &motive.BookingMotiveUsecase{
-			MotiveCreater: repo,
-			MotiveDeleter: repo,
-			MotiveUpdater: repo,
+		AccountAdder: &account.AddAccountUsecase{AccountCreater: repo},
+		ClinicianUsecases: usecase.ClinicianUsecases{
+			ProfessionEditer: &clinician.EditUsecase{
+				PhoneUpdater:      repo,
+				EmailUpdater:      repo,
+				AdeliUpdater:      repo,
+				ProfessionUpdater: repo,
+			},
 		},
-		officeHoursUsecases: &officehours.Usecase{
-			Creater: repo,
-			Deleter: repo,
+		BusinessUsecases: &business.UpdateUsecase{
+			BusinessUpdater: repo,
 		},
-		calendarSettingsUsecases: &settings.CalendarSettingsUsecase{
+		AccountAddressUsecases: usecase.AccountAddressUsecases{
+			OfficeAddressAdder: &address.AddAddressUsecase{AddressCreater: repo},
+			AddressDeleter:     &address.DeleteAddressUsecase{AddressDeleter: repo},
+			HomeAddressSetter:  &address.SetHomeUsecase{HomeAddressSetter: repo},
+			AddressEditer:      &address.EditAddressUsecase{AddressUpdater: repo, AccountGetter: repo},
+		},
+		MotiveUsecases: usecase.MotiveUsecases{
+			MotiveAdder:   motiveUc,
+			MotiveRemover: motiveUc,
+			MotiveEditer:  motiveUc,
+		},
+		OfficeHoursUsecases: usecase.OfficeHoursUsecases{
+			OfficeHoursAdder:   officeHoursUc,
+			OfficeHoursRemover: officeHoursUc,
+		},
+		CalendarSettingsUsecases: &settings.CalendarSettingsUsecase{
 			SettingsUpdater: repo,
 		},
-		stripeKeysUsecases: &stripekeys.Usecase{
+		StripeKeysUsecases: &stripekeys.Usecase{
 			StripeKeysUpdater: repo,
 		},
 	}
 }
 
-type clinicianUsecases struct {
-	editer *clinician.EditUsecase
-}
-
-func newClinicianUsecases(repo *psql.Repo) clinicianUsecases {
-	return clinicianUsecases{
-		editer: &clinician.EditUsecase{
-			EmailUpdater:      repo,
-			PhoneUpdater:      repo,
-			AdeliUpdater:      repo,
-			ProfessionUpdater: repo,
-		},
+func newPatientUsecases(repo *psql.Repo) usecase.PatientUsecases {
+	uc := &patient.Usecase{
+		Searcher:              repo,
+		Creater:               repo,
+		Updater:               repo,
+		GetterByEmail:         repo,
+		ClinicianBoundChecker: repo,
+		AddressCreater:        repo,
+		AddressUpdater:        repo,
+		BookingsGetter:        repo,
+	}
+	return usecase.PatientUsecases{
+		Searcher:       uc,
+		Adder:          uc,
+		Editer:         uc,
+		AddressEditer:  uc,
+		AddressAdder:   uc,
+		BookingsGetter: uc,
 	}
 }
 
-type businessUsecases struct {
-	updater *business.UpdateUsecase
-}
-
-func newBusinessUsecases(repo *psql.Repo) businessUsecases {
-	return businessUsecases{
-		updater: &business.UpdateUsecase{BusinessUpdater: repo},
-	}
-}
-
-type addressUsecases struct {
-	adder      *address.AddAddressUsecase
-	deleter    *address.DeleteAddressUsecase
-	editer     *address.EditAddressUsecase
-	homeSetter *address.SetHomeUsecase
-}
-
-func newAddressUsecases(repo *psql.Repo) addressUsecases {
-	return addressUsecases{
-		adder:   &address.AddAddressUsecase{AddressCreater: repo},
-		deleter: &address.DeleteAddressUsecase{AccountGetter: repo, AddressDeleter: repo},
-		editer: &address.EditAddressUsecase{
-			AccountGetter:  repo,
-			AddressUpdater: repo,
-		},
-		homeSetter: &address.SetHomeUsecase{
-			HomeAddressSetter: repo,
-		},
-	}
-}
-
-type billingUsecases struct {
-	invoiceCreater       *billing.CreateInvoiceUsecase
-	invoiceCanceler      *billing.CancelInvoiceUsecase
-	invoiceMailer        *billing.MailInvoiceUsecase
-	periodInvoicesGetter *billing.GetPeriodInvoicesUsecase
-	stripeSessionCreater *billing.CreateStripeSessionUsecase
-	unpaidBookingsGetter *billing.GetUnpaidBookingsUsecase
-}
-
-func newBillingUsecases(repo *psql.Repo, mailer *mail.Mailer, pdf *pdf.Pdf) billingUsecases {
+func newBillingUsecases(repo *psql.Repo, mailer *mail.Mailer, pdf *pdf.Pdf) usecase.BillingUsecases {
 	stripe := stripe.NewService()
 	crypt := crypt.NewService()
-	return billingUsecases{
-		invoiceCreater: &billing.CreateInvoiceUsecase{
+	return usecase.BillingUsecases{
+		InvoiceCreater: &billing.CreateInvoiceUsecase{
 			Counter:    repo,
 			Saver:      repo,
 			PdfCreater: pdf,
 			Mailer:     mailer,
 		},
-		invoiceCanceler: &billing.CancelInvoiceUsecase{
+		InvoiceCanceler: &billing.CancelInvoiceUsecase{
 			Counter: repo,
 			Saver:   repo,
 		},
-		invoiceMailer: &billing.MailInvoiceUsecase{
+		InvoiceMailer: &billing.MailInvoiceUsecase{
 			InvoiceMailer:             mailer,
 			InvoicesSummaryMailer:     mailer,
 			PdfInvoicesSummaryCreater: pdf,
 			PdfInvoiceCreater:         pdf,
 			InvoicesGetter:            repo,
 		},
-		periodInvoicesGetter: &billing.GetPeriodInvoicesUsecase{Getter: repo},
-		stripeSessionCreater: &billing.CreateStripeSessionUsecase{
+		InvoicesGetter: &billing.GetPeriodInvoicesUsecase{Getter: repo},
+		StripeSessionCreater: &billing.CreateStripeSessionUsecase{
 			Crypter:              crypt,
 			StripeSessionCreater: stripe,
 			SecretKeyGetter:      repo,
 		},
-		unpaidBookingsGetter: &billing.GetUnpaidBookingsUsecase{Getter: repo},
+		UnpaidBookingsGetter: &billing.GetUnpaidBookingsUsecase{Getter: repo},
 	}
 }
 
-type bookingUsecases struct {
-	register       *booking.RegisterUsecase
-	preRegister    *booking.PreRegisterUsecase
-	calendarReader *booking.ReadCalendarUsecase
-	slotDeleter    *booking.DeleteSlotUsecase
-	slotBlocker    *booking.BlockSlotUsecase
-}
-
-func newBookingUsecases(paris *time.Location, repo *psql.Repo, mailer *mail.Mailer) bookingUsecases {
+func newBookingUsecases(paris *time.Location, repo *psql.Repo, mailer *mail.Mailer) usecase.BookingUsecases {
 	bookingRegister := &booking.RegisterUsecase{
 		Loc:            paris,
 		PatientGetter:  repo,
@@ -321,11 +235,11 @@ func newBookingUsecases(paris *time.Location, repo *psql.Repo, mailer *mail.Mail
 	bookingSlotBlocker := &booking.BlockSlotUsecase{
 		Blocker: repo,
 	}
-	return bookingUsecases{
-		register:       bookingRegister,
-		preRegister:    bookingPreRegister,
-		calendarReader: calendarReader,
-		slotDeleter:    bookingSlotDeleter,
-		slotBlocker:    bookingSlotBlocker,
+	return usecase.BookingUsecases{
+		Register:       bookingRegister,
+		PreRegister:    bookingPreRegister,
+		CalendarReader: calendarReader,
+		SlotDeleter:    bookingSlotDeleter,
+		SlotBlocker:    bookingSlotBlocker,
 	}
 }

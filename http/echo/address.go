@@ -1,26 +1,14 @@
 package echo
 
 import (
-	"context"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
 	"strconv"
 )
 
-type (
-	officeAddressAdder interface {
-		AddClinicianOfficeAddress(ctx context.Context, address *deiz.Address, clinicianID int) error
-	}
-	homeAddressSetter interface {
-		SetHomeAddress(ctx context.Context, address *deiz.Address, clinicianID int) error
-	}
-	addressDeleter interface {
-		DeleteAddress(ctx context.Context, addressID, clinicianID int) error
-	}
-)
-
-func handleDeleteClinicianAddress(deleter addressDeleter) echo.HandlerFunc {
+func handleDeleteClinicianAddress(deleter usecase.AddressDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -37,7 +25,7 @@ func handleDeleteClinicianAddress(deleter addressDeleter) echo.HandlerFunc {
 }
 
 func handlePostClinicianAddress(
-	officeAddressAdder officeAddressAdder, homeAddressSetter homeAddressSetter) echo.HandlerFunc {
+	officeAddressAdder usecase.OfficeAddressAdder, homeAddressSetter usecase.HomeAddressSetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var err error
 		ctx := c.Request().Context()

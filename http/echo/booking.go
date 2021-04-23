@@ -1,43 +1,14 @@
 package echo
 
 import (
-	"context"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
 	"strconv"
-	"time"
 )
 
-type (
-	bookingRegister interface {
-		RegisterBookingFromClinician(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient bool) error
-		RegisterBookingFromPatient(ctx context.Context, b *deiz.Booking) error
-		RegisterPreRegisteredBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient bool) error
-	}
-	bookingSlotDeleter interface {
-		DeleteBlockedSlot(ctx context.Context, bookingID, clinicianID int) error
-		DeletePreRegisteredSlot(ctx context.Context, bookingID, clinicianID int) error
-		DeleteBookedSlotFromPatient(ctx context.Context, deleteID string) error
-		DeleteBookedSlotFromClinician(ctx context.Context, bookingID int, notifyPatient bool, clinicianID int) error
-	}
-	bookingPreRegister interface {
-		PreRegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int) error
-	}
-	bookingSlotBlocker interface {
-		BlockBookingSlot(ctx context.Context, slot *deiz.Booking, clinicianID int) error
-	}
-	calendarReader interface {
-		GetCalendarFreeSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error)
-		GetCalendarSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error)
-	}
-
-	PatientBookingsGetter interface {
-		GetPatientBookings(ctx context.Context, clinicianID, patientID int) ([]deiz.Booking, error)
-	}
-)
-
-func handleGetPatientBookings(getter PatientBookingsGetter) echo.HandlerFunc {
+func handleGetPatientBookings(getter usecase.PatientBookingsGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -53,7 +24,7 @@ func handleGetPatientBookings(getter PatientBookingsGetter) echo.HandlerFunc {
 	}
 }
 
-func handlePatchPreRegisteredBooking(register bookingRegister) echo.HandlerFunc {
+func handlePatchPreRegisteredBooking(register usecase.BookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -73,7 +44,7 @@ func handlePatchPreRegisteredBooking(register bookingRegister) echo.HandlerFunc 
 	}
 }
 
-func handlePostPreRegisteredBooking(register bookingPreRegister) echo.HandlerFunc {
+func handlePostPreRegisteredBooking(register usecase.BookingPreRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -89,7 +60,7 @@ func handlePostPreRegisteredBooking(register bookingPreRegister) echo.HandlerFun
 	}
 }
 
-func handlePostBooking(register bookingRegister) echo.HandlerFunc {
+func handlePostBooking(register usecase.BookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -110,7 +81,7 @@ func handlePostBooking(register bookingRegister) echo.HandlerFunc {
 	}
 }
 
-func handlePublicPostBooking(register bookingRegister) echo.HandlerFunc {
+func handlePublicPostBooking(register usecase.BookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		var b deiz.Booking
@@ -124,7 +95,7 @@ func handlePublicPostBooking(register bookingRegister) echo.HandlerFunc {
 	}
 }
 
-func handleDeleteBooking(deleter bookingSlotDeleter) echo.HandlerFunc {
+func handleDeleteBooking(deleter usecase.BookingSlotDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -143,7 +114,7 @@ func handleDeleteBooking(deleter bookingSlotDeleter) echo.HandlerFunc {
 	}
 }
 
-func handleGetFreeBookingSlots(getter calendarReader) echo.HandlerFunc {
+func handleGetFreeBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID, err := strconv.Atoi(c.QueryParam("clinician"))
@@ -166,7 +137,7 @@ func handleGetFreeBookingSlots(getter calendarReader) echo.HandlerFunc {
 	}
 }
 
-func handleGetBookingSlots(getter calendarReader) echo.HandlerFunc {
+func handleGetBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -198,7 +169,7 @@ func getMotiveFromParam(c echo.Context) (deiz.BookingMotive, error) {
 	return deiz.BookingMotive{ID: motiveID, Duration: motiveDuration}, nil
 }
 
-func handlePostBlockedBookingSlot(blocker bookingSlotBlocker) echo.HandlerFunc {
+func handlePostBlockedBookingSlot(blocker usecase.BookingSlotBlocker) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -214,7 +185,7 @@ func handlePostBlockedBookingSlot(blocker bookingSlotBlocker) echo.HandlerFunc {
 	}
 }
 
-func handleDeleteBookingSlotBlocked(deleter bookingSlotDeleter) echo.HandlerFunc {
+func handleDeleteBookingSlotBlocked(deleter usecase.BookingSlotDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).userID
@@ -229,7 +200,7 @@ func handleDeleteBookingSlotBlocked(deleter bookingSlotDeleter) echo.HandlerFunc
 	}
 }
 
-func handleDeletePublicBooking(deleter bookingSlotDeleter) echo.HandlerFunc {
+func handleDeletePublicBooking(deleter usecase.BookingSlotDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		deleteID := c.Param("id")

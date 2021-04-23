@@ -10,6 +10,8 @@ type PreRegisterUsecase struct {
 	BookingCreater bookingCreater
 }
 
+//PreRegisterBooking locks a given slot to be completed later by adding a patient or settings different details.
+//Its similar to registration but booking status wont be confirmed and mail reminder wont be send
 func (r *PreRegisterUsecase) PreRegisterBooking(ctx context.Context, b *deiz.Booking, clinicianID int) error {
 	if r.preRegistrationInvalid(b, clinicianID) {
 		return deiz.ErrorStructValidation

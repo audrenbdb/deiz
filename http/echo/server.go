@@ -58,8 +58,7 @@ type (
 		OfficeHoursAdder   officeHoursAdder
 		OfficeHoursRemover officeHoursRemover
 	}
-
-	PatientService interface {
+	PatientUsecases interface {
 		PatientSearcher
 		PatientAdder
 		PatientEditer
@@ -76,7 +75,7 @@ type (
 type EchoServerDeps struct {
 	CredentialsGetter credentialsGetter
 	AccountUsecases   AccountUsecases
-	PatientService    PatientService
+	PatientUsecases   PatientUsecases
 	ContactService    ContactService
 	BookingUsecases   BookingUsecases
 	BillingUsecases   BillingUsecases
@@ -114,12 +113,12 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.POST("/api/clinicians/:id/addresses", handlePostClinicianAddress(deps.AccountUsecases.AccountAddressUsecases.OfficeAddressAdder, deps.AccountUsecases.AccountAddressUsecases.HomeAddressSetter), clinicianMW)
 	e.DELETE("/api/clinicians/:id/addresses/:aid", handleDeleteClinicianAddress(deps.AccountUsecases.AccountAddressUsecases.AddressDeleter), clinicianMW)
 
-	e.GET("/api/patients", handleGetPatients(deps.PatientService), clinicianMW)
-	e.POST("/api/patients", handlePostPatient(deps.PatientService), clinicianMW)
-	e.PATCH("/api/patients", handlePatchPatient(deps.PatientService), clinicianMW)
-	e.POST("/api/patients/:id/address", handlePostPatientAddress(deps.PatientService), clinicianMW)
-	e.PATCH("/api/patients/:id/address", handlePatchPatientAddress(deps.PatientService), clinicianMW)
-	e.GET("/api/patients/:id/bookings", handleGetPatientBookings(deps.PatientService), clinicianMW)
+	e.GET("/api/patients", handleGetPatients(deps.PatientUsecases), clinicianMW)
+	e.POST("/api/patients", handlePostPatient(deps.PatientUsecases), clinicianMW)
+	e.PATCH("/api/patients", handlePatchPatient(deps.PatientUsecases), clinicianMW)
+	e.POST("/api/patients/:id/address", handlePostPatientAddress(deps.PatientUsecases), clinicianMW)
+	e.PATCH("/api/patients/:id/address", handlePatchPatientAddress(deps.PatientUsecases), clinicianMW)
+	e.GET("/api/patients/:id/bookings", handleGetPatientBookings(deps.PatientUsecases), clinicianMW)
 
 	e.POST("/api/pdf-booking-invoices/:id", handlePostPDFBookingInvoice(deps.BillingUsecases.InvoiceMailer), clinicianMW)
 	e.POST("/api/pdf-booking-invoices", handlePostPDFBookingInvoicesPeriodSummary(deps.BillingUsecases.InvoiceMailer), clinicianMW)

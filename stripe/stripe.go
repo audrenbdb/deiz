@@ -13,6 +13,7 @@ const (
 
 type service struct{}
 
+//CreateSession creates stripe session token that can be used by a client to open a stripe payment checkout form
 func (s *service) CreateSession(ctx context.Context, amount int64, sk string) (string, error) {
 	sc := &client.API{}
 	sc.Init(sk, nil)

@@ -5,6 +5,8 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
+//CancelInvoice creates a corrective invoice to erase a previous one with wrong data
+//French invoice system does not allow deletion of invoice, only correction.
 func (c *CancelInvoiceUsecase) CancelInvoice(ctx context.Context, invoiceToCancel *deiz.BookingInvoice) error {
 	invoiceToCancel.RemoveBooking()
 	if err := setInvoiceIdentifier(ctx, invoiceToCancel, c.Counter); err != nil {

@@ -19,13 +19,18 @@ type (
 	}
 )
 
-func (u *Usecase) SetClinicianStripeKeys(ctx context.Context, pk, sk string, clinicianID int) error {
-	if len(pk) < 7 || len(sk) < 7 {
+//SetClinicianStripeKeys saves encrypted stripe keys of a given clinician
+func (u *Usecase) SetClinicianStripeKeys(ctx context.Context, publicKey, secretKey string, clinicianID int) error {
+	if keysInvalid(publicKey, secretKey) {
 		return deiz.ErrorStructValidation
 	}
-	encryptedSecretKey, err := u.Crypter.StringToBytes(sk)
+	encryptedSecretKey, err := u.Crypter.StringToBytes(secretKey)
 	if err != nil {
 		return err
 	}
-	return u.StripeKeysUpdater.UpdateClinicianStripeKeys(ctx, pk, encryptedSecretKey, clinicianID)
+	return u.StripeKeysUpdater.UpdateClinicianStripeKeys(ctx, publicKey, encryptedSecretKey, clinicianID)
+}
+
+func keysInvalid(publicKey, secretKey string) bool {
+	return len(publicKey) < 7 || len(secretKey) < 7
 }

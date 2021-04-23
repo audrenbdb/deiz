@@ -35,3 +35,13 @@ func bookingSlotAvailable(ctx context.Context, b *deiz.Booking, getter clinician
 	}
 	return true, nil
 }
+
+func filterConfirmedBookings(bookings []deiz.Booking) []deiz.Booking {
+	confirmedBookings := []deiz.Booking{}
+	for _, b := range bookings {
+		if b.Confirmed {
+			confirmedBookings = append(confirmedBookings, b)
+		}
+	}
+	return confirmedBookings
+}

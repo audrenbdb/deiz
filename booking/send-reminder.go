@@ -27,10 +27,10 @@ func getBookingsAwaitingRecall(ctx context.Context, getter bookingsInTimeRangeGe
 	if err != nil {
 		return nil, fmt.Errorf("unable to get bookings in time range: %s", err)
 	}
-	return bookings, nil
+	return filterConfirmedBookings(bookings), nil
 }
 
-//Get a time range to scan for upcoming bookings in 48h
+//getReminderRange creates a time range to scan for upcoming bookings in 48h
 func getReminderRange() timeRange {
 	anchor := time.Now().AddDate(0, 0, 2).UTC()
 	start := time.Date(anchor.Year(), anchor.Month(), anchor.Day(), anchor.Hour(), 0, 0, 0, time.UTC)

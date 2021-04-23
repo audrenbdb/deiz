@@ -65,32 +65,6 @@ func TestAddClinician(t *testing.T) {
 	}
 }
 
-func TestIsValid(t *testing.T) {
-	var tests = []struct {
-		description string
-
-		inPatient deiz.Patient
-		outValid  bool
-	}{
-		{
-			description: "should pass",
-			inPatient:   deiz.Patient{Name: "toto", Phone: "010101100101", Surname: "Hey", Email: "legit@legit.com"},
-			outValid:    true,
-		},
-		{
-			description: "should fail invalid name",
-			inPatient:   deiz.Patient{},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			valid := patient.IsPatientValid(&test.inPatient)
-			assert.Equal(t, test.outValid, valid)
-		})
-	}
-}
-
 func TestSearchPatient(t *testing.T) {
 	var tests = []struct {
 		description string

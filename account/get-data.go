@@ -5,10 +5,13 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
+//GetClinicianAccountData retrieves data about a clinician account for a client application to function properly
 func (u *GetDataUsecase) GetClinicianAccountData(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
 	return u.AccountDataGetter.GetClinicianAccount(ctx, clinicianID)
 }
 
+//GetClinicianAccountPublicData retrieves publicly available data about a clinician account
+//These data are mandatory to pay a clinician or to book a new appointment
 func (u *GetDataUsecase) GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error) {
 	acc, err := u.AccountDataGetter.GetClinicianAccount(ctx, clinicianID)
 	if err != nil {

@@ -101,7 +101,16 @@ func main() {
 			StripeKeysUsecases:       accountUsecases.stripeKeysUsecases,
 			CalendarSettingsUsecases: accountUsecases.calendarSettingsUsecases,
 		},
-		PatientService: patient.NewUsecase(repo),
+		PatientUsecases: &patient.Usecase{
+			Searcher:              repo,
+			Creater:               repo,
+			Updater:               repo,
+			GetterByEmail:         repo,
+			ClinicianBoundChecker: repo,
+			AddressCreater:        repo,
+			AddressUpdater:        repo,
+			BookingsGetter:        repo,
+		},
 		ContactService: contact.NewUsecase(repo, mail),
 		BookingUsecases: echo.BookingUsecases{
 			Register:       bookingUsecases.register,

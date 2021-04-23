@@ -47,26 +47,25 @@ type (
 
 type (
 	AccountDataGetter interface {
-		GetClinicianAccountData(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error)
-		GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error)
+		GetClinicianAccountData(ctx context.Context, clinicianID int, cred deiz.Credentials) (deiz.ClinicianAccount, error)
 	}
 	AccountAdder interface {
 		AddAccount(ctx context.Context, acc *deiz.ClinicianAccount) error
 	}
 	LoginAllower interface {
-		AllowLogin(ctx context.Context, loginCredentials deiz.Credentials) error
+		AllowLogin(ctx context.Context, loginCredentials deiz.LoginData) error
 	}
 )
 
 type (
 	OfficeAddressAdder interface {
-		AddClinicianOfficeAddress(ctx context.Context, address *deiz.Address, clinicianID int) error
+		AddClinicianOfficeAddress(ctx context.Context, address *deiz.Address, cred deiz.Credentials) error
 	}
 	HomeAddressSetter interface {
-		SetHomeAddress(ctx context.Context, address *deiz.Address, clinicianID int) error
+		SetHomeAddress(ctx context.Context, address *deiz.Address, cred deiz.Credentials) error
 	}
 	AddressDeleter interface {
-		DeleteAddress(ctx context.Context, addressID, clinicianID int) error
+		DeleteAddress(ctx context.Context, addressID int, cred deiz.Credentials) error
 	}
 )
 
@@ -117,7 +116,7 @@ type (
 		EditClinicianEmail(ctx context.Context, email string, clinicianID int) error
 	}
 	AddressEditer interface {
-		EditAddress(ctx context.Context, address *deiz.Address, clinicianID int) error
+		EditAddress(ctx context.Context, address *deiz.Address, cred deiz.Credentials) error
 	}
 	ClinicianAdeliEditer interface {
 		EditClinicianAdeli(ctx context.Context, identifier string, clinicianID int) error

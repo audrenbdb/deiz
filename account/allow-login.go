@@ -25,7 +25,7 @@ type AllowLoginUsecase struct {
 
 //AllowLogin ensures that auth system has been enabled for an existing clinician
 //When a clinician first logs in, the auth system is enabled with the provided password to authenticate
-func (u *AllowLoginUsecase) AllowLogin(ctx context.Context, credentials deiz.Credentials) error {
+func (u *AllowLoginUsecase) AllowLogin(ctx context.Context, credentials deiz.LoginData) error {
 	if credentials.IsInvalid() {
 		return deiz.ErrorStructValidation
 	}

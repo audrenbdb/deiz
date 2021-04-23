@@ -11,7 +11,7 @@ import (
 func handleGetUnpaidBookings(getter usecase.UnpaidBookingsGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		bookings, err := getter.GetUnpaidBookings(ctx, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
@@ -42,7 +42,7 @@ func handleGetSessionCheckout(creater usecase.StripeSessionCreater) echo.Handler
 func handlePostPDFBookingInvoicesPeriodSummary(mailer usecase.InvoiceMailer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		type post struct {
 			SendTo string `json:"sendTo"`
 		}
@@ -88,7 +88,7 @@ func handlePostBookingInvoice(creater usecase.InvoiceCreater) echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 		invoice, err := getInvoiceFromRequest(c)
-		invoice.ClinicianID = getCredFromEchoCtx(c).userID
+		invoice.ClinicianID = getCredFromEchoCtx(c).UserID
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -104,7 +104,7 @@ func handlePostCancelInvoice(canceler usecase.InvoiceCanceler) echo.HandlerFunc 
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		invoice, err := getInvoiceFromRequest(c)
-		invoice.ClinicianID = getCredFromEchoCtx(c).userID
+		invoice.ClinicianID = getCredFromEchoCtx(c).UserID
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -119,7 +119,7 @@ func handlePostCancelInvoice(canceler usecase.InvoiceCanceler) echo.HandlerFunc 
 func handleGetPeriodInvoices(getter usecase.InvoicesGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		start, err := getTimeFromParam(c, "start")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -141,6 +141,6 @@ func getInvoiceFromRequest(c echo.Context) (*deiz.BookingInvoice, error) {
 	if err := c.Bind(&i); err != nil {
 		return nil, err
 	}
-	i.Booking.Clinician.ID = getCredFromEchoCtx(c).userID
+	i.Booking.Clinician.ID = getCredFromEchoCtx(c).UserID
 	return &i, nil
 }

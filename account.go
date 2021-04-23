@@ -12,18 +12,11 @@ type ClinicianAccount struct {
 	TaxExemptions    []TaxExemption   `json:"taxExemptions"`
 }
 
-type ClinicianAccountPublicData struct {
-	Clinician       Clinician       `json:"clinician"`
-	StripePublicKey string          `json:"stripePublicKey"`
-	PublicMotives   []BookingMotive `json:"bookingMotives"`
-	RemoteAllowed   bool            `json:"remoteAllowed"`
-}
-
-type Credentials struct {
+type LoginData struct {
 	Email    string
 	Password string
 }
 
-func (c *Credentials) IsInvalid() bool {
+func (c *LoginData) IsInvalid() bool {
 	return len(c.Email) < 4 || len(c.Password) < 6
 }

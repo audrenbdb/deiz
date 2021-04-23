@@ -34,9 +34,9 @@ func TestEditAddress(t *testing.T) {
 	var tests = []struct {
 		description string
 
-		addressInput     *deiz.Address
-		clinicianIDInput int
-		errorOutput      error
+		addressInput *deiz.Address
+		credInput    deiz.Credentials
+		errorOutput  error
 
 		usecase EditAddressUsecase
 	}{
@@ -54,7 +54,7 @@ func TestEditAddress(t *testing.T) {
 			addressInput: &validAddress,
 			errorOutput:  deiz.GenericError,
 
-			usecase: EditAddressUsecase{accountGetter: &mockAccountGetter{err: deiz.GenericError}},
+			usecase: EditAddressUsecase{AccountGetter: &mockAccountGetter{err: deiz.GenericError}},
 		},
 		{
 			description: "should fail to find address in clinician's address",
@@ -62,7 +62,7 @@ func TestEditAddress(t *testing.T) {
 			addressInput: &validAddress,
 			errorOutput:  deiz.ErrorUnauthorized,
 
-			usecase: EditAddressUsecase{accountGetter: &mockAccountGetter{account: deiz.ClinicianAccount{
+			usecase: EditAddressUsecase{AccountGetter: &mockAccountGetter{account: deiz.ClinicianAccount{
 				Clinician: deiz.Clinician{
 					Address: deiz.Address{},
 				},
@@ -75,18 +75,18 @@ func TestEditAddress(t *testing.T) {
 			addressInput: &validAddress,
 			errorOutput:  deiz.GenericError,
 
-			usecase: EditAddressUsecase{accountGetter: &mockAccountGetter{account: deiz.ClinicianAccount{
+			usecase: EditAddressUsecase{AccountGetter: &mockAccountGetter{account: deiz.ClinicianAccount{
 				Clinician: deiz.Clinician{
 					Address: validAddress,
 				},
 				OfficeAddresses: nil,
 			}},
-				addressUpdater: &mockAddressUpdater{err: deiz.GenericError}},
+				AddressUpdater: &mockAddressUpdater{err: deiz.GenericError}},
 		},
 	}
 
 	for _, test := range tests {
-		err := test.usecase.EditAddress(context.Background(), test.addressInput, test.clinicianIDInput)
+		err := test.usecase.EditAddress(context.Background(), test.addressInput, test.credInput)
 		assert.Equal(t, test.errorOutput, err)
 	}
 }

@@ -11,7 +11,7 @@ import (
 func handlePostOfficeHours(adder usecase.OfficeHoursAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		var h deiz.OfficeHours
 		if err := c.Bind(&h); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -27,7 +27,7 @@ func handlePostOfficeHours(adder usecase.OfficeHoursAdder) echo.HandlerFunc {
 func handleDeleteOfficeHours(remover usecase.OfficeHoursRemover) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		hoursID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())

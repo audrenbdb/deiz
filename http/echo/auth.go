@@ -3,6 +3,7 @@ package echo
 import (
 	"context"
 	firebaseAuth "firebase.google.com/go/auth"
+	"github.com/audrenbdb/deiz"
 	"github.com/labstack/echo"
 	"net/http"
 	"strings"
@@ -14,18 +15,18 @@ type (
 	}
 	echoCtxCredentials struct {
 		echo.Context
-		credentials credentials
+		credentials deiz.Credentials
 	}
-	credentials struct {
-		userID int
-		role   int
-	}
-	credentialsGetter func(ctx context.Context, tokenID string) (credentials, error)
+
+	credentialsGetter func(ctx context.Context, tokenID string) (deiz.Credentials, error)
 )
 
 //retrieve credentials in the current echo context
-func getCredFromEchoCtx(c echo.Context) credentials {
-	credCtx := c.(*echoCtxCredentials)
+func getCredFromEchoCtx(c echo.Context) deiz.Credentials {
+	credCtx, ok := c.(*echoCtxCredentials)
+	if !ok {
+		return deiz.Credentials{}
+	}
 	return credCtx.credentials
 }
 
@@ -49,7 +50,7 @@ func roleMW(getCredentials credentialsGetter, minRole int) func(next echo.Handle
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, err.Error())
 			}
-			if cred.role < minRole {
+			if cred.Role < deiz.Role(minRole) {
 				return c.JSON(http.StatusUnauthorized, errUnauthorizedRole.Error())
 			}
 			return next(&echoCtxCredentials{c, cred})
@@ -57,33 +58,49 @@ func roleMW(getCredentials credentialsGetter, minRole int) func(next echo.Handle
 	}
 }
 
+func publicMW(getCredentials credentialsGetter) func(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			tokenID, err := getBearerToken(c.Request().Header)
+			if err != nil {
+				return next(&echoCtxCredentials{c, deiz.Credentials{}})
+			}
+			cred, err := getCredentials(c.Request().Context(), tokenID)
+			if err != nil {
+				return c.JSON(http.StatusUnauthorized, err.Error())
+			}
+			return next(&echoCtxCredentials{c, cred})
+		}
+	}
+}
+
 func FirebaseCredentialsGetter(client *firebaseAuth.Client) credentialsGetter {
-	return func(ctx context.Context, tokenID string) (credentials, error) {
+	return func(ctx context.Context, tokenID string) (deiz.Credentials, error) {
 		token, err := client.VerifyIDToken(ctx, tokenID)
 		if err != nil {
-			return credentials{}, err
+			return deiz.Credentials{}, err
 		}
 		claims := token.Claims
 		roleStr, ok := claims["role"]
 		if !ok {
-			return credentials{}, errReadAuthClaims
+			return deiz.Credentials{}, errReadAuthClaims
 		}
 		roleFloat, ok := roleStr.(float64)
 		if !ok || float64(int(roleFloat)) != roleFloat {
-			return credentials{}, errReadAuthClaims
+			return deiz.Credentials{}, errReadAuthClaims
 		}
 
 		userIDStr, ok := claims["userId"]
 		if !ok {
-			return credentials{}, errReadAuthClaims
+			return deiz.Credentials{}, errReadAuthClaims
 		}
 		userIDFloat, ok := userIDStr.(float64)
 		if !ok || float64(int(userIDFloat)) != userIDFloat {
-			return credentials{}, errReadAuthClaims
+			return deiz.Credentials{}, errReadAuthClaims
 		}
-		return credentials{
-			role:   int(roleFloat),
-			userID: int(userIDFloat),
+		return deiz.Credentials{
+			Role:   deiz.Role(int(roleFloat)),
+			UserID: int(userIDFloat),
 		}, nil
 	}
 }

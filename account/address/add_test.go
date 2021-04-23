@@ -27,7 +27,7 @@ func TestAddClinicianOfficeAddress(t *testing.T) {
 		description string
 
 		addressInput     *deiz.Address
-		clinicianIDInput int
+		credentialsInput deiz.Credentials
 		errorOutput      error
 
 		usecase AddAddressUsecase
@@ -51,7 +51,7 @@ func TestAddClinicianOfficeAddress(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		err := test.usecase.AddClinicianOfficeAddress(context.Background(), test.addressInput, test.clinicianIDInput)
+		err := test.usecase.AddClinicianOfficeAddress(context.Background(), test.addressInput, test.credentialsInput)
 		assert.Equal(t, test.errorOutput, err)
 	}
 }

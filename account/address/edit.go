@@ -5,10 +5,11 @@ import (
 	"github.com/audrenbdb/deiz"
 )
 
-func (u *EditAddressUsecase) EditAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
+func (u *EditAddressUsecase) EditAddress(ctx context.Context, address *deiz.Address, cred deiz.Credentials) error {
 	if address.IsInvalid() {
 		return deiz.ErrorStructValidation
 	}
+	clinicianID := cred.UserID
 	allowedToEdit, err := isAddressToClinician(ctx, address.ID, clinicianID, u.AccountGetter)
 	if err != nil {
 		return err

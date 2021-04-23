@@ -9,7 +9,7 @@ import (
 func handlePatchStripeKeys(setter usecase.StripeKeysSetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 
 		type keys struct {
 			PublicKey string `json:"publicKey"`

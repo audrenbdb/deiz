@@ -11,7 +11,7 @@ import (
 func handlePostRegistration(allower usecase.LoginAllower) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		var f deiz.Credentials
+		var f deiz.LoginData
 		if err := c.Bind(&f); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -40,26 +40,14 @@ func handlePostClinicianAccount(adder usecase.AccountAdder) echo.HandlerFunc {
 func handleGetClinicianAccount(getter usecase.AccountDataGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
-		acc, err := getter.GetClinicianAccountData(ctx, clinicianID)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		return c.JSON(http.StatusOK, acc)
-	}
-}
-
-func handleGetClinicianAccountPublicData(getter usecase.AccountDataGetter) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := c.Request().Context()
 		clinicianID, err := strconv.Atoi(c.QueryParam("clinicianId"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		data, err := getter.GetClinicianAccountPublicData(ctx, clinicianID)
+		acc, err := getter.GetClinicianAccountData(ctx, clinicianID, getCredFromEchoCtx(c))
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
-		return c.JSON(http.StatusOK, data)
+		return c.JSON(http.StatusOK, acc)
 	}
 }

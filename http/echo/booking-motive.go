@@ -11,7 +11,7 @@ import (
 func handlePatchBookingMotive(editer usecase.BookingMotiveEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 
 		var m deiz.BookingMotive
 		if err := c.Bind(&m); err != nil {
@@ -28,7 +28,7 @@ func handlePatchBookingMotive(editer usecase.BookingMotiveEditer) echo.HandlerFu
 func handlePostBookingMotive(adder usecase.BookingMotiveAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 
 		var m deiz.BookingMotive
 		if err := c.Bind(&m); err != nil {
@@ -45,7 +45,7 @@ func handlePostBookingMotive(adder usecase.BookingMotiveAdder) echo.HandlerFunc 
 func handleDeleteBookingMotive(remover usecase.BookingMotiveRemover) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 
 		motiveID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {

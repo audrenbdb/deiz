@@ -6,22 +6,23 @@ import (
 )
 
 //GetClinicianAccountData retrieves data about a clinician account for a client application to function properly
-func (u *GetDataUsecase) GetClinicianAccountData(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
-	return u.AccountDataGetter.GetClinicianAccount(ctx, clinicianID)
+func (u *GetDataUsecase) GetClinicianAccountData(ctx context.Context, clinicianID int, cred deiz.Credentials) (deiz.ClinicianAccount, error) {
+	if cred.IsPatient() {
+		return u.getPublicData(ctx, clinicianID)
+	}
+	return u.AccountDataGetter.GetClinicianAccount(ctx, cred.UserID)
 }
 
-//GetClinicianAccountPublicData retrieves publicly available data about a clinician account
-//These data are mandatory to pay a clinician or to book a new appointment
-func (u *GetDataUsecase) GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccountPublicData, error) {
+func (u *GetDataUsecase) getPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
 	acc, err := u.AccountDataGetter.GetClinicianAccount(ctx, clinicianID)
 	if err != nil {
-		return deiz.ClinicianAccountPublicData{}, err
+		return deiz.ClinicianAccount{}, err
 	}
-	return deiz.ClinicianAccountPublicData{
-		Clinician:       acc.Clinician,
-		StripePublicKey: acc.StripePublicKey,
-		PublicMotives:   filterPublicMotives(acc.BookingMotives),
-		RemoteAllowed:   acc.CalendarSettings.RemoteAllowed,
+	return deiz.ClinicianAccount{
+		Clinician:        acc.Clinician,
+		StripePublicKey:  acc.StripePublicKey,
+		BookingMotives:   filterPublicMotives(acc.BookingMotives),
+		CalendarSettings: deiz.CalendarSettings{RemoteAllowed: acc.CalendarSettings.RemoteAllowed},
 	}, nil
 }
 

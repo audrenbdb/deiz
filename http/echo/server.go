@@ -2,6 +2,7 @@ package echo
 
 import (
 	"context"
+	"github.com/audrenbdb/deiz"
 	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -36,7 +37,6 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.POST("/api/registrations", handlePostRegistration(deps.AccountUsecases.LoginAllower))
 
 	e.POST("/api/clinician-accounts", handlePostClinicianAccount(deps.AccountUsecases.AccountAdder))
-	e.GET("/api/clinician-accounts/current", handleGetClinicianAccount(deps.AccountUsecases.AccountDataGetter), clinicianMW)
 	e.PATCH("/api/businesses/:id", handlePatchBusiness(deps.AccountUsecases.BusinessUsecases), clinicianMW)
 
 	e.GET("/api/bookings", handleGetBookingSlots(deps.BookingUsecases.CalendarReader), clinicianMW)
@@ -82,7 +82,7 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.PATCH("/api/clinician-accounts/stripe-keys", handlePatchStripeKeys(deps.AccountUsecases.StripeKeysUsecases), clinicianMW)
 
 	/* PUBLIC API */
-	e.GET("/api/public/clinician-accounts", handleGetClinicianAccountPublicData(deps.AccountUsecases.AccountDataGetter))
+	e.GET("/api/clinician-accounts", handleGetClinicianAccount(deps.AccountUsecases.AccountDataGetter), publicMW(deps.CredentialsGetter))
 	e.GET("/api/public/booking-slots", handleGetFreeBookingSlots(deps.BookingUsecases.CalendarReader))
 	e.POST("/api/public/bookings", handlePublicPostBooking(deps.BookingUsecases.Register))
 	e.GET("/api/public/session-checkout", handleGetSessionCheckout(deps.BillingUsecases.StripeSessionCreater))
@@ -93,10 +93,10 @@ func StartEchoServer(deps EchoServerDeps) error {
 	return e.Start(":8080")
 }
 
-func FakeCredentialsGetter(ctx context.Context, tokenID string) (credentials, error) {
-	return credentials{
-		userID: 7,
-		role:   2,
+func FakeCredentialsGetter(ctx context.Context, tokenID string) (deiz.Credentials, error) {
+	return deiz.Credentials{
+		UserID: 7,
+		Role:   deiz.Role(2),
 	}, nil
 }
 

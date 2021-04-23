@@ -20,6 +20,7 @@ func TestGetClinicianAccountData(t *testing.T) {
 	var tests = []struct {
 		description string
 
+		credInput        deiz.Credentials
 		clinicianIDInput int
 		accountOuput     deiz.ClinicianAccount
 		errorOutput      error
@@ -29,21 +30,38 @@ func TestGetClinicianAccountData(t *testing.T) {
 		{
 			description: "Should fail to retrieve clinician account",
 
+			credInput:   deiz.Credentials{Role: deiz.CLINICIAN},
 			errorOutput: deiz.GenericError,
 			usecase: GetDataUsecase{
 				&mockGetClinicianAccount{err: deiz.GenericError},
 			},
 		},
+		{
+			description: "Should filter out private booking motive if public",
+
+			credInput: deiz.Credentials{Role: deiz.PATIENT},
+			accountOuput: deiz.ClinicianAccount{BookingMotives: []deiz.BookingMotive{
+				{Public: true, ID: 1},
+			}},
+			usecase: GetDataUsecase{
+				&mockGetClinicianAccount{account: deiz.ClinicianAccount{
+					Business: deiz.Business{ID: 1},
+					BookingMotives: []deiz.BookingMotive{
+						{Public: false, ID: 1}, {Public: true, ID: 1},
+					}}},
+			},
+		},
 	}
 
 	for _, test := range tests {
-		acc, err := test.usecase.GetClinicianAccountData(context.Background(), test.clinicianIDInput)
+		acc, err := test.usecase.GetClinicianAccountData(context.Background(), test.clinicianIDInput, test.credInput)
 
 		assert.Equal(t, test.errorOutput, err)
 		assert.Equal(t, test.accountOuput, acc)
 	}
 }
 
+/*
 func TestGetClinicianAccountPublicData(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -83,3 +101,4 @@ func TestGetClinicianAccountPublicData(t *testing.T) {
 		assert.Equal(t, test.accountOuput, acc)
 	}
 }
+*/

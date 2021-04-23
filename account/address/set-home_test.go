@@ -37,9 +37,9 @@ func TestSetHomeAddress(t *testing.T) {
 	var tests = []struct {
 		description string
 
-		addressInput     *deiz.Address
-		clinicianIDInput int
-		errorOutput      error
+		addressInput *deiz.Address
+		credInput    deiz.Credentials
+		errorOutput  error
 
 		usecase SetHomeUsecase
 	}{
@@ -56,7 +56,7 @@ func TestSetHomeAddress(t *testing.T) {
 			addressInput: &validNewAddress,
 			errorOutput:  deiz.GenericError,
 			usecase: SetHomeUsecase{
-				manager: &mockHomeAddressManager{
+				HomeAddressSetter: &mockHomeAddressManager{
 					err: deiz.GenericError,
 				},
 			},
@@ -66,7 +66,7 @@ func TestSetHomeAddress(t *testing.T) {
 			addressInput: &validExistingAddress,
 			errorOutput:  deiz.GenericError,
 			usecase: SetHomeUsecase{
-				manager: &mockHomeAddressManager{
+				HomeAddressSetter: &mockHomeAddressManager{
 					err: deiz.GenericError,
 				},
 			},
@@ -74,7 +74,7 @@ func TestSetHomeAddress(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		err := test.usecase.SetHomeAddress(context.Background(), test.addressInput, test.clinicianIDInput)
+		err := test.usecase.SetHomeAddress(context.Background(), test.addressInput, test.credInput)
 		assert.Equal(t, test.errorOutput, err)
 	}
 }

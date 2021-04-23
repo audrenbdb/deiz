@@ -19,9 +19,9 @@ func TestDeleteAddress(t *testing.T) {
 	var tests = []struct {
 		description string
 
-		addressIDInput   int
-		clinicianIDInput int
-		errorOutput      error
+		addressIDInput int
+		credInput      deiz.Credentials
+		errorOutput    error
 
 		usecase DeleteAddressUsecase
 	}{
@@ -49,7 +49,7 @@ func TestDeleteAddress(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		err := test.usecase.DeleteAddress(context.Background(), test.addressIDInput, test.clinicianIDInput)
+		err := test.usecase.DeleteAddress(context.Background(), test.addressIDInput, test.credInput)
 		assert.Equal(t, test.errorOutput, err)
 	}
 }

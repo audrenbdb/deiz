@@ -16,8 +16,8 @@ type DeleteAddressUsecase struct {
 	AddressDeleter addressDeleter
 }
 
-func (u *DeleteAddressUsecase) DeleteAddress(ctx context.Context, addressID int, clinicianID int) error {
-	authorized, err := isAddressToClinician(ctx, addressID, clinicianID, u.AccountGetter)
+func (u *DeleteAddressUsecase) DeleteAddress(ctx context.Context, addressID int, cred deiz.Credentials) error {
+	authorized, err := isAddressToClinician(ctx, addressID, cred.UserID, u.AccountGetter)
 	if err != nil {
 		return err
 	}

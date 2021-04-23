@@ -11,7 +11,7 @@ import (
 func handleGetPatientBookings(getter usecase.PatientBookingsGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		patientID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -27,7 +27,7 @@ func handleGetPatientBookings(getter usecase.PatientBookingsGetter) echo.Handler
 func handlePatchPreRegisteredBooking(register usecase.BookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		notifyPatient, err := strconv.ParseBool(c.QueryParam("notifyPatient"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -47,7 +47,7 @@ func handlePatchPreRegisteredBooking(register usecase.BookingRegister) echo.Hand
 func handlePostPreRegisteredBooking(register usecase.BookingPreRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		var b deiz.Booking
 		if err := c.Bind(&b); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -63,7 +63,7 @@ func handlePostPreRegisteredBooking(register usecase.BookingPreRegister) echo.Ha
 func handlePostBooking(register usecase.BookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 
 		notifyPatient, err := strconv.ParseBool(c.QueryParam("notifyPatient"))
 		if err != nil {
@@ -98,7 +98,7 @@ func handlePublicPostBooking(register usecase.BookingRegister) echo.HandlerFunc 
 func handleDeleteBooking(deleter usecase.BookingSlotDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		bookingID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -140,7 +140,7 @@ func handleGetFreeBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 func handleGetBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		from, err := getTimeFromParam(c, "from")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -172,7 +172,7 @@ func getMotiveFromParam(c echo.Context) (deiz.BookingMotive, error) {
 func handlePostBlockedBookingSlot(blocker usecase.BookingSlotBlocker) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		var b *deiz.Booking
 		if err := c.Bind(&b); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -188,7 +188,7 @@ func handlePostBlockedBookingSlot(blocker usecase.BookingSlotBlocker) echo.Handl
 func handleDeleteBookingSlotBlocked(deleter usecase.BookingSlotDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		bookingID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())

@@ -10,7 +10,7 @@ import (
 func handlePatchBusiness(patcher usecase.BusinessEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 
 		var b deiz.Business
 		if err := c.Bind(&b); err != nil {

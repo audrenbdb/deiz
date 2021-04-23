@@ -71,7 +71,7 @@ func main() {
 	err = echo.StartEchoServer(echo.EchoServerDeps{
 		ContactService:    contact.NewUsecase(repo, mail),
 		CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
-		//CCredentialsGetter: http.FirebaseCredentialsGetter(fbClient),
+		//CredentialsGetter: http.FirebaseCredentialsGetter(fbClient),
 		AccountUsecases: newAccountUsecases(repo),
 		PatientUsecases: newPatientUsecases(repo),
 		BookingUsecases: newBookingUsecases(paris, repo, mail),

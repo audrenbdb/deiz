@@ -34,7 +34,7 @@ func (m *mockAuthEnabler) EnableClinicianAuthentication(ctx context.Context, cli
 }
 
 func TestAllowLogin(t *testing.T) {
-	validCredentials := deiz.Credentials{
+	validCredentials := deiz.LoginData{
 		Email:    "random legit email",
 		Password: "a random password",
 	}
@@ -42,7 +42,7 @@ func TestAllowLogin(t *testing.T) {
 	var tests = []struct {
 		description string
 
-		credentialsInput deiz.Credentials
+		credentialsInput deiz.LoginData
 
 		errorOuput error
 

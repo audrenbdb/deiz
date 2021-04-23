@@ -11,7 +11,7 @@ import (
 func handlePatchPatientAddress(addressEditer usecase.PatientAddressEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		patientID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, errValidating)
@@ -30,7 +30,7 @@ func handlePatchPatientAddress(addressEditer usecase.PatientAddressEditer) echo.
 func handlePostPatientAddress(adder usecase.PatientAddressAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		patientID, err := strconv.Atoi(c.Param("id"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, errValidating)
@@ -49,7 +49,7 @@ func handlePostPatientAddress(adder usecase.PatientAddressAdder) echo.HandlerFun
 func handlePatchPatient(editer usecase.PatientEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		var p deiz.Patient
 		if err := c.Bind(&p); err != nil {
 			return c.JSON(http.StatusBadRequest, errBind)
@@ -64,7 +64,7 @@ func handlePatchPatient(editer usecase.PatientEditer) echo.HandlerFunc {
 func handleGetPatients(searcher usecase.PatientSearcher) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		search := c.QueryParam("search")
 		if search == "" {
 			return c.JSON(http.StatusBadRequest, "no search provided")
@@ -80,7 +80,7 @@ func handleGetPatients(searcher usecase.PatientSearcher) echo.HandlerFunc {
 func handlePostPatient(adder usecase.PatientAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		var p deiz.Patient
 		if err := c.Bind(&p); err != nil {
 			return c.JSON(http.StatusBadRequest, errBind)

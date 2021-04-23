@@ -64,7 +64,7 @@ func (r *Repo) GetClinicianAccount(ctx context.Context, clinicianID int) (deiz.C
 	var err error
 	acc.Clinician, err = getClinicianByID(ctx, r.conn, clinicianID)
 	if err != nil {
-		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get clinician by ID: %s", err)
+		return deiz.ClinicianAccount{}, fmt.Errorf("unable to get clinician by UserID: %s", err)
 	}
 	acc.Business, err = getBusinessByPersonID(ctx, r.conn, clinicianID)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 func handlePatchCalendarSettings(editer usecase.CalendarSettingsEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		var s deiz.CalendarSettings
 		if err := c.Bind(&s); err != nil {
 			return c.JSON(http.StatusBadRequest, errBind.Error())

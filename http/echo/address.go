@@ -11,12 +11,11 @@ import (
 func handleDeleteClinicianAddress(deleter usecase.AddressDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
 		addressID, err := strconv.Atoi(c.Param("aid"))
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		err = deleter.DeleteAddress(ctx, addressID, clinicianID)
+		err = deleter.DeleteAddress(ctx, addressID, getCredFromEchoCtx(c))
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -29,7 +28,7 @@ func handlePostClinicianAddress(
 	return func(c echo.Context) error {
 		var err error
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		credentials := getCredFromEchoCtx(c)
 		var a deiz.Address
 		if err = c.Bind(&a); err != nil {
 			return c.JSON(http.StatusBadRequest, errBind.Error())
@@ -42,9 +41,9 @@ func handlePostClinicianAddress(
 		}
 
 		if addressType == "home" {
-			err = homeAddressSetter.SetHomeAddress(ctx, &a, clinicianID)
+			err = homeAddressSetter.SetHomeAddress(ctx, &a, credentials)
 		} else {
-			err = officeAddressAdder.AddClinicianOfficeAddress(ctx, &a, clinicianID)
+			err = officeAddressAdder.AddClinicianOfficeAddress(ctx, &a, credentials)
 		}
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())

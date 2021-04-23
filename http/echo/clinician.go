@@ -10,7 +10,7 @@ import (
 func handlePatchClinicianProfession(edit usecase.ClinicianProfessionEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		var post struct {
 			Profession string `json:"profession"`
 		}
@@ -28,7 +28,7 @@ func handlePatchClinicianProfession(edit usecase.ClinicianProfessionEditer) echo
 func handlePatchClinicianPhone(edit usecase.ClinicianPhoneEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		var post struct {
 			Phone string `json:"phone"`
 		}
@@ -46,7 +46,7 @@ func handlePatchClinicianPhone(edit usecase.ClinicianPhoneEditer) echo.HandlerFu
 func handlePatchClinicianEmail(edit usecase.ClinicianEmailEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		type data struct {
 			Email string `json:"email"`
 		}
@@ -65,12 +65,11 @@ func handlePatchClinicianEmail(edit usecase.ClinicianEmailEditer) echo.HandlerFu
 func handlePatchClinicianAddress(edit usecase.AddressEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
 		var a deiz.Address
 		if err := c.Bind(&a); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		err := edit.EditAddress(ctx, &a, clinicianID)
+		err := edit.EditAddress(ctx, &a, getCredFromEchoCtx(c))
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -81,7 +80,7 @@ func handlePatchClinicianAddress(edit usecase.AddressEditer) echo.HandlerFunc {
 func handlePatchClinicianAdeli(edit usecase.ClinicianAdeliEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).userID
+		clinicianID := getCredFromEchoCtx(c).UserID
 		var a deiz.Adeli
 		if err := c.Bind(&a); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())

@@ -15,9 +15,9 @@ type AddAddressUsecase struct {
 	AddressCreater addressCreater
 }
 
-func (u *AddAddressUsecase) AddClinicianOfficeAddress(ctx context.Context, address *deiz.Address, clinicianID int) error {
+func (u *AddAddressUsecase) AddClinicianOfficeAddress(ctx context.Context, address *deiz.Address, cred deiz.Credentials) error {
 	if address.IsInvalid() {
 		return deiz.ErrorStructValidation
 	}
-	return u.AddressCreater.CreateClinicianOfficeAddress(ctx, address, clinicianID)
+	return u.AddressCreater.CreateClinicianOfficeAddress(ctx, address, cred.UserID)
 }

@@ -41,10 +41,10 @@ func main() {
 		Intl:      intl.NewIntlParser("Fr", paris),
 	})
 	//mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient(), paris)
-	reminder := booking.NewReminderUsecase(booking.ReminderDeps{
+	reminder := booking.SendReminderUsecase{
 		Getter: repo,
 		Mailer: mail,
-	})
+	}
 	reminder.SendReminders(ctx)
 }
 

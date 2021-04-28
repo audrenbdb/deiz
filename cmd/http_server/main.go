@@ -18,6 +18,7 @@ import (
 	"github.com/audrenbdb/deiz/http/echo"
 	"github.com/audrenbdb/deiz/intl"
 	"github.com/audrenbdb/deiz/mail"
+	"github.com/audrenbdb/deiz/mail/mailtmpl"
 	"github.com/audrenbdb/deiz/patient"
 	"github.com/audrenbdb/deiz/pdf"
 	"github.com/audrenbdb/deiz/repo/psql"
@@ -26,7 +27,6 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"os"
 	"path/filepath"
-	"text/template"
 	"time"
 
 	firebase "firebase.google.com/go"
@@ -53,6 +53,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unable to start database pool : %v\n", err)
 		os.Exit(1)
 	}
+	emailTemplates, err := mailtmpl.Embed()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to embed email templates : %v\n", err)
+		os.Exit(1)
+	}
 	repo := psql.NewRepo(psqlDB, fbClient)
 	paris, _ := time.LoadLocation("Europe/Paris")
 	intl := intl.NewIntlParser("Fr", paris)
@@ -63,7 +68,7 @@ func main() {
 		Intl:       intl,
 	})
 	mail := mail.NewService(mail.Deps{
-		Templates: parseEmailTemplates(path),
+		Templates: emailTemplates,
 		//Client:    mail.NewPostFixClient(),
 		Client: mail.NewGmailClient(),
 		Intl:   intl,
@@ -82,10 +87,6 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unable to start echo http_server: %v\n", err)
 		os.Exit(1)
 	}
-}
-
-func parseEmailTemplates(path string) *template.Template {
-	return template.Must(template.ParseGlob(path + "/../../mail/templates/*.html"))
 }
 
 func newFireBaseClient(ctx context.Context, path string) (*firebaseAuth.Client, error) {

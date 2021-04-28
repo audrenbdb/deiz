@@ -41,8 +41,10 @@ type Deps struct {
 }
 
 func NewService(deps Deps) *Mailer {
+
 	return &Mailer{
-		tmpl:   deps.Templates,
+		tmpl: deps.Templates,
+		//tmpl:   deps.Templates,
 		client: deps.Client,
 		intl:   deps.Intl,
 	}

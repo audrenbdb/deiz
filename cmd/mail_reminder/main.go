@@ -6,18 +6,20 @@ import (
 	"github.com/audrenbdb/deiz/booking"
 	"github.com/audrenbdb/deiz/intl"
 	"github.com/audrenbdb/deiz/mail"
+	"github.com/audrenbdb/deiz/mail/mailtmpl"
 	"github.com/audrenbdb/deiz/repo/psql"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"log"
 	"os"
 	"path/filepath"
-	"text/template"
 	"time"
 )
 
 func main() {
 	ctx := context.Background()
 
-	path, err := getPath()
+	/*path*/
+	_, err := getPath()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to get path")
 		os.Exit(1)
@@ -33,10 +35,14 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unable to load location: %v\n", err)
 		os.Exit(1)
 	}
-
+	mailTemplates, err := mailtmpl.Embed()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "unable to parse email templates")
+		os.Exit(1)
+	}
 	repo := psql.NewRepo(psqlDB, nil)
 	mail := mail.NewService(mail.Deps{
-		Templates: parseEmailTemplates(path),
+		Templates: mailTemplates,
 		Client:    mail.NewGmailClient(),
 		//Client:    mail.NewPostFixClient(),
 		Intl: intl.NewIntlParser("Fr", paris),
@@ -46,7 +52,9 @@ func main() {
 		Getter: repo,
 		Mailer: mail,
 	}
-	reminder.SendReminders(ctx)
+	if err := reminder.SendReminders(ctx); err != nil {
+		log.Println(err)
+	}
 }
 
 func getPath() (string, error) {
@@ -57,6 +65,8 @@ func getPath() (string, error) {
 	return filepath.Dir(ex), nil
 }
 
+/*
 func parseEmailTemplates(path string) *template.Template {
-	return template.Must(template.ParseGlob(path + "/../../mail/templates/booking-reminder.html"))
+	return template.Must(template.ParseGlob(path + "/../../mail/mailtmpl/booking-reminder.html"))
 }
+*/

@@ -15,14 +15,31 @@ func (m *Mailer) MailBookingReminder(b *deiz.Booking) error {
 	if err != nil {
 		return err
 	}
+	return m.client.Send(createMail(mail{
+		to:        b.Patient.Email,
+		from:      noReplyAddress,
+		subject:   "Rappel de rdv: " + details.BookingDate,
+		template:  template,
+		plainBody: details.plainBodyToPatient(),
+	}))
+}
+
+/*
+func (m *Mailer) MailBookingReminder(b *deiz.Booking) error {
+	details := m.getBookingEmailDetails(b, b.Clinician.FullName())
+	mailtmpl, err := m.htmlTemplate("booking-reminder.html", details)
+	if err != nil {
+		return err
+	}
 	plainBody := details.plainBodyToPatient()
 	return m.client.Send(createMail(mail{
 		to:       b.Patient.Email,
 		from:     noReplyAddress,
 		subject:  "Rappel de rdv : " + details.BookingDate,
-		template: template, plainBody: plainBody,
+		mailtmpl: mailtmpl, plainBody: plainBody,
 	}))
 }
+*/
 
 func (m *Mailer) MailBookingToPatient(b *deiz.Booking) error {
 	details := m.getBookingEmailDetails(b, b.Clinician.FullName())

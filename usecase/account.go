@@ -47,7 +47,8 @@ type (
 
 type (
 	AccountDataGetter interface {
-		GetClinicianAccountData(ctx context.Context, clinicianID int, cred deiz.Credentials) (deiz.ClinicianAccount, error)
+		GetClinicianAccountData(ctx context.Context, cred deiz.Credentials) (deiz.ClinicianAccount, error)
+		GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error)
 	}
 	AccountAdder interface {
 		AddAccount(ctx context.Context, acc *deiz.ClinicianAccount) error

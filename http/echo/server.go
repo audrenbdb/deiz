@@ -27,7 +27,7 @@ type EchoServerDeps struct {
 }
 
 func StartEchoServer(deps EchoServerDeps) error {
-	clinicianMW := roleMW(deps.CredentialsGetter, 2)
+	clinicianMW := roleMW(deps.CredentialsGetter, 1)
 	//adminMW := roleMW(credentialsGetter, 3)
 
 	e := echo.New()
@@ -96,7 +96,7 @@ func StartEchoServer(deps EchoServerDeps) error {
 func FakeCredentialsGetter(ctx context.Context, tokenID string) (deiz.Credentials, error) {
 	return deiz.Credentials{
 		UserID: 7,
-		Role:   deiz.Role(2),
+		Role:   deiz.Role(1),
 	}, nil
 }
 

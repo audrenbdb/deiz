@@ -37,8 +37,9 @@ func main() {
 	repo := psql.NewRepo(psqlDB, nil)
 	mail := mail.NewService(mail.Deps{
 		Templates: parseEmailTemplates(path),
-		Client:    mail.NewPostFixClient(),
-		Intl:      intl.NewIntlParser("Fr", paris),
+		Client:    mail.NewGmailClient(),
+		//Client:    mail.NewPostFixClient(),
+		Intl: intl.NewIntlParser("Fr", paris),
 	})
 	//mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient(), paris)
 	reminder := booking.SendReminderUsecase{

@@ -40,13 +40,20 @@ func handlePostClinicianAccount(adder usecase.AccountAdder) echo.HandlerFunc {
 func handleGetClinicianAccount(getter usecase.AccountDataGetter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID, err := strconv.Atoi(c.QueryParam("clinicianId"))
+		credentials := getCredFromEchoCtx(c)
+		var acc deiz.ClinicianAccount
+		var err error
+		if credentials.Role == deiz.CLINICIAN {
+			acc, err = getter.GetClinicianAccountData(ctx, credentials)
+		} else {
+			clinicianID, err := strconv.Atoi(c.QueryParam("clinicianId"))
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, err.Error())
+			}
+			acc, err = getter.GetClinicianAccountPublicData(ctx, clinicianID)
+		}
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
-		}
-		acc, err := getter.GetClinicianAccountData(ctx, clinicianID, getCredFromEchoCtx(c))
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return c.JSON(http.StatusOK, acc)
 	}

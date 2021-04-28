@@ -6,14 +6,11 @@ import (
 )
 
 //GetClinicianAccountData retrieves data about a clinician account for a client application to function properly
-func (u *GetDataUsecase) GetClinicianAccountData(ctx context.Context, clinicianID int, cred deiz.Credentials) (deiz.ClinicianAccount, error) {
-	if cred.IsPatient() {
-		return u.getPublicData(ctx, clinicianID)
-	}
+func (u *GetDataUsecase) GetClinicianAccountData(ctx context.Context, cred deiz.Credentials) (deiz.ClinicianAccount, error) {
 	return u.AccountDataGetter.GetClinicianAccount(ctx, cred.UserID)
 }
 
-func (u *GetDataUsecase) getPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
+func (u *GetDataUsecase) GetClinicianAccountPublicData(ctx context.Context, clinicianID int) (deiz.ClinicianAccount, error) {
 	acc, err := u.AccountDataGetter.GetClinicianAccount(ctx, clinicianID)
 	if err != nil {
 		return deiz.ClinicianAccount{}, err

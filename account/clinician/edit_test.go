@@ -2,9 +2,10 @@ package clinician
 
 import (
 	"context"
+	"testing"
+
 	"github.com/audrenbdb/deiz"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 type mockUpdater struct {
@@ -54,7 +55,7 @@ func TestEditClinicianPhone(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		err := test.usecase.EditlinicianPhone(context.Background(), test.phoneInput, test.clinicianIDInput)
+		err := test.usecase.EditClinicianPhone(context.Background(), test.phoneInput, test.clinicianIDInput)
 		assert.Equal(t, test.errorOutput, err)
 	}
 }

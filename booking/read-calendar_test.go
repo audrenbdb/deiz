@@ -1,10 +1,11 @@
 package booking
 
 import (
-	"github.com/audrenbdb/deiz"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/audrenbdb/deiz"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConstraintTimeRangeWithinLimit(t *testing.T) {
@@ -41,7 +42,7 @@ func TestConstraintTimeRangeWithinLimit(t *testing.T) {
 }
 
 func TestConvertOfficeHoursToTimeRange(t *testing.T) {
-	u := NewCalendarReaderUsecase(CalendarReaderDeps{Loc: time.UTC})
+	u := ReadCalendarUsecase{Loc: time.UTC}
 
 	var tests = []struct {
 		description string

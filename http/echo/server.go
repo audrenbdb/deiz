@@ -27,7 +27,7 @@ type EchoServerDeps struct {
 }
 
 func StartEchoServer(deps EchoServerDeps) error {
-	clinicianMW := roleMW(deps.CredentialsGetter, 1)
+	clinicianMW := roleMW(deps.CredentialsGetter, deiz.CLINICIAN)
 	//adminMW := roleMW(credentialsGetter, 3)
 
 	e := echo.New()
@@ -106,4 +106,8 @@ func getTimeFromParam(c echo.Context, paramName string) (time.Time, error) {
 		return time.Time{}, err
 	}
 	return time.Unix(i, 0).UTC(), nil
+}
+
+func getURLIntegerParam(c echo.Context, paramName string) (int, error) {
+	return strconv.Atoi(c.QueryParam(paramName))
 }

@@ -3,7 +3,8 @@ package deiz
 type Role int32
 
 const (
-	PATIENT Role = iota
+	PUBLIC Role = iota
+	PATIENT
 	CLINICIAN
 	ADMIN
 )

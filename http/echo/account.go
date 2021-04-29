@@ -5,7 +5,6 @@ import (
 	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
-	"strconv"
 )
 
 func handlePostRegistration(allower usecase.LoginAllower) echo.HandlerFunc {
@@ -46,7 +45,7 @@ func handleGetClinicianAccount(getter usecase.AccountDataGetter) echo.HandlerFun
 		if credentials.Role == deiz.CLINICIAN {
 			acc, err = getter.GetClinicianAccountData(ctx, credentials)
 		} else {
-			clinicianID, err := strconv.Atoi(c.QueryParam("clinicianId"))
+			clinicianID, err := getURLIntegerParam(c, "clinicianId")
 			if err != nil {
 				return c.JSON(http.StatusBadRequest, err.Error())
 			}

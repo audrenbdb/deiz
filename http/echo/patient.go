@@ -5,20 +5,19 @@ import (
 	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
-	"strconv"
 )
 
 func handlePatchPatientAddress(addressEditer usecase.PatientAddressEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
-		patientID, err := strconv.Atoi(c.Param("id"))
+		patientID, err := getURLIntegerParam(c, "id")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, errValidating)
 		}
-		var a deiz.Address
-		if err := c.Bind(&a); err != nil {
-			return c.JSON(http.StatusBadRequest, errBind)
+		a, err := getAddressFromRequest(c)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 		if err := addressEditer.EditPatientAddress(ctx, &a, patientID, clinicianID); err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
@@ -31,13 +30,13 @@ func handlePostPatientAddress(adder usecase.PatientAddressAdder) echo.HandlerFun
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
-		patientID, err := strconv.Atoi(c.Param("id"))
+		patientID, err := getURLIntegerParam(c, "id")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, errValidating)
 		}
-		var a deiz.Address
-		if err := c.Bind(&a); err != nil {
-			return c.JSON(http.StatusBadRequest, errBind)
+		a, err := getAddressFromRequest(c)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 		if err := adder.AddPatientAddress(ctx, &a, patientID, clinicianID); err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
@@ -50,15 +49,20 @@ func handlePatchPatient(editer usecase.PatientEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
-		var p deiz.Patient
-		if err := c.Bind(&p); err != nil {
-			return c.JSON(http.StatusBadRequest, errBind)
+		p, err := getPatientFromRequest(c)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
 		}
 		if err := editer.EditPatient(ctx, &p, clinicianID); err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return nil
 	}
+}
+
+func getPatientFromRequest(c echo.Context) (deiz.Patient, error) {
+	var p deiz.Patient
+	return p, c.Bind(&p)
 }
 
 func handleGetPatients(searcher usecase.PatientSearcher) echo.HandlerFunc {
@@ -81,8 +85,8 @@ func handlePostPatient(adder usecase.PatientAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
-		var p deiz.Patient
-		if err := c.Bind(&p); err != nil {
+		p, err := getPatientFromRequest(c)
+		if err != nil {
 			return c.JSON(http.StatusBadRequest, errBind)
 		}
 		if err := adder.AddPatient(ctx, &p, clinicianID); err != nil {

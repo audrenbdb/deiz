@@ -11,19 +11,12 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 )
 
 func main() {
 	ctx := context.Background()
 
-	/*path*/
-	_, err := getPath()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "unable to get path")
-		os.Exit(1)
-	}
 	psqlDB, err := pgxpool.Connect(ctx, os.Getenv("DATABASE_URL"))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start db pool: %v\n", err)
@@ -43,11 +36,10 @@ func main() {
 	repo := psql.NewRepo(psqlDB, nil)
 	mail := mail.NewService(mail.Deps{
 		Templates: mailTemplates,
-		Client:    mail.NewGmailClient(),
-		//Client:    mail.NewPostFixClient(),
-		Intl: intl.NewIntlParser("Fr", paris),
+		//Client:    mail.NewGmailClient(),
+		Client: mail.NewPostFixClient(),
+		Intl:   intl.NewIntlParser("Fr", paris),
 	})
-	//mail := mail.NewService(parseEmailTemplates(path), mail.NewGmailClient(), paris)
 	reminder := booking.SendReminderUsecase{
 		Getter: repo,
 		Mailer: mail,
@@ -56,17 +48,3 @@ func main() {
 		log.Println(err)
 	}
 }
-
-func getPath() (string, error) {
-	ex, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Dir(ex), nil
-}
-
-/*
-func parseEmailTemplates(path string) *template.Template {
-	return template.Must(template.ParseGlob(path + "/../../mail/mailtmpl/booking-reminder.html"))
-}
-*/

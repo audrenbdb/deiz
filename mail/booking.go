@@ -24,23 +24,6 @@ func (m *Mailer) MailBookingReminder(b *deiz.Booking) error {
 	}))
 }
 
-/*
-func (m *Mailer) MailBookingReminder(b *deiz.Booking) error {
-	details := m.getBookingEmailDetails(b, b.Clinician.FullName())
-	mailtmpl, err := m.htmlTemplate("booking-reminder.html", details)
-	if err != nil {
-		return err
-	}
-	plainBody := details.plainBodyToPatient()
-	return m.client.Send(createMail(mail{
-		to:       b.Patient.Email,
-		from:     noReplyAddress,
-		subject:  "Rappel de rdv : " + details.BookingDate,
-		mailtmpl: mailtmpl, plainBody: plainBody,
-	}))
-}
-*/
-
 func (m *Mailer) MailBookingToPatient(b *deiz.Booking) error {
 	details := m.getBookingEmailDetails(b, b.Clinician.FullName())
 	template, err := m.htmlTemplate("confirmbooking-topatient.html", details)

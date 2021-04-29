@@ -65,11 +65,11 @@ func handlePatchClinicianEmail(edit usecase.ClinicianEmailEditer) echo.HandlerFu
 func handlePatchClinicianAddress(edit usecase.AddressEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		var a deiz.Address
-		if err := c.Bind(&a); err != nil {
+		a, err := getAddressFromRequest(c)
+		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		err := edit.EditAddress(ctx, &a, getCredFromEchoCtx(c))
+		err = edit.EditAddress(ctx, &a, getCredFromEchoCtx(c))
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}

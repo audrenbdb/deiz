@@ -5,7 +5,6 @@ import (
 	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
-	"strconv"
 )
 
 func handlePostOfficeHours(adder usecase.OfficeHoursAdder) echo.HandlerFunc {
@@ -28,7 +27,7 @@ func handleDeleteOfficeHours(remover usecase.OfficeHoursRemover) echo.HandlerFun
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
-		hoursID, err := strconv.Atoi(c.Param("id"))
+		hoursID, err := getURLIntegerParam(c, "id")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}

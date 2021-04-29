@@ -12,7 +12,7 @@ func handleGetPatientBookings(getter usecase.PatientBookingsGetter) echo.Handler
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
-		patientID, err := strconv.Atoi(c.Param("id"))
+		patientID, err := getURLIntegerParam(c, "id")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -99,7 +99,7 @@ func handleDeleteBooking(deleter usecase.BookingSlotDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
-		bookingID, err := strconv.Atoi(c.Param("id"))
+		bookingID, err := getURLIntegerParam(c, "id")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -117,7 +117,7 @@ func handleDeleteBooking(deleter usecase.BookingSlotDeleter) echo.HandlerFunc {
 func handleGetFreeBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID, err := strconv.Atoi(c.QueryParam("clinician"))
+		clinicianID, err := getURLIntegerParam(c, "clinician")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -158,11 +158,11 @@ func handleGetBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 }
 
 func getMotiveFromParam(c echo.Context) (deiz.BookingMotive, error) {
-	motiveID, err := strconv.Atoi(c.QueryParam("motiveId"))
+	motiveID, err := getURLIntegerParam(c, "motiveId")
 	if err != nil {
 		return deiz.BookingMotive{}, err
 	}
-	motiveDuration, err := strconv.Atoi(c.QueryParam("motiveDuration"))
+	motiveDuration, err := getURLIntegerParam(c, "motiveDuration")
 	if err != nil {
 		return deiz.BookingMotive{}, err
 	}
@@ -189,7 +189,7 @@ func handleDeleteBookingSlotBlocked(deleter usecase.BookingSlotDeleter) echo.Han
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
-		bookingID, err := strconv.Atoi(c.Param("id"))
+		bookingID, err := getURLIntegerParam(c, "id")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}

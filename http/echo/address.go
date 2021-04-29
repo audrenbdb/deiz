@@ -5,13 +5,12 @@ import (
 	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
-	"strconv"
 )
 
 func handleDeleteClinicianAddress(deleter usecase.AddressDeleter) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		addressID, err := strconv.Atoi(c.Param("aid"))
+		addressID, err := getURLIntegerParam(c, "aid")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -29,8 +28,8 @@ func handlePostClinicianAddress(
 		var err error
 		ctx := c.Request().Context()
 		credentials := getCredFromEchoCtx(c)
-		var a deiz.Address
-		if err = c.Bind(&a); err != nil {
+		a, err := getAddressFromRequest(c)
+		if err != nil {
 			return c.JSON(http.StatusBadRequest, errBind.Error())
 		}
 
@@ -50,4 +49,9 @@ func handlePostClinicianAddress(
 		}
 		return c.JSON(http.StatusOK, a)
 	}
+}
+
+func getAddressFromRequest(c echo.Context) (deiz.Address, error) {
+	var a deiz.Address
+	return a, c.Bind(&a)
 }

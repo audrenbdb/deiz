@@ -5,7 +5,6 @@ import (
 	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"net/http"
-	"strconv"
 )
 
 func handlePatchBookingMotive(editer usecase.BookingMotiveEditer) echo.HandlerFunc {
@@ -47,7 +46,7 @@ func handleDeleteBookingMotive(remover usecase.BookingMotiveRemover) echo.Handle
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
 
-		motiveID, err := strconv.Atoi(c.Param("id"))
+		motiveID, err := getURLIntegerParam(c, "id")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}

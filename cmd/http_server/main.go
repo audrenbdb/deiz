@@ -69,18 +69,18 @@ func main() {
 	})
 	mail := mail.NewService(mail.Deps{
 		Templates: emailTemplates,
-		//Client:    mail.NewPostFixClient(),
-		Client: mail.NewGmailClient(),
-		Intl:   intl,
+		Client:    mail.NewPostFixClient(),
+		//Client: mail.NewGmailClient(),
+		Intl: intl,
 	})
 	err = echo.StartEchoServer(echo.EchoServerDeps{
-		ContactService:    contact.NewUsecase(repo, mail),
-		CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
-		//CredentialsGetter: http.FirebaseCredentialsGetter(fbClient),
-		AccountUsecases: newAccountUsecases(repo),
-		PatientUsecases: newPatientUsecases(repo),
-		BookingUsecases: newBookingUsecases(paris, repo, mail),
-		BillingUsecases: newBillingUsecases(repo, mail, pdf),
+		ContactService: contact.NewUsecase(repo, mail),
+		//CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
+		CredentialsGetter: echo.FirebaseCredentialsGetter(fbClient),
+		AccountUsecases:   newAccountUsecases(repo),
+		PatientUsecases:   newPatientUsecases(repo),
+		BookingUsecases:   newBookingUsecases(paris, repo, mail),
+		BillingUsecases:   newBillingUsecases(repo, mail, pdf),
 	})
 
 	if err != nil {

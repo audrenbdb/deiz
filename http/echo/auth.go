@@ -39,7 +39,7 @@ func getBearerToken(header http.Header) (string, error) {
 	return tokenSplit[1], nil
 }
 
-func roleMW(getCredentials credentialsGetter, minRole int) func(next echo.HandlerFunc) echo.HandlerFunc {
+func roleMW(getCredentials credentialsGetter, minRole deiz.Role) func(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			tokenID, err := getBearerToken(c.Request().Header)

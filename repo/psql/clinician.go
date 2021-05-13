@@ -8,15 +8,12 @@ import (
 
 func getClinicianByID(ctx context.Context, db db, clinicianID int) (deiz.Clinician, error) {
 	const query = `SELECT p.id, p.name, p.surname, p.email, p.phone, COALESCE(p.profession, ''),
-	COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, ''),
 	COALESCE(adeli.id, 0), COALESCE(adeli.identifier, '')
 	FROM person p
-	LEFT JOIN address a ON a.id = p.address_id
 	LEFT JOIN adeli adeli ON adeli.person_id = p.id WHERE p.id = $1`
 	row := db.QueryRow(ctx, query, clinicianID)
 	var c deiz.Clinician
 	err := row.Scan(&c.ID, &c.Name, &c.Surname, &c.Email, &c.Phone, &c.Profession,
-		&c.Address.ID, &c.Address.Line, &c.Address.PostCode, &c.Address.City,
 		&c.Adeli.ID, &c.Adeli.Identifier)
 	if err != nil {
 		return deiz.Clinician{}, err
@@ -29,7 +26,6 @@ func insertClinicianPerson(ctx context.Context, db db, c *deiz.Clinician) error 
 		role:       2,
 		email:      c.Email,
 		profession: c.Profession,
-		addressID:  c.Address.ID,
 		name:       c.Name,
 		surname:    c.Surname,
 		phone:      c.Phone,
@@ -48,7 +44,6 @@ func insertAdeli(ctx context.Context, db db, a *deiz.Adeli, clinicianID int) err
 	return row.Scan(&a.ID)
 }
 
-//Update clinicianPhone
 func (r *Repo) UpdateClinicianPhone(ctx context.Context, phone string, clinicianID int) error {
 	const query = `UPDATE person SET phone = $1 WHERE id = $2`
 	tag, err := r.conn.Exec(ctx, query, phone, clinicianID)
@@ -138,15 +133,12 @@ func (r *Repo) UpdateClinicianRole(ctx context.Context, role int, clinicianID in
 }
 func (r *Repo) GetClinicianByEmail(ctx context.Context, email string) (deiz.Clinician, error) {
 	const query = `SELECT p.id, p.name, p.surname, p.email, p.phone, COALESCE(p.profession, ''),
-	COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, ''),
 	COALESCE(adeli.id, 0), COALESCE(adeli.identifier, '')
 	FROM person p
-	LEFT JOIN address a ON a.id = p.address_id
 	LEFT JOIN adeli adeli ON adeli.person_id = p.id WHERE p.email = $1`
 	row := r.conn.QueryRow(ctx, query, email)
 	var c deiz.Clinician
 	err := row.Scan(&c.ID, &c.Name, &c.Surname, &c.Email, &c.Phone, &c.Profession,
-		&c.Address.ID, &c.Address.Line, &c.Address.PostCode, &c.Address.City,
 		&c.Adeli.ID, &c.Adeli.Identifier)
 	if err != nil {
 		return deiz.Clinician{}, err

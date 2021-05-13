@@ -1,10 +1,11 @@
 package deiz
 
 type CalendarSettings struct {
-	ID            int           `json:"id"`
-	DefaultMotive BookingMotive `json:"defaultMotive"`
-	Timezone      Timezone      `json:"timezone"`
-	RemoteAllowed bool          `json:"remoteAllowed"`
+	ID                int           `json:"id"`
+	DefaultMotive     BookingMotive `json:"defaultMotive"`
+	Timezone          Timezone      `json:"timezone"`
+	RemoteAllowed     bool          `json:"remoteAllowed"`
+	NewPatientAllowed bool          `json:"newPatientAllowed"`
 }
 
 type Timezone struct {

@@ -36,6 +36,7 @@ type (
 	}
 	BookingSlotBlocker interface {
 		BlockBookingSlot(ctx context.Context, slot *deiz.Booking, clinicianID int) error
+		BlockBookingSlotList(ctx context.Context, slots []*deiz.Booking, credentials deiz.Credentials) error
 	}
 	CalendarReader interface {
 		GetCalendarFreeSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error)

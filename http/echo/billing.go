@@ -23,11 +23,11 @@ func handleGetUnpaidBookings(getter usecase.UnpaidBookingsGetter) echo.HandlerFu
 func handleGetSessionCheckout(creater usecase.StripeSessionCreater) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID, err := getURLIntegerParam(c, "clinicianId")
+		clinicianID, err := getURLIntegerQueryParam(c, "clinicianId")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		amount, err := getURLIntegerParam(c, "amount")
+		amount, err := getURLIntegerQueryParam(c, "amount")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}

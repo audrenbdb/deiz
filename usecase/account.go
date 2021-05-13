@@ -15,7 +15,7 @@ type (
 		AccountDataGetter AccountDataGetter
 
 		AccountAddressUsecases   AccountAddressUsecases
-		BusinessUsecases         BusinessEditer
+		BusinessUsecases         BusinessUsecases
 		ClinicianUsecases        ClinicianUsecases
 		MotiveUsecases           MotiveUsecases
 		OfficeHoursUsecases      OfficeHoursUsecases
@@ -25,8 +25,12 @@ type (
 	AccountAddressUsecases struct {
 		OfficeAddressAdder OfficeAddressAdder
 		AddressDeleter     AddressDeleter
-		HomeAddressSetter  HomeAddressSetter
 		AddressEditer      AddressEditer
+	}
+	BusinessUsecases struct {
+		BusinessEditer        BusinessEditer
+		BusinessAddressEditer BusinessAddressEditer
+		BusinessAddressSetter BusinessAddressSetter
 	}
 	ClinicianUsecases struct {
 		PhoneEditer      ClinicianPhoneEditer
@@ -62,9 +66,6 @@ type (
 	OfficeAddressAdder interface {
 		AddClinicianOfficeAddress(ctx context.Context, address *deiz.Address, cred deiz.Credentials) error
 	}
-	HomeAddressSetter interface {
-		SetHomeAddress(ctx context.Context, address *deiz.Address, cred deiz.Credentials) error
-	}
 	AddressDeleter interface {
 		DeleteAddress(ctx context.Context, addressID int, cred deiz.Credentials) error
 	}
@@ -85,6 +86,12 @@ type (
 type (
 	BusinessEditer interface {
 		EditClinicianBusiness(ctx context.Context, b *deiz.Business, clinicianID int) error
+	}
+	BusinessAddressSetter interface {
+		SetClinicianBusinessAddress(ctx context.Context, a *deiz.Address, clinicianID int) error
+	}
+	BusinessAddressEditer interface {
+		UpdateClinicianBusinessAddress(ctx context.Context, a *deiz.Address, clinicianID int) error
 	}
 )
 

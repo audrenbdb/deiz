@@ -86,6 +86,9 @@ func (r *RegisterUsecase) setBookingPatient(ctx context.Context, b *deiz.Booking
 		return err
 	}
 	if patient.IsNotSet() {
+		if b.Patient.IsInvalid() {
+			return deiz.ErrorStructValidation
+		}
 		err := r.PatientCreater.CreatePatient(ctx, &b.Patient, b.Clinician.ID)
 		if err != nil {
 			return err

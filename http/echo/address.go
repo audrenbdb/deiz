@@ -23,7 +23,7 @@ func handleDeleteClinicianAddress(deleter usecase.AddressDeleter) echo.HandlerFu
 }
 
 func handlePostClinicianAddress(
-	officeAddressAdder usecase.OfficeAddressAdder, homeAddressSetter usecase.HomeAddressSetter) echo.HandlerFunc {
+	officeAddressAdder usecase.OfficeAddressAdder) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var err error
 		ctx := c.Request().Context()
@@ -32,18 +32,7 @@ func handlePostClinicianAddress(
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, errBind.Error())
 		}
-
-		//addressType can either be professional address or personal address
-		addressType := c.QueryParam("type")
-		if addressType != "office" && addressType != "home" {
-			return c.JSON(http.StatusBadRequest, "address type not specified in the url")
-		}
-
-		if addressType == "home" {
-			err = homeAddressSetter.SetHomeAddress(ctx, &a, credentials)
-		} else {
-			err = officeAddressAdder.AddClinicianOfficeAddress(ctx, &a, credentials)
-		}
+		err = officeAddressAdder.AddClinicianOfficeAddress(ctx, &a, credentials)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}

@@ -3,11 +3,12 @@ package deiz
 import "time"
 
 type OfficeHours struct {
-	ID      int     `json:"id"`
-	StartMn int     `json:"startMn"`
-	EndMn   int     `json:"endMn"`
-	WeekDay int     `json:"weekDay"`
-	Address Address `json:"address"`
+	ID          int         `json:"id"`
+	StartMn     int         `json:"startMn"`
+	EndMn       int         `json:"endMn"`
+	WeekDay     int         `json:"weekDay"`
+	Address     Address     `json:"address"`
+	BookingType BookingType `json:"bookingType"`
 }
 
 func (h *OfficeHours) IsValid() bool {

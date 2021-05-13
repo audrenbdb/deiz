@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"github.com/audrenbdb/deiz/account"
 	"github.com/audrenbdb/deiz/account/address"
@@ -36,6 +37,7 @@ import (
 
 func main() {
 	ctx := context.Background()
+
 	path, err := getPath()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to get path: %v\n", err)
@@ -58,6 +60,11 @@ func main() {
 		fmt.Fprintf(os.Stderr, "unable to embed email templates : %v\n", err)
 		os.Exit(1)
 	}
+
+	var isProd bool
+	flag.BoolVar(&isProd, "prod", true, "inject mock auth and gmail email client if not prod")
+	flag.Parse()
+
 	repo := psql.NewRepo(psqlDB, fbClient)
 	paris, _ := time.LoadLocation("Europe/Paris")
 	intl := intl.NewIntlParser("Fr", paris)
@@ -67,21 +74,37 @@ func main() {
 		FontDir:    filepath.Join(path, "../../assets", "fonts"),
 		Intl:       intl,
 	})
-	mail := mail.NewService(mail.Deps{
-		Templates: emailTemplates,
-		Client:    mail.NewPostFixClient(),
-		//Client: mail.NewGmailClient(),
-		Intl: intl,
-	})
-	err = echo.StartEchoServer(echo.EchoServerDeps{
-		ContactService: contact.NewUsecase(repo, mail),
-		//CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
-		CredentialsGetter: echo.FirebaseCredentialsGetter(fbClient),
-		AccountUsecases:   newAccountUsecases(repo),
-		PatientUsecases:   newPatientUsecases(repo),
-		BookingUsecases:   newBookingUsecases(paris, repo, mail),
-		BillingUsecases:   newBillingUsecases(repo, mail, pdf),
-	})
+
+	if isProd {
+		mail := mail.NewService(mail.Deps{
+			Templates: emailTemplates,
+			Client:    mail.NewPostFixClient(),
+			Intl:      intl,
+		})
+		err = echo.StartEchoServer(echo.EchoServerDeps{
+			ContactService: contact.NewUsecase(repo, mail),
+			//CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
+			CredentialsGetter: echo.FirebaseCredentialsGetter(fbClient),
+			AccountUsecases:   newAccountUsecases(repo),
+			PatientUsecases:   newPatientUsecases(repo),
+			BookingUsecases:   newBookingUsecases(paris, repo, mail),
+			BillingUsecases:   newBillingUsecases(repo, mail, pdf),
+		})
+	} else {
+		mail := mail.NewService(mail.Deps{
+			Templates: emailTemplates,
+			Client:    mail.NewGmailClient(),
+			Intl:      intl,
+		})
+		err = echo.StartEchoServer(echo.EchoServerDeps{
+			ContactService:    contact.NewUsecase(repo, mail),
+			CredentialsGetter: echo.FakeCredentialsGetter,
+			AccountUsecases:   newAccountUsecases(repo),
+			PatientUsecases:   newPatientUsecases(repo),
+			BookingUsecases:   newBookingUsecases(paris, repo, mail),
+			BillingUsecases:   newBillingUsecases(repo, mail, pdf),
+		})
+	}
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unable to start echo http_server: %v\n", err)
@@ -123,6 +146,12 @@ func newAccountUsecases(repo *psql.Repo) usecase.AccountUsecases {
 		AdeliUpdater:      repo,
 		ProfessionUpdater: repo,
 	}
+	businessUc := &business.Usecase{
+		BusinessUpdater: repo,
+		AddressUpdater:  repo,
+		AddressCreater:  repo,
+		Getter:          repo,
+	}
 	return usecase.AccountUsecases{
 		AccountDataGetter: &account.GetDataUsecase{AccountDataGetter: repo},
 		LoginAllower: &account.AllowLoginUsecase{
@@ -137,13 +166,14 @@ func newAccountUsecases(repo *psql.Repo) usecase.AccountUsecases {
 			EmailEditer:      clinicianUc,
 			AdeliEditer:      clinicianUc,
 		},
-		BusinessUsecases: &business.UpdateUsecase{
-			BusinessUpdater: repo,
+		BusinessUsecases: usecase.BusinessUsecases{
+			BusinessEditer:        businessUc,
+			BusinessAddressEditer: businessUc,
+			BusinessAddressSetter: businessUc,
 		},
 		AccountAddressUsecases: usecase.AccountAddressUsecases{
 			OfficeAddressAdder: &address.AddAddressUsecase{AddressCreater: repo},
 			AddressDeleter:     &address.DeleteAddressUsecase{AccountGetter: repo, AddressDeleter: repo},
-			HomeAddressSetter:  &address.SetHomeUsecase{HomeAddressSetter: repo},
 			AddressEditer:      &address.EditAddressUsecase{AddressUpdater: repo, AccountGetter: repo},
 		},
 		MotiveUsecases: usecase.MotiveUsecases{

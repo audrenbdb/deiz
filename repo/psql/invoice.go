@@ -19,7 +19,7 @@ func setInvoiceCanceled(ctx context.Context, db db, invoiceID int, clinicianID i
 }
 
 func (r *Repo) GetBookingsPendingPayment(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
-	const query = `SELECT b.id, lower(b.during), upper(b.during), b.remote, b.note,
+	const query = `SELECT b.id, lower(b.during), upper(b.during), b.booking_type_id, b.note,
 	COALESCE(m.id, 0), COALESCE(m.name, ''), COALESCE(m.duration, 0), COALESCE(m.price, 0),
 	p.id, p.name, p.surname, p.email, p.phone,
 	COALESCE(pa.id, 0), COALESCE(pa.line, ''), COALESCE(pa.post_code, 0), COALESCE(pa.city, ''),
@@ -38,7 +38,7 @@ func (r *Repo) GetBookingsPendingPayment(ctx context.Context, clinicianID int) (
 	var bookings []deiz.Booking
 	for rows.Next() {
 		var b deiz.Booking
-		err := rows.Scan(&b.ID, &b.Start, &b.End, &b.Remote, &b.Note,
+		err := rows.Scan(&b.ID, &b.Start, &b.End, &b.BookingType, &b.Note,
 			&b.Motive.ID, &b.Motive.Name, &b.Motive.Duration, &b.Motive.Price,
 			&b.Patient.ID, &b.Patient.Name, &b.Patient.Surname, &b.Patient.Email, &b.Patient.Phone,
 			&b.Patient.Address.ID, &b.Patient.Address.Line, &b.Patient.Address.PostCode, &b.Patient.Address.City,

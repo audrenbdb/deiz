@@ -36,8 +36,8 @@ func insertAddress(ctx context.Context, db db, a *deiz.Address) error {
 	return nil
 }
 
-func updatePersonAddress(ctx context.Context, db db, a *deiz.Address, personID int) error {
-	const query = `UPDATE person SET address_id = $1 WHERE id = $2`
+func updateBusinessAddress(ctx context.Context, db db, a *deiz.Address, personID int) error {
+	const query = `UPDATE business SET address_id = $1 WHERE person_id = $2`
 	tag, err := db.Exec(ctx, query, a.ID, personID)
 	if err != nil {
 		return err
@@ -76,11 +76,7 @@ func (r *Repo) UpdateAddress(ctx context.Context, a *deiz.Address) error {
 	return updateAddress(ctx, r.conn, a)
 }
 
-func (r *Repo) SetClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
-	return updatePersonAddress(ctx, r.conn, a, clinicianID)
-}
-
-func (r *Repo) CreateClinicianHomeAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
+func (r *Repo) CreateBusinessAddress(ctx context.Context, a *deiz.Address, clinicianID int) error {
 	tx, err := r.conn.Begin(ctx)
 	defer tx.Rollback(ctx)
 	if err != nil {
@@ -90,7 +86,7 @@ func (r *Repo) CreateClinicianHomeAddress(ctx context.Context, a *deiz.Address, 
 	if err != nil {
 		return err
 	}
-	err = updatePersonAddress(ctx, tx, a, clinicianID)
+	err = updateBusinessAddress(ctx, tx, a, clinicianID)
 	if err != nil {
 		return err
 	}

@@ -6,20 +6,28 @@ import (
 )
 
 type Booking struct {
-	ID        int           `json:"id"`
-	DeleteID  string        `json:"deleteId"`
-	Start     time.Time     `json:"start"`
-	End       time.Time     `json:"end"`
-	Motive    BookingMotive `json:"motive"`
-	Clinician Clinician     `json:"clinician"`
-	Patient   Patient       `json:"patient"`
-	Address   Address       `json:"address"`
-	Remote    bool          `json:"remote"`
-	Paid      bool          `json:"paid"`
-	Blocked   bool          `json:"blocked"`
-	Confirmed bool          `json:"confirmed"`
-	Note      string        `json:"note"`
+	ID          int           `json:"id"`
+	DeleteID    string        `json:"deleteId"`
+	Start       time.Time     `json:"start"`
+	End         time.Time     `json:"end"`
+	Motive      BookingMotive `json:"motive"`
+	Clinician   Clinician     `json:"clinician"`
+	Patient     Patient       `json:"patient"`
+	Address     Address       `json:"address"`
+	Paid        bool          `json:"paid"`
+	Blocked     bool          `json:"blocked"`
+	Confirmed   bool          `json:"confirmed"`
+	Note        string        `json:"note"`
+	BookingType BookingType   `json:"bookingType"`
 }
+
+type BookingType int32
+
+const (
+	RemoteBooking BookingType = iota
+	AtClinicianAddressBooking
+	AtPatientHomeBooking
+)
 
 func (b *Booking) Assigned() bool {
 	return b.Confirmed || b.PreRegistered()
@@ -54,7 +62,7 @@ func (b *Booking) EndBeforeStart() bool {
 }
 
 func (b *Booking) RemoteStatusMatchAddress() bool {
-	if b.Remote {
+	if b.BookingType == RemoteBooking {
 		return b.AddressNotSet()
 	}
 	return true

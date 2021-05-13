@@ -30,7 +30,7 @@ func TestGetClinicianAccountData(t *testing.T) {
 		{
 			description: "Should fail to retrieve clinician account",
 
-			credInput:   deiz.Credentials{Role: deiz.CLINICIAN},
+			credInput:   deiz.Credentials{Role: deiz.ClinicianRole},
 			errorOutput: deiz.GenericError,
 			usecase: GetDataUsecase{
 				&mockGetClinicianAccount{err: deiz.GenericError},
@@ -39,7 +39,7 @@ func TestGetClinicianAccountData(t *testing.T) {
 		{
 			description: "Should filter out private booking motive if public",
 
-			credInput: deiz.Credentials{Role: deiz.PATIENT},
+			credInput: deiz.Credentials{Role: deiz.PatientRole},
 			accountOuput: deiz.ClinicianAccount{BookingMotives: []deiz.BookingMotive{
 				{Public: true, ID: 1},
 			}},

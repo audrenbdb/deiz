@@ -117,7 +117,7 @@ func handleDeleteBooking(deleter usecase.BookingSlotDeleter) echo.HandlerFunc {
 func handleGetFreeBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
-		clinicianID, err := getURLIntegerParam(c, "clinician")
+		clinicianID, err := getURLIntegerQueryParam(c, "clinician")
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -158,11 +158,11 @@ func handleGetBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 }
 
 func getMotiveFromParam(c echo.Context) (deiz.BookingMotive, error) {
-	motiveID, err := getURLIntegerParam(c, "motiveId")
+	motiveID, err := getURLIntegerQueryParam(c, "motiveId")
 	if err != nil {
 		return deiz.BookingMotive{}, err
 	}
-	motiveDuration, err := getURLIntegerParam(c, "motiveDuration")
+	motiveDuration, err := getURLIntegerQueryParam(c, "motiveDuration")
 	if err != nil {
 		return deiz.BookingMotive{}, err
 	}
@@ -182,6 +182,22 @@ func handlePostBlockedBookingSlot(blocker usecase.BookingSlotBlocker) echo.Handl
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		return c.JSON(http.StatusOK, b)
+	}
+}
+
+func handlePostBlockedBookingSlotList(blocker usecase.BookingSlotBlocker) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+		cred := getCredFromEchoCtx(c)
+		var slots []*deiz.Booking
+		if err := c.Bind(&slots); err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		err := blocker.BlockBookingSlotList(ctx, slots, cred)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, slots)
 	}
 }
 

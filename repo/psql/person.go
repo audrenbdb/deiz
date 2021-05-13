@@ -14,8 +14,8 @@ type person struct {
 }
 
 func insertPerson(ctx context.Context, db db, p *person) error {
-	const query = `INSERT INTO person(role, profession, address_id, name, surname, phone, email) VALUES($1, $2, NULLIF($3, 0), $4, $5, $6, $7) RETURNING id`
-	row := db.QueryRow(ctx, query, p.role, p.profession, p.addressID, p.name, p.surname, p.phone, p.email)
+	const query = `INSERT INTO person(role, profession, name, surname, phone, email) VALUES($1, $2, $3, $4, $5, $6) RETURNING id`
+	row := db.QueryRow(ctx, query, p.role, p.profession, p.name, p.surname, p.phone, p.email)
 	return row.Scan(&p.id)
 }
 

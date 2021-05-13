@@ -17,18 +17,24 @@ func insertBusiness(ctx context.Context, db db, b *deiz.Business, personID int) 
 
 func getBusinessByPersonID(ctx context.Context, db db, personID int) (deiz.Business, error) {
 	const query = `SELECT b.id, COALESCE(b.name, ''), COALESCE(b.identifier, ''),
-	COALESCE(t.id, 0), COALESCE(t.code, '')
+	COALESCE(t.id, 0), COALESCE(t.code, ''),
+    COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, '')
 	FROM business b
 	LEFT JOIN tax_exemption t ON b.tax_exemption_id = t.id
+    LEFT JOIN address a ON b.address_id = a.id
 	WHERE b.person_id = $1`
 	row := db.QueryRow(ctx, query, personID)
 	b := deiz.Business{}
-	err := row.Scan(&b.ID, &b.Name, &b.Identifier, &b.TaxExemption.ID,
-		&b.TaxExemption.Code)
+	err := row.Scan(&b.ID, &b.Name, &b.Identifier, &b.TaxExemption.ID, &b.TaxExemption.Code,
+		&b.Address.ID, &b.Address.Line, &b.Address.PostCode, &b.Address.City)
 	if err != nil {
 		return deiz.Business{}, err
 	}
 	return b, nil
+}
+
+func (r *Repo) GetClinicianBusiness(ctx context.Context, clinicianID int) (deiz.Business, error) {
+	return getBusinessByPersonID(ctx, r.conn, clinicianID)
 }
 
 func (r *Repo) UpdateClinicianBusiness(ctx context.Context, b *deiz.Business, clinicianID int) error {

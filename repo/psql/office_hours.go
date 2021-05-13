@@ -6,7 +6,7 @@ import (
 )
 
 func (r *Repo) GetClinicianOfficeHours(ctx context.Context, clinicianID int) ([]deiz.OfficeHours, error) {
-	const query = `SELECT h.id, h.start_mn, h.end_mn, h.week_day,
+	const query = `SELECT h.id, h.start_mn, h.end_mn, h.week_day, h.booking_type_id,
 	COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, '')
 	FROM office_hours h
 	LEFT JOIN address a ON h.address_id = a.id
@@ -19,7 +19,8 @@ func (r *Repo) GetClinicianOfficeHours(ctx context.Context, clinicianID int) ([]
 	hours := []deiz.OfficeHours{}
 	for rows.Next() {
 		var h deiz.OfficeHours
-		err := rows.Scan(&h.ID, &h.StartMn, &h.EndMn, &h.WeekDay, &h.Address.ID, &h.Address.Line, &h.Address.PostCode, &h.Address.City)
+		err := rows.Scan(&h.ID, &h.StartMn, &h.EndMn, &h.WeekDay, &h.BookingType,
+			&h.Address.ID, &h.Address.Line, &h.Address.PostCode, &h.Address.City)
 		if err != nil {
 			return nil, err
 		}
@@ -29,9 +30,9 @@ func (r *Repo) GetClinicianOfficeHours(ctx context.Context, clinicianID int) ([]
 }
 
 func (r *Repo) CreateOfficeHours(ctx context.Context, h *deiz.OfficeHours, clinicianID int) error {
-	const query = `INSERT INTO office_hours(start_mn, end_mn, week_day, address_id, person_id)
-	VALUES($1, $2, $3, NULLIF($4, 0), $5) RETURNING id`
-	row := r.conn.QueryRow(ctx, query, h.StartMn, h.EndMn, h.WeekDay, h.Address.ID, clinicianID)
+	const query = `INSERT INTO office_hours(start_mn, end_mn, week_day, address_id, person_id, booking_type_id)
+	VALUES($1, $2, $3, NULLIF($4, 0), $5, $6) RETURNING id`
+	row := r.conn.QueryRow(ctx, query, h.StartMn, h.EndMn, h.WeekDay, h.Address.ID, clinicianID, h.BookingType)
 	return row.Scan(&h.ID)
 }
 

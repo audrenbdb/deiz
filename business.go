@@ -6,6 +6,7 @@ type Business struct {
 	Name         string       `json:"name"`
 	Identifier   string       `json:"identifier"`
 	TaxExemption TaxExemption `json:"taxExemption"`
+	Address      Address      `json:"address"`
 }
 
 type TaxExemption struct {

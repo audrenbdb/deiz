@@ -42,10 +42,10 @@ func handleGetClinicianAccount(getter usecase.AccountDataGetter) echo.HandlerFun
 		credentials := getCredFromEchoCtx(c)
 		var acc deiz.ClinicianAccount
 		var err error
-		if credentials.Role == deiz.CLINICIAN {
+		if credentials.Role == deiz.ClinicianRole {
 			acc, err = getter.GetClinicianAccountData(ctx, credentials)
 		} else {
-			clinicianID, err := getURLIntegerParam(c, "clinicianId")
+			clinicianID, err := getURLIntegerQueryParam(c, "clinicianId")
 			if err != nil {
 				return c.JSON(http.StatusBadRequest, err.Error())
 			}

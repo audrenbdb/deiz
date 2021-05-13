@@ -58,10 +58,18 @@
                                                                 <td>
                                                                     <table border="0" cellpadding="0" cellspacing="14" width="100%">
                                                                         <tbody>
-
                                                                             <tr align="center">
                                                                                 <td style="font-size:14px;color:#435f71;font-weight:bold">
-                                                                                    {{.BookingDate}}</td>
+                                                                                    <p>{{.BookingDate}}</p>
+                                                                                    {{ if eq .BookingType 2 }}
+                                                                                    <p>Au domicile de votre patient</p>
+                                                                                    <p>{{.AddressLine}}, {{.AddressCity}}</p>
+                                                                                    {{ else if eq .BookingType 1 }}
+                                                                                    <p>{{.AddressLine}}</p>
+                                                                                    {{ else if eq .BookingType 0 }}
+                                                                                    <p>En visio conférence</p>
+                                                                                    {{ end }}
+                                                                                </td>
                                                                             </tr>
                                                                             <tr align="center">
                                                                                 <td style="font-size:14px;color:#435f71;font-weight:bold">
@@ -71,7 +79,9 @@
                                                                 <td style="color:#435f71;font-size:14px;line-height:24px">
                                                                     <p>{{.Patient}}<br>{{.Phone}}</p>
                                                                     <p>{{.Email}}</p>
+
                                                                 </td>
+
                                                             </tr>
                                                                             <tr>
                                                                                 <td align="center">

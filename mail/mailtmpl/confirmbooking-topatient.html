@@ -157,7 +157,6 @@
 
 
 
-
                                 <tr>
                                     <td>
                                         <table width="100%" bgcolor="#FFFFFF" border="0" cellpadding="0"
@@ -167,7 +166,23 @@
                                                     <td align="center"
                                                         style="color:#435f71;font-size:15px;font-weight:bold">Accès</td>
                                                 </tr>
-                                                {{if not .Remote}}
+                                                {{ if eq .BookingType 2}}
+                                                <tr>
+                                                    <td>
+                                                        <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                                                            <tbody>
+                                                            <tr>
+                                                                <td
+                                                                        style="color:#435f71;font-size:14px;line-height:24px">
+                                                                    <p>La consultation sera à votre domicile. Vous pouvez contacter le clinicien si vous souhaitez en savoir davantage.</p>
+
+                                                                </td>
+                                                            </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                                {{ else if eq .BookingType 1}}
                                                 <tr>
                                                     <td>
                                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -206,7 +221,7 @@
                                                         </table>
                                                     </td>
                                                 </tr>
-                                                {{else}}
+                                                {{else if eq .BookingType 0}}
                                                 <tr>
                                                     <td>
                                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -214,7 +229,7 @@
                                                             <tr>
                                                                 <td
                                                                         style="color:#435f71;font-size:14px;line-height:24px">
-                                                                    <p>La consultation sera en visioconférence. Contactez le clinician pour en déterminer les modalités.</p>
+                                                                    <p>La consultation sera en visioconférence. Vous pouvez contacter le clinicien si vous souhaitez en savoir davantage.</p>
 
                                                                 </td>
                                                             </tr>
@@ -228,7 +243,6 @@
                                     </td>
                                 </tr>
                                 <tr height="14"></tr>
-
                                 <tr>
                                     <td>
                                         <table width="100%" bgcolor="#FFFFFF" border="0" cellpadding="0"

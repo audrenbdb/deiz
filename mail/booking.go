@@ -79,7 +79,7 @@ type bookingEmailDetails struct {
 	CancelLink    string
 	AddressLine   string
 	AddressCity   string
-	Remote        bool
+	BookingType   int
 	Motive        string
 	Email         string
 }
@@ -138,6 +138,6 @@ func (m *Mailer) getBookingEmailDetails(b *deiz.Booking, with string) bookingEma
 		CancelLink:  buildCancelURL(b.DeleteID).String(),
 		AddressLine: b.Address.Line,
 		AddressCity: fmt.Sprintf("%d %s", b.Address.PostCode, b.Address.City),
-		Remote:      b.Remote,
+		BookingType: int(b.BookingType),
 	}
 }

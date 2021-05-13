@@ -11,7 +11,7 @@ func isAddressToClinician(ctx context.Context, addressID int, clinicianID int, g
 		return false, err
 	}
 
-	return isAddressIDInAddresses(addressID, append(acc.OfficeAddresses, acc.Clinician.Address)), nil
+	return isAddressIDInAddresses(addressID, acc.OfficeAddresses), nil
 }
 
 func isAddressIDInAddresses(addressID int, addresses []deiz.Address) bool {

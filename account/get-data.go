@@ -16,10 +16,13 @@ func (u *GetDataUsecase) GetClinicianAccountPublicData(ctx context.Context, clin
 		return deiz.ClinicianAccount{}, err
 	}
 	return deiz.ClinicianAccount{
-		Clinician:        acc.Clinician,
-		StripePublicKey:  acc.StripePublicKey,
-		BookingMotives:   filterPublicMotives(acc.BookingMotives),
-		CalendarSettings: deiz.CalendarSettings{RemoteAllowed: acc.CalendarSettings.RemoteAllowed},
+		Clinician:       acc.Clinician,
+		StripePublicKey: acc.StripePublicKey,
+		BookingMotives:  filterPublicMotives(acc.BookingMotives),
+		CalendarSettings: deiz.CalendarSettings{
+			RemoteAllowed:     acc.CalendarSettings.RemoteAllowed,
+			NewPatientAllowed: acc.CalendarSettings.NewPatientAllowed,
+		},
 	}, nil
 }
 

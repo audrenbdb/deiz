@@ -10,3 +10,7 @@ CREATE TABLE timezone (
                           id SERIAL PRIMARY KEY,
                           name VARCHAR(80) NOT NULL
 );
+
+ALTER TABLE OFFICE_HOURS ADD COLUMN allow_remote bool NOT NULL DEFAULT FALSE;
+ALTER TABLE OFFICE_HOURS ADD COLUMN allow_booking_to_patient_home bool NOT NULL DEFAULT FALSE;
+ALTER TABLE OFFICE_HOURS ADD COLUMN allow_new_patient bool NOT NULL DEFAULT TRUE;

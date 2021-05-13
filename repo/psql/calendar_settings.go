@@ -6,7 +6,7 @@ import (
 )
 
 func getCalendarSettingsByPersonID(ctx context.Context, db db, personID int) (deiz.CalendarSettings, error) {
-	const query = `SELECT s.id, s.remote_allowed,
+	const query = `SELECT s.id, s.remote_allowed, s.new_patient_allowed,
 	COALESCE(m.id, 0), COALESCE(m.duration, 60), COALESCE(m.price, 5000), COALESCE(m.name, 'Défaut'), COALESCE(m.public, false),
 	t.id, t.name
 	FROM calendar_settings s
@@ -15,7 +15,7 @@ func getCalendarSettingsByPersonID(ctx context.Context, db db, personID int) (de
 	WHERE s.person_id = $1`
 	row := db.QueryRow(ctx, query, personID)
 	var s deiz.CalendarSettings
-	err := row.Scan(&s.ID, &s.RemoteAllowed,
+	err := row.Scan(&s.ID, &s.RemoteAllowed, &s.NewPatientAllowed,
 		&s.DefaultMotive.ID, &s.DefaultMotive.Duration, &s.DefaultMotive.Price, &s.DefaultMotive.Name, &s.DefaultMotive.Public,
 		&s.Timezone.ID, &s.Timezone.Name)
 	if err != nil {
@@ -31,8 +31,8 @@ func insertCalendarSettings(ctx context.Context, db db, s *deiz.CalendarSettings
 }
 
 func (r *Repo) UpdateCalendarSettings(ctx context.Context, s *deiz.CalendarSettings, clinicianID int) error {
-	const query = `UPDATE calendar_settings SET default_booking_motive_id = NULLIF($1, 0), remote_allowed = $2 WHERE person_id = $3`
-	tag, err := r.conn.Exec(ctx, query, s.DefaultMotive.ID, s.RemoteAllowed, clinicianID)
+	const query = `UPDATE calendar_settings SET default_booking_motive_id = NULLIF($1, 0), remote_allowed = $2, new_patient_allowed = $3 WHERE person_id = $4`
+	tag, err := r.conn.Exec(ctx, query, s.DefaultMotive.ID, s.RemoteAllowed, s.NewPatientAllowed, clinicianID)
 	if err != nil {
 		return err
 	}

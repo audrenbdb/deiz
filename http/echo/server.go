@@ -27,7 +27,7 @@ type EchoServerDeps struct {
 }
 
 func StartEchoServer(deps EchoServerDeps) error {
-	clinicianMW := roleMW(deps.CredentialsGetter, deiz.CLINICIAN)
+	clinicianMW := roleMW(deps.CredentialsGetter, deiz.ClinicianRole)
 	//adminMW := roleMW(credentialsGetter, 3)
 
 	e := echo.New()
@@ -36,11 +36,16 @@ func StartEchoServer(deps EchoServerDeps) error {
 
 	e.POST("/api/registrations", handlePostRegistration(deps.AccountUsecases.LoginAllower))
 
+	e.GET("/api/clinician-accounts", handleGetClinicianAccount(deps.AccountUsecases.AccountDataGetter), publicMW(deps.CredentialsGetter))
 	e.POST("/api/clinician-accounts", handlePostClinicianAccount(deps.AccountUsecases.AccountAdder))
-	e.PATCH("/api/businesses/:id", handlePatchBusiness(deps.AccountUsecases.BusinessUsecases), clinicianMW)
+
+	e.PATCH("/api/businesses/:id", handlePatchBusiness(deps.AccountUsecases.BusinessUsecases.BusinessEditer), clinicianMW)
+	e.POST("/api/businesses/:bid/address", handlePostBusinessAddress(deps.AccountUsecases.BusinessUsecases.BusinessAddressSetter), clinicianMW)
+	e.PATCH("/api/businesses/:bid/addresses/:aid", handlePatchBusinessAddress(deps.AccountUsecases.BusinessUsecases.BusinessAddressEditer), clinicianMW)
 
 	e.GET("/api/bookings", handleGetBookingSlots(deps.BookingUsecases.CalendarReader), clinicianMW)
 	e.POST("/api/bookings/blocked", handlePostBlockedBookingSlot(deps.BookingUsecases.SlotBlocker), clinicianMW)
+	e.POST("/api/bookings/blocked/list", handlePostBlockedBookingSlotList(deps.BookingUsecases.SlotBlocker), clinicianMW)
 	e.POST("/api/bookings", handlePostBooking(deps.BookingUsecases.Register), clinicianMW)
 	e.POST("/api/bookings/pre-registered", handlePostPreRegisteredBooking(deps.BookingUsecases.PreRegister), clinicianMW)
 	e.PATCH("/api/bookings/pre-registered", handlePatchPreRegisteredBooking(deps.BookingUsecases.Register), clinicianMW)
@@ -53,9 +58,9 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.PATCH("/api/clinicians/:id/email", handlePatchClinicianEmail(deps.AccountUsecases.ClinicianUsecases.EmailEditer), clinicianMW)
 	e.PATCH("/api/clinicians/:id/adeli", handlePatchClinicianAdeli(deps.AccountUsecases.ClinicianUsecases.AdeliEditer), clinicianMW)
 	e.PATCH("/api/clinicians/:id/profession", handlePatchClinicianProfession(deps.AccountUsecases.ClinicianUsecases.ProfessionEditer), clinicianMW)
-	e.PATCH("/api/clinicians/:id/addresses/:aid", handlePatchClinicianAddress(deps.AccountUsecases.AccountAddressUsecases.AddressEditer), clinicianMW)
-	e.POST("/api/clinicians/:id/addresses", handlePostClinicianAddress(deps.AccountUsecases.AccountAddressUsecases.OfficeAddressAdder, deps.AccountUsecases.AccountAddressUsecases.HomeAddressSetter), clinicianMW)
 	e.DELETE("/api/clinicians/:id/addresses/:aid", handleDeleteClinicianAddress(deps.AccountUsecases.AccountAddressUsecases.AddressDeleter), clinicianMW)
+
+	e.POST("/api/office-addresses", handlePostClinicianAddress(deps.AccountUsecases.AccountAddressUsecases.OfficeAddressAdder), clinicianMW)
 
 	e.GET("/api/patients", handleGetPatients(deps.PatientUsecases.Searcher), clinicianMW)
 	e.POST("/api/patients", handlePostPatient(deps.PatientUsecases.Adder), clinicianMW)
@@ -81,8 +86,8 @@ func StartEchoServer(deps EchoServerDeps) error {
 
 	e.PATCH("/api/clinician-accounts/stripe-keys", handlePatchStripeKeys(deps.AccountUsecases.StripeKeysUsecases), clinicianMW)
 
-	/* PUBLIC API */
-	e.GET("/api/clinician-accounts", handleGetClinicianAccount(deps.AccountUsecases.AccountDataGetter), publicMW(deps.CredentialsGetter))
+	/* PublicRole API */
+	e.GET("/api/public/clinician-accounts", handleGetClinicianAccount(deps.AccountUsecases.AccountDataGetter), publicMW(deps.CredentialsGetter))
 	e.GET("/api/public/booking-slots", handleGetFreeBookingSlots(deps.BookingUsecases.CalendarReader))
 	e.POST("/api/public/bookings", handlePublicPostBooking(deps.BookingUsecases.Register))
 	e.GET("/api/public/session-checkout", handleGetSessionCheckout(deps.BillingUsecases.StripeSessionCreater))
@@ -96,7 +101,7 @@ func StartEchoServer(deps EchoServerDeps) error {
 func FakeCredentialsGetter(ctx context.Context, tokenID string) (deiz.Credentials, error) {
 	return deiz.Credentials{
 		UserID: 7,
-		Role:   deiz.Role(1),
+		Role:   deiz.ClinicianRole,
 	}, nil
 }
 
@@ -108,6 +113,10 @@ func getTimeFromParam(c echo.Context, paramName string) (time.Time, error) {
 	return time.Unix(i, 0).UTC(), nil
 }
 
-func getURLIntegerParam(c echo.Context, paramName string) (int, error) {
+func getURLIntegerQueryParam(c echo.Context, paramName string) (int, error) {
 	return strconv.Atoi(c.QueryParam(paramName))
+}
+
+func getURLIntegerParam(c echo.Context, paramName string) (int, error) {
+	return strconv.Atoi(c.Param(paramName))
 }

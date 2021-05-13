@@ -62,21 +62,6 @@ func handlePatchClinicianEmail(edit usecase.ClinicianEmailEditer) echo.HandlerFu
 	}
 }
 
-func handlePatchClinicianAddress(edit usecase.AddressEditer) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-		a, err := getAddressFromRequest(c)
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, err.Error())
-		}
-		err = edit.EditAddress(ctx, &a, getCredFromEchoCtx(c))
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		return nil
-	}
-}
-
 func handlePatchClinicianAdeli(edit usecase.ClinicianAdeliEditer) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()

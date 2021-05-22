@@ -20,16 +20,15 @@ func setInvoiceCanceled(ctx context.Context, db db, invoiceID int, clinicianID i
 
 func (r *Repo) GetBookingsPendingPayment(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
 	const query = `SELECT b.id, lower(b.during), upper(b.during), b.booking_type_id, b.note,
-	COALESCE(m.id, 0), COALESCE(m.name, ''), COALESCE(m.duration, 0), COALESCE(m.price, 0),
-	p.id, p.name, p.surname, p.email, p.phone,
+	COALESCE(b.description, ''),
+	p.id, p.name, p.surname, COALESCE(p.email, ''), p.phone,
 	COALESCE(pa.id, 0), COALESCE(pa.line, ''), COALESCE(pa.post_code, 0), COALESCE(pa.city, ''),
-	COALESCE(a.id, 0), COALESCE(a.line, ''), COALESCE(a.post_code, 0), COALESCE(a.city, '')
+	COALESCE(b.address, ''),
 	FROM clinician_booking b
 	LEFT JOIN booking_motive m ON b.booking_motive_id = m.id
 	INNER JOIN patient p ON p.id = b.patient_id
 	LEFT JOIN address pa ON pa.id = p.address_id
-	LEFT JOIN address a ON a.id = b.address_id
-	WHERE b.clinician_person_id = $1 AND b.blocked = false AND b.paid = false AND lower(b.during) < NOW()`
+	WHERE b.clinician_person_id = $1 AND b.booking_type_id = 1 AND b.paid = false AND lower(b.during) < NOW()`
 	rows, err := r.conn.Query(ctx, query, clinicianID)
 	defer rows.Close()
 	if err != nil {
@@ -38,11 +37,9 @@ func (r *Repo) GetBookingsPendingPayment(ctx context.Context, clinicianID int) (
 	var bookings []deiz.Booking
 	for rows.Next() {
 		var b deiz.Booking
-		err := rows.Scan(&b.ID, &b.Start, &b.End, &b.BookingType, &b.Note,
-			&b.Motive.ID, &b.Motive.Name, &b.Motive.Duration, &b.Motive.Price,
+		err := rows.Scan(&b.ID, &b.Start, &b.End, &b.BookingType, &b.Note, &b.Description,
 			&b.Patient.ID, &b.Patient.Name, &b.Patient.Surname, &b.Patient.Email, &b.Patient.Phone,
-			&b.Patient.Address.ID, &b.Patient.Address.Line, &b.Patient.Address.PostCode, &b.Patient.Address.City,
-			&b.Address.ID, &b.Address.Line, &b.Address.PostCode, &b.Address.City)
+			&b.Patient.Address.ID, &b.Patient.Address.Line, &b.Patient.Address.PostCode, &b.Patient.Address.City)
 		if err != nil {
 			return nil, err
 		}

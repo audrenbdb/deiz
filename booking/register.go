@@ -105,7 +105,7 @@ func (r *RegisterUsecase) notifyRegistration(b *deiz.Booking, notifyPatient, not
 			return err
 		}
 	}
-	if notifyPatient {
+	if notifyPatient && b.Patient.IsEmailSet() {
 		if err := r.BookingMailer.MailBookingToPatient(b); err != nil {
 			return err
 		}
@@ -114,8 +114,12 @@ func (r *RegisterUsecase) notifyRegistration(b *deiz.Booking, notifyPatient, not
 }
 
 func (r *RegisterUsecase) registrationValid(b *deiz.Booking, clinicianID int) bool {
+	if b.BookingType == deiz.EventBooking {
+		b.ToEvent()
+		return b.EventValid() && b.Clinician.ID == clinicianID
+	}
 	return b.Start.Before(b.End) &&
-		b.ClinicianSet() && !b.Blocked && b.RemoteStatusMatchAddress() &&
+		b.ClinicianSet() && b.BookingType != deiz.BlockedBooking &&
 		b.PatientSet() && b.Clinician.ID == clinicianID
 }
 

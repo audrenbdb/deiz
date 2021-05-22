@@ -65,11 +65,13 @@ func (r *ReadCalendarUsecase) getFreeBookingSlots(ctx context.Context, timeRange
 
 func splitAvailabilityInFreeBookingSlots(availability officeHoursAvailability, existingBookings []deiz.Booking, motive deiz.BookingMotive, freeBookings []deiz.Booking) []deiz.Booking {
 	nextFreeBooking := deiz.Booking{
-		Start:       availability.availableTimeRange.start,
-		End:         availability.availableTimeRange.start.Add(time.Minute * time.Duration(motive.Duration)),
-		Address:     availability.hours.Address,
-		BookingType: availability.hours.BookingType,
-		Motive:      motive,
+		BookingType:      deiz.AppointmentBooking,
+		Start:            availability.availableTimeRange.start,
+		End:              availability.availableTimeRange.start.Add(time.Minute * time.Duration(motive.Duration)),
+		Address:          availability.hours.Address.ToString(),
+		Description:      motive.Name,
+		Price:            motive.Price,
+		AvailabilityType: availability.hours.AvailabilityType,
 	}
 	//make sure next free booking time range do not overlaps with existing bookings
 	for _, booking := range existingBookings {

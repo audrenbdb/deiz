@@ -28,8 +28,12 @@ func (p *Patient) IsNotSet() bool {
 	return !p.IsSet()
 }
 
+func (p *Patient) IsEmailSet() bool {
+	return p.Email != ""
+}
+
 func (p *Patient) IsValid() bool {
-	return len(p.Name) >= 2 && len(p.Surname) >= 2 && valid.Phone(p.Phone) && valid.Email(p.Email)
+	return len(p.Name) >= 2 && len(p.Surname) >= 2 && valid.Phone(p.Phone) && (valid.Email(p.Email) || p.Email == "")
 }
 
 func (p *Patient) IsInvalid() bool {

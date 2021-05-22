@@ -19,13 +19,13 @@ func (r *Repo) IsPatientTiedToClinician(ctx context.Context, p *deiz.Patient, cl
 
 func (r *Repo) CreatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
 	const query = `INSERT INTO patient(clinician_person_id, email, name, surname, phone, address_id)
-	VALUES($1, $2, $3, $4, $5, NULLIF($6, 0)) RETURNING id`
+	VALUES($1, NULLIF($2, ''), $3, $4, $5, NULLIF($6, 0)) RETURNING id`
 	row := r.conn.QueryRow(ctx, query, clinicianID, p.Email, p.Name, p.Surname, p.Phone, p.Address.ID)
 	return row.Scan(&p.ID)
 }
 
 func (r *Repo) GetPatientByEmail(ctx context.Context, email string, clinicianID int) (deiz.Patient, error) {
-	const query = `SELECT id, name, surname, phone, email FROM patient WHERE clinician_person_id = $1 AND email = $2`
+	const query = `SELECT id, name, surname, phone, COALESCE(email, '') FROM patient WHERE clinician_person_id = $1 AND email = $2`
 	row := r.conn.QueryRow(ctx, query, clinicianID, email)
 	var p deiz.Patient
 	err := row.Scan(&p.ID, &p.Name, &p.Surname, &p.Phone, &p.Email)
@@ -36,7 +36,7 @@ func (r *Repo) GetPatientByEmail(ctx context.Context, email string, clinicianID 
 }
 
 func (r *Repo) SearchPatient(ctx context.Context, search string, clinicianID int) ([]deiz.Patient, error) {
-	const query = `SELECT p.id, p.email, p.name, p.surname, p.phone, COALESCE(p.note, ''),
+	const query = `SELECT p.id, COALESCE(p.email, ''), p.name, p.surname, p.phone, COALESCE(p.note, ''),
 		COALESCE(a.id, 0) address_id, COALESCE(a.line, '') address_line, COALESCE(a.post_code, 0) address_post_code, COALESCE(a.city, '') address_city,
 		similarity(p.name, $1) AS name_sml
 		FROM patient p LEFT JOIN address a ON p.address_id = a.id
@@ -73,7 +73,7 @@ func (r *Repo) CountPatients(ctx context.Context, clinicianID int) (int, error) 
 }
 
 func (r *Repo) UpdatePatient(ctx context.Context, p *deiz.Patient, clinicianID int) error {
-	const query = `UPDATE patient SET name = $1, surname = $2, phone = $3, email = $4, note = NULLIF($5, '') WHERE clinician_person_id = $6 AND id = $7`
+	const query = `UPDATE patient SET name = $1, surname = $2, phone = $3, email = NULLIF($4, ''), note = NULLIF($5, '') WHERE clinician_person_id = $6 AND id = $7`
 	cmdTag, err := r.conn.Exec(ctx, query, p.Name, p.Surname, p.Phone, p.Email, p.Note, clinicianID, p.ID)
 	if err != nil {
 		return err

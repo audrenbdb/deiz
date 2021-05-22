@@ -8,13 +8,16 @@ import (
 	"os"
 	"os/exec"
 	"text/template"
+	"time"
 )
 
 const noReplyAddress = "noreply@deiz.fr"
 
 type Mailer struct {
-	tmpl   *template.Template
-	intl   *intl.Parser
+	tmpl *template.Template
+	intl *intl.Parser
+	//location to use accross email sent
+	tz     *time.Location
 	client client
 }
 
@@ -41,12 +44,13 @@ type Deps struct {
 }
 
 func NewService(deps Deps) *Mailer {
-
+	tz, _ := time.LoadLocation("Europe/Paris")
 	return &Mailer{
 		tmpl: deps.Templates,
 		//tmpl:   deps.Templates,
 		client: deps.Client,
 		intl:   deps.Intl,
+		tz:     tz,
 	}
 }
 

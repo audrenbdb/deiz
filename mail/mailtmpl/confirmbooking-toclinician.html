@@ -61,12 +61,12 @@
                                                                             <tr align="center">
                                                                                 <td style="font-size:14px;color:#435f71;font-weight:bold">
                                                                                     <p>{{.BookingDate}}</p>
-                                                                                    {{ if eq .BookingType 2 }}
+                                                                                    {{ if eq .AvailabilityType 2 }}
                                                                                     <p>Au domicile de votre patient</p>
-                                                                                    <p>{{.AddressLine}}, {{.AddressCity}}</p>
-                                                                                    {{ else if eq .BookingType 1 }}
-                                                                                    <p>{{.AddressLine}}</p>
-                                                                                    {{ else if eq .BookingType 0 }}
+                                                                                    <p>{{.Address}}</p>
+                                                                                    {{ else if eq .AvailabilityType 1 }}
+                                                                                    <p>{{.Address}}</p>
+                                                                                    {{ else if eq .AvailabilityType 0 }}
                                                                                     <p>En visio conférence</p>
                                                                                     {{ end }}
                                                                                 </td>

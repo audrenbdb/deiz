@@ -27,5 +27,8 @@ func (r *PreRegisterUsecase) PreRegisterBooking(ctx context.Context, b *deiz.Boo
 }
 
 func (r *PreRegisterUsecase) preRegistrationInvalid(b *deiz.Booking, clinicianID int) bool {
-	return b.Confirmed || b.End.Before(b.Start) || b.Blocked || b.Clinician.ID != clinicianID
+	if b.BookingType == deiz.EventBooking {
+		b.ToEvent()
+	}
+	return b.Confirmed || b.End.Before(b.Start) || b.BookingType == deiz.BlockedBooking || b.Clinician.ID != clinicianID
 }

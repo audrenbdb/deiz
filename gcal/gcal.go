@@ -26,6 +26,7 @@ func NewLink(event Event) string {
 	params.Add("text", event.Title)
 	params.Add("details", event.Details)
 	params.Add("location", event.Location)
+	params.Add("ctz", "Europe/Paris")
 
 	baseURL.RawQuery = params.Encode()
 	return baseURL.String()

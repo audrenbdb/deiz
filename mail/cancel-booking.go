@@ -40,7 +40,7 @@ func (m *Mailer) getCancelEmailDetails(b *deiz.Booking) cancelEmailDetails {
 		Name:        b.Patient.Surname + " " + b.Patient.Name,
 		Phone:       b.Patient.Phone,
 		Email:       b.Patient.Email,
-		Motive:      b.Motive.Name,
+		Description: b.Description,
 	}
 }
 
@@ -58,7 +58,7 @@ func (details *cancelEmailDetails) plainBodyToClinician() string {
 		Application de gestion pour thérapeutes\n
 	https://deiz.fr`,
 		details.BookingDate,
-		details.Motive,
+		details.Description,
 		details.Name, details.Phone, details.Email)
 }
 
@@ -77,5 +77,5 @@ type cancelEmailDetails struct {
 	Name        string
 	Phone       string
 	Email       string
-	Motive      string
+	Description string
 }

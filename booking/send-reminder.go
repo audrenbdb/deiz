@@ -13,9 +13,11 @@ func (r *SendReminderUsecase) SendReminders(ctx context.Context) error {
 		return err
 	}
 	for _, b := range bookings {
-		err := r.Mailer.MailBookingReminder(&b)
-		if err != nil {
-			return err
+		if b.Patient.IsEmailSet() && b.BookingType == deiz.AppointmentBooking {
+			err := r.Mailer.MailBookingReminder(&b)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil

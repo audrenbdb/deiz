@@ -70,18 +70,17 @@ func buildCancelURL(deleteID string) *url.URL {
 }
 
 type bookingEmailDetails struct {
-	Clinician     string
-	Patient       string
-	Phone         string
-	BookingDate   string
-	GCalendarLink string
-	GMapsLink     string
-	CancelLink    string
-	AddressLine   string
-	AddressCity   string
-	BookingType   int
-	Motive        string
-	Email         string
+	Clinician        string
+	Patient          string
+	Phone            string
+	BookingDate      string
+	GCalendarLink    string
+	GMapsLink        string
+	CancelLink       string
+	Address          string
+	AvailabilityType int
+	Motive           string
+	Email            string
 }
 
 func (details *bookingEmailDetails) plainBodyToPatient() string {
@@ -95,14 +94,13 @@ func (details *bookingEmailDetails) plainBodyToPatient() string {
 	Annuler : %s\n
 	\n
 	%s\n
-	%s\n
 	Itinéraire : %s\n
 	\n
 	Deiz\n
 	Agenda pour thérapeutes\n
 	https://deiz.fr
 	`, details.Clinician, details.Phone, details.BookingDate, details.GCalendarLink,
-		details.CancelLink, details.AddressLine, details.AddressCity, details.GMapsLink)
+		details.CancelLink, details.Address, details.GMapsLink)
 }
 
 func (details *bookingEmailDetails) plainBodyToClinician() string {
@@ -129,15 +127,14 @@ func (m *Mailer) getBookingEmailDetails(b *deiz.Booking, with string) bookingEma
 		Phone:       b.Clinician.Phone,
 		BookingDate: m.intl.Fr.FmtMMMEEEEd(b.Start),
 		GCalendarLink: gcal.NewLink(gcal.Event{
-			Start:    b.Start,
-			End:      b.End,
+			Start:    b.Start.In(m.tz),
+			End:      b.End.In(m.tz),
 			Title:    fmt.Sprintf("Consultation avec %s", with),
-			Location: b.Address.ToString(),
+			Location: b.Address,
 		}),
-		GMapsLink:   gmaps.CreateLink(b.Address.ToString()),
-		CancelLink:  buildCancelURL(b.DeleteID).String(),
-		AddressLine: b.Address.Line,
-		AddressCity: fmt.Sprintf("%d %s", b.Address.PostCode, b.Address.City),
-		BookingType: int(b.BookingType),
+		GMapsLink:        gmaps.CreateLink(b.Address),
+		CancelLink:       buildCancelURL(b.DeleteID).String(),
+		Address:          b.Address,
+		AvailabilityType: int(b.AvailabilityType),
 	}
 }

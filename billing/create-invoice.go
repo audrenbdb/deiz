@@ -16,7 +16,7 @@ func (i *CreateInvoiceUsecase) CreateInvoice(ctx context.Context, invoice *deiz.
 	if err := i.Saver.SaveBookingInvoice(ctx, invoice); err != nil {
 		return err
 	}
-	if sendToPatient {
+	if sendToPatient && invoice.Booking.Patient.IsEmailSet() {
 		return i.send(invoice)
 	}
 	return nil

@@ -167,7 +167,7 @@
                                     <td align="center"
                                         style="color:#435f71;font-size:15px;font-weight:bold">Accès</td>
                                 </tr>
-                                {{ if eq .BookingType 2}}
+                                {{ if eq .AvailabilityType 2}}
                                 <tr>
                                     <td>
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -183,7 +183,7 @@
                                         </table>
                                     </td>
                                 </tr>
-                                {{ else if eq .BookingType 1}}
+                                {{ else if eq .AvailabilityType 1}}
                                 <tr>
                                     <td>
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">
@@ -191,7 +191,7 @@
                                             <tr>
                                                 <td
                                                         style="color:#435f71;font-size:14px;line-height:24px">
-                                                    <p>{{.AddressLine}}<br>{{.AddressCity}}</p>
+                                                    <p>{{.Address}}</p>
 
                                                 </td>
                                             </tr>
@@ -222,7 +222,7 @@
                                         </table>
                                     </td>
                                 </tr>
-                                {{else if eq .BookingType 0}}
+                                {{else if eq .AvailabilityType 0}}
                                 <tr>
                                     <td>
                                         <table width="100%" border="0" cellpadding="0" cellspacing="0">

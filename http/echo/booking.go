@@ -44,23 +44,23 @@ func handlePatchPreRegisteredBooking(register usecase.BookingRegister) echo.Hand
 	}
 }
 
-func handlePostPreRegisteredBooking(register usecase.BookingPreRegister) echo.HandlerFunc {
+func handlePostPreRegisteredBookings(register usecase.BookingPreRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
-		var b deiz.Booking
-		if err := c.Bind(&b); err != nil {
+		var bookings []*deiz.Booking
+		if err := c.Bind(&bookings); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		err := register.PreRegisterBooking(ctx, &b, clinicianID)
+		err := register.PreRegisterBookings(ctx, bookings, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
-		return c.JSON(http.StatusOK, b)
+		return c.JSON(http.StatusOK, bookings)
 	}
 }
 
-func handlePostBooking(register usecase.BookingRegister) echo.HandlerFunc {
+func handlePostBookings(register usecase.BookingRegister) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		clinicianID := getCredFromEchoCtx(c).UserID
@@ -69,15 +69,15 @@ func handlePostBooking(register usecase.BookingRegister) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		var b deiz.Booking
-		if err := c.Bind(&b); err != nil {
+		var bookings []*deiz.Booking
+		if err := c.Bind(&bookings); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		err = register.RegisterBookingFromClinician(ctx, &b, clinicianID, notifyPatient)
+		err = register.RegisterBookingsFromClinician(ctx, bookings, clinicianID, notifyPatient)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
-		return c.JSON(http.StatusOK, b)
+		return c.JSON(http.StatusOK, bookings)
 	}
 }
 
@@ -169,23 +169,7 @@ func getMotiveFromParam(c echo.Context) (deiz.BookingMotive, error) {
 	return deiz.BookingMotive{ID: motiveID, Duration: motiveDuration}, nil
 }
 
-func handlePostBlockedBookingSlot(blocker usecase.BookingSlotBlocker) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		ctx := c.Request().Context()
-		clinicianID := getCredFromEchoCtx(c).UserID
-		var b *deiz.Booking
-		if err := c.Bind(&b); err != nil {
-			return c.JSON(http.StatusBadRequest, err.Error())
-		}
-		err := blocker.BlockBookingSlot(ctx, b, clinicianID)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err.Error())
-		}
-		return c.JSON(http.StatusOK, b)
-	}
-}
-
-func handlePostBlockedBookingSlotList(blocker usecase.BookingSlotBlocker) echo.HandlerFunc {
+func handlePostBlockedBookingSlots(blocker usecase.BookingSlotBlocker) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		cred := getCredFromEchoCtx(c)
@@ -193,7 +177,7 @@ func handlePostBlockedBookingSlotList(blocker usecase.BookingSlotBlocker) echo.H
 		if err := c.Bind(&slots); err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		err := blocker.BlockBookingSlotList(ctx, slots, cred)
+		err := blocker.BlockBookingSlots(ctx, slots, cred)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}

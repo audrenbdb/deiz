@@ -35,7 +35,7 @@ func (r *RegisterUsecase) RegisterBookingFromPatient(ctx context.Context, b *dei
 	if err := r.setBookingPatient(ctx, b); err != nil {
 		return err
 	}
-	if r.registrationInvalid(b, b.Clinician.ID) {
+	if r.registrationsInvalid([]*deiz.Booking{b}, b.Clinician.ID) {
 		return deiz.ErrorStructValidation
 	}
 	if err := r.BookingCreater.CreateBooking(ctx, b); err != nil {
@@ -44,25 +44,32 @@ func (r *RegisterUsecase) RegisterBookingFromPatient(ctx context.Context, b *dei
 	return r.notifyRegistration(b, true, true)
 }
 
-func (r *RegisterUsecase) RegisterBookingFromClinician(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient bool) error {
-	if r.registrationInvalid(b, clinicianID) {
+func (r *RegisterUsecase) RegisterBookingsFromClinician(ctx context.Context, bookings []*deiz.Booking, clinicianID int, notifyPatient bool) error {
+	if r.registrationsInvalid(bookings, clinicianID) {
 		return deiz.ErrorStructValidation
 	}
-	available, err := bookingSlotAvailable(ctx, b, r.BookingGetter)
-	if err != nil {
-		return err
+	for _, b := range bookings {
+		available, err := bookingSlotAvailable(ctx, b, r.BookingGetter)
+		if err != nil {
+			return err
+		}
+		if !available {
+			return deiz.ErrorBookingSlotAlreadyFilled
+		}
+		if err := r.BookingCreater.CreateBooking(ctx, b); err != nil {
+			return err
+		}
+		if b.BookingType == deiz.AppointmentBooking {
+			if err := r.notifyRegistration(b, notifyPatient, false); err != nil {
+				return err
+			}
+		}
 	}
-	if !available {
-		return deiz.ErrorBookingSlotAlreadyFilled
-	}
-	if err := r.BookingCreater.CreateBooking(ctx, b); err != nil {
-		return err
-	}
-	return r.notifyRegistration(b, notifyPatient, false)
+	return nil
 }
 
 func (r *RegisterUsecase) RegisterPreRegisteredBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient bool) error {
-	if r.registrationInvalid(b, clinicianID) {
+	if r.registrationsInvalid([]*deiz.Booking{b}, clinicianID) {
 		return deiz.ErrorStructValidation
 	}
 	available, err := bookingSlotAvailable(ctx, b, r.BookingGetter)
@@ -113,16 +120,24 @@ func (r *RegisterUsecase) notifyRegistration(b *deiz.Booking, notifyPatient, not
 	return nil
 }
 
-func (r *RegisterUsecase) registrationValid(b *deiz.Booking, clinicianID int) bool {
-	if b.BookingType == deiz.EventBooking {
-		b.ToEvent()
-		return b.EventValid() && b.Clinician.ID == clinicianID
+func (r *RegisterUsecase) registrationsValid(bookings []*deiz.Booking, clinicianID int) bool {
+	for _, b := range bookings {
+		valid := true
+		if b.BookingType == deiz.EventBooking {
+			b.ToEvent()
+			valid = b.EventValid() && b.Clinician.ID == clinicianID
+		} else {
+			valid = b.Start.Before(b.End) &&
+				b.ClinicianSet() && b.BookingType != deiz.BlockedBooking &&
+				b.PatientSet() && b.Clinician.ID == clinicianID
+		}
+		if !valid {
+			return false
+		}
 	}
-	return b.Start.Before(b.End) &&
-		b.ClinicianSet() && b.BookingType != deiz.BlockedBooking &&
-		b.PatientSet() && b.Clinician.ID == clinicianID
+	return true
 }
 
-func (r *RegisterUsecase) registrationInvalid(b *deiz.Booking, clinicianID int) bool {
-	return !r.registrationValid(b, clinicianID)
+func (r *RegisterUsecase) registrationsInvalid(bookings []*deiz.Booking, clinicianID int) bool {
+	return !r.registrationsValid(bookings, clinicianID)
 }

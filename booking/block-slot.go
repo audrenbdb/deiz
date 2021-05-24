@@ -15,11 +15,7 @@ type blockedSlotDeleter interface {
 	DeleteBlockedBookingPrior(ctx context.Context, d time.Time) error
 }
 
-func (b *BlockSlotUsecase) BlockBookingSlot(ctx context.Context, slot *deiz.Booking, clinicianID int) error {
-	return b.blockSingleSlot(ctx, slot, clinicianID)
-}
-
-func (b *BlockSlotUsecase) BlockBookingSlotList(ctx context.Context, slots []*deiz.Booking, cred deiz.Credentials) error {
+func (b *BlockSlotUsecase) BlockBookingSlots(ctx context.Context, slots []*deiz.Booking, cred deiz.Credentials) error {
 	for _, slot := range slots {
 		err := b.blockSingleSlot(ctx, slot, cred.UserID)
 		if err != nil {

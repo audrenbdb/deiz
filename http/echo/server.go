@@ -44,10 +44,9 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.PATCH("/api/businesses/:bid/addresses/:aid", handlePatchBusinessAddress(deps.AccountUsecases.BusinessUsecases.BusinessAddressEditer), clinicianMW)
 
 	e.GET("/api/bookings", handleGetBookingSlots(deps.BookingUsecases.CalendarReader), clinicianMW)
-	e.POST("/api/bookings/blocked", handlePostBlockedBookingSlot(deps.BookingUsecases.SlotBlocker), clinicianMW)
-	e.POST("/api/bookings/blocked/list", handlePostBlockedBookingSlotList(deps.BookingUsecases.SlotBlocker), clinicianMW)
-	e.POST("/api/bookings", handlePostBooking(deps.BookingUsecases.Register), clinicianMW)
-	e.POST("/api/bookings/pre-registered", handlePostPreRegisteredBooking(deps.BookingUsecases.PreRegister), clinicianMW)
+	e.POST("/api/bookings/blocked", handlePostBlockedBookingSlots(deps.BookingUsecases.SlotBlocker), clinicianMW)
+	e.POST("/api/bookings", handlePostBookings(deps.BookingUsecases.Register), clinicianMW)
+	e.POST("/api/bookings/pre-registered", handlePostPreRegisteredBookings(deps.BookingUsecases.PreRegister), clinicianMW)
 	e.PATCH("/api/bookings/pre-registered", handlePatchPreRegisteredBooking(deps.BookingUsecases.Register), clinicianMW)
 	e.DELETE("/api/bookings/:id/blocked", handleDeleteBookingSlotBlocked(deps.BookingUsecases.SlotDeleter), clinicianMW)
 	e.DELETE("/api/bookings/:id", handleDeleteBooking(deps.BookingUsecases.SlotDeleter), clinicianMW)

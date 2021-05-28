@@ -1,8 +1,8 @@
 package echo
 
 import (
-	"context"
 	"github.com/audrenbdb/deiz"
+	"github.com/audrenbdb/deiz/auth"
 	"github.com/audrenbdb/deiz/usecase"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
@@ -23,11 +23,12 @@ type EchoServerDeps struct {
 	BookingUsecases   usecase.BookingUsecases
 	BillingUsecases   usecase.BillingUsecases
 	ContactService    ContactService
-	CredentialsGetter credentialsGetter
+	CredentialsGetter auth.CredentialsFromHttpRequest
 }
 
 func StartEchoServer(deps EchoServerDeps) error {
 	clinicianMW := roleMW(deps.CredentialsGetter, deiz.ClinicianRole)
+	publicMW := roleMW(deps.CredentialsGetter, deiz.PublicRole)
 	//adminMW := roleMW(credentialsGetter, 3)
 
 	e := echo.New()
@@ -36,7 +37,7 @@ func StartEchoServer(deps EchoServerDeps) error {
 
 	e.POST("/api/registrations", handlePostRegistration(deps.AccountUsecases.LoginAllower))
 
-	e.GET("/api/clinician-accounts", handleGetClinicianAccount(deps.AccountUsecases.AccountDataGetter), publicMW(deps.CredentialsGetter))
+	e.GET("/api/clinician-accounts", handleGetClinicianAccount(deps.AccountUsecases.AccountDataGetter), publicMW)
 	e.POST("/api/clinician-accounts", handlePostClinicianAccount(deps.AccountUsecases.AccountAdder))
 
 	e.PATCH("/api/businesses/:id", handlePatchBusiness(deps.AccountUsecases.BusinessUsecases.BusinessEditer), clinicianMW)
@@ -86,7 +87,7 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.PATCH("/api/clinician-accounts/stripe-keys", handlePatchStripeKeys(deps.AccountUsecases.StripeKeysUsecases), clinicianMW)
 
 	/* PublicRole API */
-	e.GET("/api/public/clinician-accounts", handleGetClinicianAccount(deps.AccountUsecases.AccountDataGetter), publicMW(deps.CredentialsGetter))
+	e.GET("/api/public/clinician-accounts", handleGetClinicianAccount(deps.AccountUsecases.AccountDataGetter), publicMW)
 	e.GET("/api/public/booking-slots", handleGetFreeBookingSlots(deps.BookingUsecases.CalendarReader))
 	e.POST("/api/public/bookings", handlePublicPostBooking(deps.BookingUsecases.Register))
 	e.GET("/api/public/session-checkout", handleGetSessionCheckout(deps.BillingUsecases.StripeSessionCreater))
@@ -95,13 +96,6 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.POST("/api/public/get-in-touch-form", handlePostGetInTouchForm(deps.ContactService))
 
 	return e.Start(":8080")
-}
-
-func FakeCredentialsGetter(ctx context.Context, tokenID string) (deiz.Credentials, error) {
-	return deiz.Credentials{
-		UserID: 7,
-		Role:   deiz.ClinicianRole,
-	}, nil
 }
 
 func getTimeFromParam(c echo.Context, paramName string) (time.Time, error) {

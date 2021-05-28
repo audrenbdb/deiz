@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/audrenbdb/deiz"
 	"github.com/audrenbdb/deiz/account"
 	"github.com/audrenbdb/deiz/account/address"
 	"github.com/audrenbdb/deiz/account/business"
@@ -12,6 +13,7 @@ import (
 	"github.com/audrenbdb/deiz/account/officehours"
 	"github.com/audrenbdb/deiz/account/settings"
 	"github.com/audrenbdb/deiz/account/stripekeys"
+	"github.com/audrenbdb/deiz/auth"
 	"github.com/audrenbdb/deiz/billing"
 	"github.com/audrenbdb/deiz/booking"
 	"github.com/audrenbdb/deiz/contact"
@@ -84,7 +86,7 @@ func main() {
 		err = echo.StartEchoServer(echo.EchoServerDeps{
 			ContactService: contact.NewUsecase(repo, mail),
 			//CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
-			CredentialsGetter: echo.FirebaseCredentialsGetter(fbClient),
+			CredentialsGetter: auth.FirebaseHTTP(fbClient),
 			AccountUsecases:   newAccountUsecases(repo),
 			PatientUsecases:   newPatientUsecases(repo),
 			BookingUsecases:   newBookingUsecases(paris, repo, mail),
@@ -97,12 +99,14 @@ func main() {
 			Intl:      intl,
 		})
 		err = echo.StartEchoServer(echo.EchoServerDeps{
-			ContactService:    contact.NewUsecase(repo, mail),
-			CredentialsGetter: echo.FakeCredentialsGetter,
-			AccountUsecases:   newAccountUsecases(repo),
-			PatientUsecases:   newPatientUsecases(repo),
-			BookingUsecases:   newBookingUsecases(paris, repo, mail),
-			BillingUsecases:   newBillingUsecases(repo, mail, pdf),
+			ContactService: contact.NewUsecase(repo, mail),
+			CredentialsGetter: auth.MockHTTP(deiz.Credentials{
+				UserID: 7, Role: deiz.ClinicianRole,
+			}),
+			AccountUsecases: newAccountUsecases(repo),
+			PatientUsecases: newPatientUsecases(repo),
+			BookingUsecases: newBookingUsecases(paris, repo, mail),
+			BillingUsecases: newBillingUsecases(repo, mail, pdf),
 		})
 	}
 

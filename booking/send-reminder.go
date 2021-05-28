@@ -47,6 +47,10 @@ type timeRange struct {
 	end   time.Time
 }
 
+func (t *timeRange) isNull() bool {
+	return t.start.IsZero() && t.end.IsZero()
+}
+
 type (
 	bookingsInTimeRangeGetter interface {
 		GetBookingsInTimeRange(ctx context.Context, start, end time.Time) ([]deiz.Booking, error)

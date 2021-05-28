@@ -260,6 +260,7 @@ func newBookingUsecases(paris *time.Location, repo *psql.Repo, mailer *mail.Mail
 	bookingPreRegister := &booking.PreRegisterUsecase{
 		BookingGetter:  repo,
 		BookingCreater: repo,
+		Loc:            paris,
 	}
 	calendarReader := &booking.ReadCalendarUsecase{
 		Loc:               paris,

@@ -16,20 +16,16 @@ type blockedSlotDeleter interface {
 }
 
 func (b *BlockSlotUsecase) BlockBookingSlots(ctx context.Context, slots []*deiz.Booking, cred deiz.Credentials) error {
+	if areBookingsInvalid(slots, cred.UserID) {
+		return deiz.ErrorUnauthorized
+	}
 	for _, slot := range slots {
-		err := b.blockSingleSlot(ctx, slot, cred.UserID)
+		err := b.Blocker.CreateBooking(ctx, slot)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func (b *BlockSlotUsecase) blockSingleSlot(ctx context.Context, slot *deiz.Booking, clinicianID int) error {
-	if slot.Clinician.ID != clinicianID {
-		return deiz.ErrorUnauthorized
-	}
-	return b.Blocker.CreateBooking(ctx, slot.SetBlocked())
 }
 
 func (b *BlockSlotUsecase) DeletePastBlockedBookingSlot(ctx context.Context) error {

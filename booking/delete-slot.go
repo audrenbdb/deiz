@@ -3,10 +3,13 @@ package booking
 import (
 	"context"
 	"github.com/audrenbdb/deiz"
+	"time"
 )
 
 type (
 	bookingGetter interface {
+		GetNonRecurrentClinicianBookingsInTimeRange(ctx context.Context, start, end time.Time, clinicianID int) ([]deiz.Booking, error)
+		GetClinicianWeeklyRecurrentBookings(ctx context.Context, clinicianID int) ([]deiz.Booking, error)
 		GetBookingByDeleteID(ctx context.Context, deleteID string) (deiz.Booking, error)
 		GetBookingByID(ctx context.Context, bookingID int) (deiz.Booking, error)
 	}

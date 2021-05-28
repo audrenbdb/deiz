@@ -17,7 +17,7 @@ type ReadCalendarUsecase struct {
 	Loc               *time.Location
 	OfficeHoursGetter officeHoursGetter
 
-	BookingsGetter clinicianBookingsInTimeRangeGetter
+	BookingsGetter bookingGetter
 }
 
 func (r *ReadCalendarUsecase) GetCalendarSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error) {
@@ -38,11 +38,33 @@ func (r *ReadCalendarUsecase) GetCalendarFreeSlots(ctx context.Context, start ti
 
 func (r *ReadCalendarUsecase) getBookingSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, []deiz.Booking, error) {
 	end := start.AddDate(0, 0, 7)
-	existingBookings, err := r.BookingsGetter.GetClinicianBookingsInTimeRange(ctx, start, end, clinicianID)
+	existingBookings, err := r.BookingsGetter.GetNonRecurrentClinicianBookingsInTimeRange(ctx, start, end, clinicianID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to get bookings in given timerange: %s", err)
 	}
-	freeBookingSlots, err := r.getFreeBookingSlots(ctx, timeRange{start, end}, existingBookings, motive, clinicianID)
+	recurrentBookings, err := r.BookingsGetter.GetClinicianWeeklyRecurrentBookings(ctx, clinicianID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("unable to get existing recurrent bookings: %s", err)
+	}
+	for _, rb := range recurrentBookings {
+		rbStart := rb.Start.In(r.Loc)
+		rbEnd := rb.End.In(r.Loc)
+		tr := convertCalEventToTimeRange(timeRange{
+			start: start,
+			end:   end,
+		}, calEvent{
+			weekday: int(rbStart.Weekday()),
+			startMn: rbStart.Hour()*60 + rbStart.Minute(),
+			endMn:   rbEnd.Hour()*60 + rbEnd.Minute(),
+			loc:     r.Loc,
+		}, false)
+		if !tr.isNull() {
+			rb.Start = tr.start
+			rb.End = tr.end
+			existingBookings = append(existingBookings, rb)
+		}
+	}
+	freeBookingSlots, err := r.getFreeBookingSlots(ctx, timeRange{start, end}, deiz.SortBookingByDate(existingBookings), motive, clinicianID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to get free booking slots: %s", err)
 	}
@@ -99,26 +121,51 @@ func (r *ReadCalendarUsecase) getOfficeHoursAvailabilities(ctx context.Context, 
 	for _, h := range officeHours {
 		officeHoursRanges = append(officeHoursRanges,
 			officeHoursAvailability{
-				hours:              h,
-				availableTimeRange: r.convertOfficeHoursToTimeRange(timeRange, h),
+				hours: h,
+				availableTimeRange: convertCalEventToTimeRange(timeRange, calEvent{
+					weekday: h.WeekDay,
+					startMn: h.StartMn,
+					endMn:   h.EndMn,
+					loc:     r.Loc,
+				}, true),
 			})
 	}
 	return officeHoursRanges, nil
 }
 
-func (r *ReadCalendarUsecase) convertOfficeHoursToTimeRange(limit timeRange, h deiz.OfficeHours) timeRange {
-	y, m, d := limit.start.In(r.Loc).Date()
-	if h.IsWithinDate(limit.start.In(r.Loc)) {
-		officeOpensAt := time.Date(y, m, d, h.StartMn/60, h.StartMn%60, 0, 0, r.Loc).UTC()
-		officeClosesAt := time.Date(y, m, d, h.EndMn/60, h.EndMn%60, 0, 0, r.Loc).UTC()
-		return constraintTimeRangeWithinLimit(limit, timeRange{start: officeOpensAt, end: officeClosesAt})
+//check if given dates in an array have same weekday
+func datesShareSameWeekday(dates []time.Time, weekday int) bool {
+	for _, d := range dates {
+		if int(d.Weekday()) != weekday {
+			return false
+		}
+	}
+	return true
+}
+
+type calEvent struct {
+	weekday int
+	startMn int
+	endMn   int
+	loc     *time.Location
+}
+
+func convertCalEventToTimeRange(limit timeRange, ev calEvent, shouldConstraintWithingLimits bool) timeRange {
+	y, m, d := limit.start.In(ev.loc).Date()
+	if datesShareSameWeekday([]time.Time{limit.start.In(ev.loc)}, ev.weekday) {
+		officeOpensAt := time.Date(y, m, d, ev.startMn/60, ev.startMn%60, 0, 0, ev.loc).UTC()
+		officeClosesAt := time.Date(y, m, d, ev.endMn/60, ev.endMn%60, 0, 0, ev.loc).UTC()
+		if shouldConstraintWithingLimits {
+			return constraintTimeRangeWithinLimit(limit, timeRange{start: officeOpensAt, end: officeClosesAt})
+		}
+		return timeRange{start: officeOpensAt, end: officeClosesAt}
 	}
 	if limit.start.After(limit.end) {
 		return timeRange{}
 	}
-	return r.convertOfficeHoursToTimeRange(timeRange{
+	return convertCalEventToTimeRange(timeRange{
 		start: time.Date(y, m, d+1, 0, 0, 0, 0, time.UTC),
-		end:   limit.end}, h)
+		end:   limit.end}, ev, shouldConstraintWithingLimits)
 }
 
 func constraintTimeRangeWithinLimit(limit timeRange, tr timeRange) timeRange {

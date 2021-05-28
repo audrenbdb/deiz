@@ -26,7 +26,7 @@ type RegisterUsecase struct {
 
 	BookingCreater bookingCreater
 	BookingUpdater bookingUpdater
-	BookingGetter  clinicianBookingsInTimeRangeGetter
+	BookingGetter  bookingGetter
 
 	BookingMailer bookingMailer
 }
@@ -35,32 +35,45 @@ func (r *RegisterUsecase) RegisterBookingFromPatient(ctx context.Context, b *dei
 	if err := r.setBookingPatient(ctx, b); err != nil {
 		return err
 	}
-	if r.registrationsInvalid([]*deiz.Booking{b}, b.Clinician.ID) {
-		return deiz.ErrorStructValidation
-	}
-	if err := r.BookingCreater.CreateBooking(ctx, b); err != nil {
-		return err
-	}
-	return r.notifyRegistration(b, true, true)
+	return registerBookings(
+		ctx, registrationDependencies{loc: r.Loc,
+			getter: r.BookingGetter, creater: r.BookingCreater, mailer: r.BookingMailer},
+		[]*deiz.Booking{b}, b.Clinician.ID, true, true)
 }
 
 func (r *RegisterUsecase) RegisterBookingsFromClinician(ctx context.Context, bookings []*deiz.Booking, clinicianID int, notifyPatient bool) error {
-	if r.registrationsInvalid(bookings, clinicianID) {
+	return registerBookings(
+		ctx, registrationDependencies{loc: r.Loc,
+			getter: r.BookingGetter, creater: r.BookingCreater, mailer: r.BookingMailer},
+		bookings, clinicianID, notifyPatient, false)
+}
+
+type registrationDependencies struct {
+	getter  bookingGetter
+	creater bookingCreater
+	mailer  bookingMailer
+	loc     *time.Location
+}
+
+func registerBookings(
+	ctx context.Context, deps registrationDependencies,
+	bookings []*deiz.Booking, clinicianID int, notifyPatient, notifyClinician bool) error {
+	if areBookingsInvalid(bookings, clinicianID) {
 		return deiz.ErrorStructValidation
 	}
 	for _, b := range bookings {
-		available, err := bookingSlotAvailable(ctx, b, r.BookingGetter)
+		available, err := bookingSlotAvailable(ctx, b, deps.getter, deps.loc)
 		if err != nil {
 			return err
 		}
 		if !available {
 			return deiz.ErrorBookingSlotAlreadyFilled
 		}
-		if err := r.BookingCreater.CreateBooking(ctx, b); err != nil {
+		if err := deps.creater.CreateBooking(ctx, b); err != nil {
 			return err
 		}
 		if b.BookingType == deiz.AppointmentBooking {
-			if err := r.notifyRegistration(b, notifyPatient, false); err != nil {
+			if err := notifyRegistration(b, deps.mailer, notifyPatient, notifyClinician); err != nil {
 				return err
 			}
 		}
@@ -69,10 +82,10 @@ func (r *RegisterUsecase) RegisterBookingsFromClinician(ctx context.Context, boo
 }
 
 func (r *RegisterUsecase) RegisterPreRegisteredBooking(ctx context.Context, b *deiz.Booking, clinicianID int, notifyPatient bool) error {
-	if r.registrationsInvalid([]*deiz.Booking{b}, clinicianID) {
+	if areBookingsInvalid([]*deiz.Booking{b}, clinicianID) {
 		return deiz.ErrorStructValidation
 	}
-	available, err := bookingSlotAvailable(ctx, b, r.BookingGetter)
+	available, err := bookingSlotAvailable(ctx, b, r.BookingGetter, r.Loc)
 	if err != nil {
 		return err
 	}
@@ -82,7 +95,7 @@ func (r *RegisterUsecase) RegisterPreRegisteredBooking(ctx context.Context, b *d
 	if err := r.BookingUpdater.UpdateBooking(ctx, b); err != nil {
 		return err
 	}
-	return r.notifyRegistration(b, notifyPatient, false)
+	return notifyRegistration(b, r.BookingMailer, notifyPatient, false)
 
 }
 
@@ -106,38 +119,16 @@ func (r *RegisterUsecase) setBookingPatient(ctx context.Context, b *deiz.Booking
 	return nil
 }
 
-func (r *RegisterUsecase) notifyRegistration(b *deiz.Booking, notifyPatient, notifyClinician bool) error {
+func notifyRegistration(b *deiz.Booking, mailer bookingMailer, notifyPatient, notifyClinician bool) error {
 	if notifyClinician {
-		if err := r.BookingMailer.MailBookingToClinician(b); err != nil {
+		if err := mailer.MailBookingToClinician(b); err != nil {
 			return err
 		}
 	}
 	if notifyPatient && b.Patient.IsEmailSet() {
-		if err := r.BookingMailer.MailBookingToPatient(b); err != nil {
+		if err := mailer.MailBookingToPatient(b); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func (r *RegisterUsecase) registrationsValid(bookings []*deiz.Booking, clinicianID int) bool {
-	for _, b := range bookings {
-		valid := true
-		if b.BookingType == deiz.EventBooking {
-			b.ToEvent()
-			valid = b.EventValid() && b.Clinician.ID == clinicianID
-		} else {
-			valid = b.Start.Before(b.End) &&
-				b.ClinicianSet() && b.BookingType != deiz.BlockedBooking &&
-				b.PatientSet() && b.Clinician.ID == clinicianID
-		}
-		if !valid {
-			return false
-		}
-	}
-	return true
-}
-
-func (r *RegisterUsecase) registrationsInvalid(bookings []*deiz.Booking, clinicianID int) bool {
-	return !r.registrationsValid(bookings, clinicianID)
 }

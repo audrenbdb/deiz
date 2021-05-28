@@ -26,10 +26,19 @@ type Booking struct {
 	BookingType BookingType `json:"bookingType"`
 	//AvailabilityType to status how is the public available to book
 	//Can either be remote / in office / at patient home
-	AvailabilityType AvailabilityType `json:"availabilityType"`
+	AvailabilityType AvailabilityType  `json:"availabilityType"`
+	Recurrence       BookingRecurrence `json:"recurrence"`
 }
 
-type BookingType int32
+type BookingType uint8
+type BookingRecurrence uint8
+
+const (
+	NoRecurrence BookingRecurrence = iota
+	DailyRecurrence
+	WeeklyRecurrence
+	MonthlyRecurrence
+)
 
 const (
 	BlockedBooking BookingType = iota
@@ -37,33 +46,58 @@ const (
 	EventBooking
 )
 
-func (b *Booking) ToEvent() {
-	b.BookingType = EventBooking
+type Notification struct {
+	ToPatient   bool
+	ToClinician bool
+}
+
+func (b *Booking) setAsEvent() {
 	b.Patient.ID = 0
 	b.Price = 0
 	b.AvailabilityType = AtExternalAddress
 }
 
-func (b *Booking) EventValid() bool {
-	if b.BookingType != EventBooking {
-		return false
-	}
-	if b.PatientSet() {
-		return false
-	}
-	if b.ClinicianNotSet() {
-		return false
-	}
-	if b.Price != 0 {
-		return false
-	}
-	if b.AvailabilityType != AtExternalAddress {
-		return false
-	}
+func (b *Booking) IsValid(clinicianID int) bool {
 	if b.Start.After(b.End) {
 		return false
 	}
+	if b.Clinician.ID != clinicianID || b.ClinicianNotSet() {
+		return false
+	}
+	switch b.BookingType {
+	case BlockedBooking:
+		return b.blockedBookingValid()
+	case AppointmentBooking:
+		return b.appointmentBookingValid()
+	case EventBooking:
+		return b.eventBookingValid()
+	default:
+		return true
+	}
+}
+
+func (b *Booking) IsInvalid(clinicianID int) bool {
+	return !b.IsValid(clinicianID)
+}
+
+func (b *Booking) eventBookingValid() bool {
+	b.setAsEvent()
+	if b.PatientSet() {
+		return false
+	}
 	return true
+}
+
+func (b *Booking) appointmentBookingValid() bool {
+	if b.Confirmed {
+		return b.PatientSet()
+	}
+	return true
+}
+
+func (b *Booking) blockedBookingValid() bool {
+	b.block()
+	return b.PatientNotSet() && len(b.Note) == 0
 }
 
 func (b *Booking) Assigned() bool {
@@ -102,11 +136,9 @@ func (b *Booking) SetPatient(p Patient) {
 	b.Patient = p
 }
 
-func (b *Booking) SetBlocked() *Booking {
+func (b *Booking) block() {
 	b.Patient.ID = 0
 	b.Note = ""
-	b.BookingType = BlockedBooking
-	return b
 }
 
 func SortBookingByDate(bookings []Booking) []Booking {

@@ -125,11 +125,12 @@ func handleGetFreeBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		motive, err := getMotiveFromParam(c)
+		duration, err := getMotiveDurationFromParam(c)
+
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		bookings, err := getter.GetCalendarFreeSlots(ctx, from, motive, clinicianID)
+		bookings, err := getter.GetCalendarFreeSlots(ctx, from, duration, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -145,11 +146,11 @@ func handleGetBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		motive, err := getMotiveFromParam(c)
+		duration, err := getMotiveDurationFromParam(c)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		bookings, err := getter.GetCalendarSlots(ctx, from, motive, clinicianID)
+		bookings, err := getter.GetCalendarSlots(ctx, from, duration, clinicianID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
@@ -157,17 +158,8 @@ func handleGetBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 	}
 }
 
-func getMotiveFromParam(c echo.Context) (deiz.BookingMotive, error) {
-	motiveID, err := getURLIntegerQueryParam(c, "motiveId")
-	if err != nil {
-		return deiz.BookingMotive{}, err
-	}
-	motiveDuration, err := getURLIntegerQueryParam(c, "motiveDuration")
-	if err != nil {
-		return deiz.BookingMotive{}, err
-	}
-	return deiz.BookingMotive{
-		ID: motiveID, Duration: motiveDuration, Name: "Par défaut", Price: 5000}, nil
+func getMotiveDurationFromParam(c echo.Context) (int, error) {
+	return getURLIntegerQueryParam(c, "motiveDuration")
 }
 
 func handlePostBlockedBookingSlots(blocker usecase.BookingSlotBlocker) echo.HandlerFunc {

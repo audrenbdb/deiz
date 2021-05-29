@@ -18,13 +18,22 @@ func getBearerTokenFromHTTPHeader(header http.Header) string {
 
 func getCredentialsFromFirebaseToken(ctx context.Context, client *firebaseAuth.Client, tokenID string) deiz.Credentials {
 	token, err := client.VerifyIDToken(ctx, tokenID)
-	if err == nil {
-		claims := token.Claims
-		role := claims["role"].(int)
-		userID := claims["userId"].(int)
-		return deiz.Credentials{UserID: userID, Role: deiz.Role(role)}
+	if err != nil {
+		return deiz.Credentials{UserID: 0, Role: 0}
 	}
-	return deiz.Credentials{UserID: 0, Role: 0}
+	claims := token.Claims
+	role, ok := claims["role"].(float64)
+	if !ok {
+		return deiz.Credentials{}
+	}
+	userID, ok := claims["userId"].(float64)
+	if !ok {
+		return deiz.Credentials{}
+	}
+	return deiz.Credentials{
+		Role:   deiz.Role(int(role)),
+		UserID: int(userID),
+	}
 }
 
 func FirebaseHTTP(client *firebaseAuth.Client) CredentialsFromHttpRequest {

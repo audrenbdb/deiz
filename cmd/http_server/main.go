@@ -18,7 +18,8 @@ import (
 	"github.com/audrenbdb/deiz/booking"
 	"github.com/audrenbdb/deiz/contact"
 	"github.com/audrenbdb/deiz/crypt"
-	"github.com/audrenbdb/deiz/http/echo"
+	"github.com/audrenbdb/deiz/email"
+	echoHTTP "github.com/audrenbdb/deiz/http/echo"
 	"github.com/audrenbdb/deiz/intl"
 	"github.com/audrenbdb/deiz/mail"
 	"github.com/audrenbdb/deiz/mail/mailtmpl"
@@ -28,6 +29,7 @@ import (
 	"github.com/audrenbdb/deiz/stripe"
 	"github.com/audrenbdb/deiz/usecase"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/labstack/echo"
 	"os"
 	"path/filepath"
 	"time"
@@ -76,15 +78,15 @@ func main() {
 		FontDir:    filepath.Join(path, "../../assets", "fonts"),
 		Intl:       intl,
 	})
-
+	e := echo.New()
 	if isProd {
+		contact.RegisterService(e, psqlDB, email.SendWithPostfix())
 		mail := mail.NewService(mail.Deps{
 			Templates: emailTemplates,
 			Client:    mail.NewPostFixClient(),
 			Intl:      intl,
 		})
-		err = echo.StartEchoServer(echo.EchoServerDeps{
-			ContactService: contact.NewUsecase(repo, mail),
+		err = echoHTTP.StartEchoServer(e, echoHTTP.EchoServerDeps{
 			//CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
 			CredentialsGetter: auth.FirebaseHTTP(fbClient),
 			AccountUsecases:   newAccountUsecases(repo),
@@ -93,13 +95,13 @@ func main() {
 			BillingUsecases:   newBillingUsecases(repo, mail, pdf),
 		})
 	} else {
+		contact.RegisterService(e, psqlDB, email.SendWithGmail())
 		mail := mail.NewService(mail.Deps{
 			Templates: emailTemplates,
 			Client:    mail.NewGmailClient(),
 			Intl:      intl,
 		})
-		err = echo.StartEchoServer(echo.EchoServerDeps{
-			ContactService: contact.NewUsecase(repo, mail),
+		err = echoHTTP.StartEchoServer(e, echoHTTP.EchoServerDeps{
 			CredentialsGetter: auth.MockHTTP(deiz.Credentials{
 				UserID: 7, Role: deiz.ClinicianRole,
 			}),

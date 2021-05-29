@@ -10,28 +10,19 @@ import (
 	"time"
 )
 
-type (
-	ContactService interface {
-		ContactFormToClinicianSender
-		GetInTouchSender
-	}
-)
-
 type EchoServerDeps struct {
 	AccountUsecases   usecase.AccountUsecases
 	PatientUsecases   usecase.PatientUsecases
 	BookingUsecases   usecase.BookingUsecases
 	BillingUsecases   usecase.BillingUsecases
-	ContactService    ContactService
 	CredentialsGetter auth.CredentialsFromHttpRequest
 }
 
-func StartEchoServer(deps EchoServerDeps) error {
+func StartEchoServer(e *echo.Echo, deps EchoServerDeps) error {
 	clinicianMW := roleMW(deps.CredentialsGetter, deiz.ClinicianRole)
 	publicMW := roleMW(deps.CredentialsGetter, deiz.PublicRole)
 	//adminMW := roleMW(credentialsGetter, 3)
 
-	e := echo.New()
 	e.Use(middleware.CORS())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{Level: 5}))
 
@@ -92,9 +83,6 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.POST("/api/public/bookings", handlePublicPostBooking(deps.BookingUsecases.Register))
 	e.GET("/api/public/session-checkout", handleGetSessionCheckout(deps.BillingUsecases.StripeSessionCreater))
 	e.DELETE("/api/public/bookings/:id", handleDeletePublicBooking(deps.BookingUsecases.SlotDeleter))
-	e.POST("/api/public/contact-form", handlePostContactFormToClinician(deps.ContactService))
-	e.POST("/api/public/get-in-touch-form", handlePostGetInTouchForm(deps.ContactService))
-
 	return e.Start(":8080")
 }
 

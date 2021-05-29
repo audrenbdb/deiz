@@ -166,7 +166,8 @@ func getMotiveFromParam(c echo.Context) (deiz.BookingMotive, error) {
 	if err != nil {
 		return deiz.BookingMotive{}, err
 	}
-	return deiz.BookingMotive{ID: motiveID, Duration: motiveDuration}, nil
+	return deiz.BookingMotive{
+		ID: motiveID, Duration: motiveDuration, Name: "Par défaut", Price: 5000}, nil
 }
 
 func handlePostBlockedBookingSlots(blocker usecase.BookingSlotBlocker) echo.HandlerFunc {

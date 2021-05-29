@@ -11,6 +11,9 @@ type (
 	officeHoursGetter interface {
 		GetClinicianOfficeHours(ctx context.Context, clinicianID int) ([]deiz.OfficeHours, error)
 	}
+	bookingMotiveGetter interface {
+		GetBookingMotiveByID(ctx context.Context, bookingMotiveID int, clinicianID int) (deiz.BookingMotive, error)
+	}
 )
 
 type ReadCalendarUsecase struct {
@@ -18,9 +21,18 @@ type ReadCalendarUsecase struct {
 	OfficeHoursGetter officeHoursGetter
 
 	BookingsGetter bookingGetter
+	MotiveGetter   bookingMotiveGetter
 }
 
 func (r *ReadCalendarUsecase) GetCalendarSlots(ctx context.Context, start time.Time, motive deiz.BookingMotive, clinicianID int) ([]deiz.Booking, error) {
+	if motive.ID != 0 {
+		var err error
+		motive, err = r.MotiveGetter.GetBookingMotiveByID(ctx, motive.ID, clinicianID)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get booking motive: %s", err)
+		}
+	}
+
 	existingBookings, freeBookingSlots, err := r.getBookingSlots(ctx, start, motive, clinicianID)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get booking slots: %s", err)

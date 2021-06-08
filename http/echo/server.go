@@ -15,7 +15,7 @@ type EchoServerDeps struct {
 	PatientUsecases   usecase.PatientUsecases
 	BookingUsecases   usecase.BookingUsecases
 	BillingUsecases   usecase.BillingUsecases
-	CredentialsGetter auth.CredentialsFromHttpRequest
+	CredentialsGetter auth.GetCredentialsFromHttpRequest
 }
 
 func StartEchoServer(e *echo.Echo, deps EchoServerDeps) error {
@@ -35,7 +35,7 @@ func StartEchoServer(e *echo.Echo, deps EchoServerDeps) error {
 	e.POST("/api/businesses/:bid/address", handlePostBusinessAddress(deps.AccountUsecases.BusinessUsecases.BusinessAddressSetter), clinicianMW)
 	e.PATCH("/api/businesses/:bid/addresses/:aid", handlePatchBusinessAddress(deps.AccountUsecases.BusinessUsecases.BusinessAddressEditer), clinicianMW)
 
-	e.GET("/api/bookings", handleGetBookingSlots(deps.BookingUsecases.CalendarReader), clinicianMW)
+	//e.GET("/api/bookings", handleGetBookingSlots(deps.BookingUsecases.CalendarReader), clinicianMW)
 	e.POST("/api/bookings/blocked", handlePostBlockedBookingSlots(deps.BookingUsecases.SlotBlocker), clinicianMW)
 	e.POST("/api/bookings", handlePostBookings(deps.BookingUsecases.Register), clinicianMW)
 	e.POST("/api/bookings/pre-registered", handlePostPreRegisteredBookings(deps.BookingUsecases.PreRegister), clinicianMW)

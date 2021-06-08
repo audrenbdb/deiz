@@ -3,18 +3,18 @@ package deiz
 import "time"
 
 type OfficeHours struct {
-	ID               int              `json:"id"`
-	StartMn          int              `json:"startMn"`
-	EndMn            int              `json:"endMn"`
-	WeekDay          int              `json:"weekDay"`
-	Address          Address          `json:"address"`
-	AvailabilityType AvailabilityType `json:"availabilityType"`
+	ID          int         `json:"id"`
+	StartMn     int         `json:"startMn"`
+	EndMn       int         `json:"endMn"`
+	WeekDay     int         `json:"weekDay"`
+	Address     Address     `json:"address"`
+	MeetingMode MeetingMode `json:"meetingMode"`
 }
 
-type AvailabilityType uint8
+type MeetingMode uint8
 
 const (
-	RemoteAvailability AvailabilityType = iota
+	RemoteAvailability MeetingMode = iota
 	InOfficeAvailability
 	AtExternalAddress
 )

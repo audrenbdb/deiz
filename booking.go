@@ -26,7 +26,7 @@ type Booking struct {
 	BookingType BookingType `json:"bookingType"`
 	//AvailabilityType to status how is the public available to book
 	//Can either be remote / in office / at patient home
-	AvailabilityType AvailabilityType  `json:"availabilityType"`
+	AvailabilityType MeetingMode       `json:"availabilityType"`
 	Recurrence       BookingRecurrence `json:"recurrence"`
 }
 

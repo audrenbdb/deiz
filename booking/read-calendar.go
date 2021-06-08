@@ -93,7 +93,7 @@ func splitAvailabilityInFreeBookingSlots(availability officeHoursAvailability, e
 		Address:          availability.hours.Address.ToString(),
 		Description:      motive.Name,
 		Price:            motive.Price,
-		AvailabilityType: availability.hours.AvailabilityType,
+		AvailabilityType: availability.hours.MeetingMode,
 	}
 	//make sure next free booking time range do not overlaps with existing bookings
 	for _, booking := range existingBookings {

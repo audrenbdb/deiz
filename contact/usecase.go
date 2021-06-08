@@ -41,7 +41,7 @@ type contactFormDataToBind struct {
 	Message string
 }
 
-func createContactFormEmail(c clinician, f contactForm) email.HTML {
+func createContactFormEmail(c clinician, f contactForm) email.HTMLMail {
 	plainBody := fmt.Sprintf(`Deiz\n
 			Formulaire de contact\n
 			\n
@@ -53,21 +53,25 @@ func createContactFormEmail(c clinician, f contactForm) email.HTML {
 			Agenda pour thérapeutes\n
 			https://deiz.fr
 	`, f.Name, f.Email, f.Message)
-	return email.HTML{
-		To:               c.email,
-		From:             f.Email,
-		Subject:          "Nouvelle question de " + f.Name,
-		TemplateFilePath: "contact-form.html",
-		DataToBind: contactFormDataToBind{
-			Name:    f.Name,
-			Email:   f.Email,
-			Message: replaceLineJumpsWithBRTags(f.Message),
+	return email.HTMLMail{
+		Header: email.Header{
+			To:      c.email,
+			From:    f.Email,
+			Subject: "Nouvelle question de " + f.Name,
 		},
-		PlainBody: plainBody,
+		Body: email.Body{
+			HTMLFileName: "contact-form.html",
+			DataToBind: contactFormDataToBind{
+				Name:    f.Name,
+				Email:   f.Email,
+				Message: replaceLineJumpsWithBRTags(f.Message),
+			},
+			Plain: plainBody,
+		},
 	}
 }
 
-func createGetInTouchFormEmail(f getInTouchForm) email.HTML {
+func createGetInTouchFormEmail(f getInTouchForm) email.HTMLMail {
 	plainBody := fmt.Sprintf(`Deiz\n
 		Demande de rappel\n
 		\n
@@ -84,13 +88,17 @@ func createGetInTouchFormEmail(f getInTouchForm) email.HTML {
 		Agenda pour thérapeutes\n
 		https://deiz.fr
 	`, f.Name, f.Name, f.Email, f.Phone, f.City, f.Job)
-	return email.HTML{
-		To:               deizContactAddress,
-		From:             f.Email,
-		Subject:          "Demande de rappel",
-		TemplateFilePath: "get-in-touch.html",
-		DataToBind:       f,
-		PlainBody:        plainBody,
+	return email.HTMLMail{
+		Header: email.Header{
+			To:      deizContactAddress,
+			From:    f.Email,
+			Subject: "Demande de rappel",
+		},
+		Body: email.Body{
+			HTMLFileName: "get-in-touch.html",
+			DataToBind:   f,
+			Plain:        plainBody,
+		},
 	}
 }
 

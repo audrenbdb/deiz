@@ -9,43 +9,77 @@ import (
 	"time"
 )
 
-type motive struct {
-	name string
-}
+type echoHandler struct{}
 
-func handleGetBookings(auth auth.CredentialsFromHttpRequest) echo.HandlerFunc {
+func (e echoHandler) handleGetBookings(
+	auth auth.GetCredentialsFromHttpRequest,
+	handleGetClinicianBookings echo.HandlerFunc,
+) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cred := auth(c.Request())
 		switch cred.Role {
 		case deiz.ClinicianRole:
-			return handleClinicianGetBookings(c, cred)
+			return handleGetClinicianBookings(c)
 		}
 		return nil
 	}
 }
 
-func handleClinicianGetBookings(c echo.Context, cred deiz.Credentials) error {
-	request := c.QueryParam("request")
-	switch request {
-	case "calendar":
-		return handleGetClinicianCalendar(c, cred)
+func (e echoHandler) handleGetClinicianBookings(
+	handleGetClinicianWeek echo.HandlerFunc,
+) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		request := c.QueryParam("request")
+		switch request {
+		case "week":
+			return handleGetClinicianWeek(c)
+		case "unpaid":
+			return nil
+		}
+		return nil
 	}
-	//week calendar
-	//or unpaid bookings
-
-	return nil
 }
 
-func handleGetClinicianCalendar(c echo.Context, cred deiz.Credentials) error {
-	from, err := getTimeFromParam(c, "from")
+func (e echoHandler) handleGetClinicianWeek(
+	auth auth.GetCredentialsFromHttpRequest,
+	getClinicianWeek getClinicianWeek,
+) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		cred := auth(c.Request())
+		params, err := e.parseQueryWeekParams(c)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		weekBookings, err := getClinicianWeek(c.Request().Context(),
+			params.from, params.bookingDuration, cred.UserID)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		return c.JSON(http.StatusOK, weekBookings)
+	}
+}
+
+type queryWeekParams struct {
+	from            time.Time
+	bookingDuration time.Duration
+}
+
+func (e echoHandler) parseQueryWeekParams(c echo.Context) (queryWeekParams, error) {
+	duration, err := e.getIntegerQueryParam(c, "bookingDuration")
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
+		return queryWeekParams{}, err
 	}
-	motive, err := getMotiveFromParam(c)
-	return nil
+	from, err := e.getTimeFromUnixURLParam(c, "from")
+	if err != nil {
+		return queryWeekParams{}, err
+	}
+	return queryWeekParams{
+		bookingDuration: time.Minute * time.Duration(duration),
+		from:            from,
+	}, nil
 }
 
-func getTimeFromParam(c echo.Context, paramName string) (time.Time, error) {
+func (e echoHandler) getTimeFromUnixURLParam(c echo.Context, paramName string) (time.Time, error) {
 	i, err := strconv.ParseInt(c.QueryParam(paramName), 10, 64)
 	if err != nil {
 		return time.Time{}, err
@@ -53,29 +87,31 @@ func getTimeFromParam(c echo.Context, paramName string) (time.Time, error) {
 	return time.Unix(i, 0).UTC(), nil
 }
 
-func handleGetUnpaidBookings(c echo.Context, cred deiz.Credentials) error {
+func (e echoHandler) getIntegerQueryParam(c echo.Context, paramName string) (int, error) {
+	return strconv.Atoi(c.QueryParam(paramName))
+}
+
+func (e echoHandler) handleGetUnpaidBookings(c echo.Context, cred deiz.Credentials) error {
 	return nil
 }
 
-func handlePostBookings(auth auth.CredentialsFromHttpRequest) echo.HandlerFunc {
+func (e echoHandler) handlePostBookings(auth auth.GetCredentialsFromHttpRequest) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cred := auth(c.Request())
+		//cred := auth(c.Request())
 		return nil
 	}
 }
 
-func handlePatchBookings(auth auth.CredentialsFromHttpRequest) echo.HandlerFunc {
+func (e echoHandler) handlePatchBookings(auth auth.GetCredentialsFromHttpRequest) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cred := auth(c.Request())
+		//cred := auth(c.Request())
 		return nil
 	}
 }
 
-func handleDeleteBookings(auth auth.CredentialsFromHttpRequest) echo.HandlerFunc {
+func (e echoHandler) handleDeleteBookings(auth auth.GetCredentialsFromHttpRequest) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cred := auth(c.Request())
+		//cred := auth(c.Request())
 		return nil
 	}
 }
-
-func RegisterService(e *echo.Echo) {}

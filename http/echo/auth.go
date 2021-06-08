@@ -23,7 +23,7 @@ func getCredFromEchoCtx(c echo.Context) deiz.Credentials {
 	return credCtx.credentials
 }
 
-func roleMW(auth auth.CredentialsFromHttpRequest, minRole deiz.Role) func(next echo.HandlerFunc) echo.HandlerFunc {
+func roleMW(auth auth.GetCredentialsFromHttpRequest, minRole deiz.Role) func(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			cred := auth(c.Request())

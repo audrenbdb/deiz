@@ -16,6 +16,7 @@ import (
 	"github.com/audrenbdb/deiz/auth"
 	"github.com/audrenbdb/deiz/billing"
 	"github.com/audrenbdb/deiz/booking"
+	"github.com/audrenbdb/deiz/booking2"
 	"github.com/audrenbdb/deiz/contact"
 	"github.com/audrenbdb/deiz/crypt"
 	"github.com/audrenbdb/deiz/email"
@@ -80,7 +81,9 @@ func main() {
 	})
 	e := echo.New()
 	if isProd {
+		credGetter := auth.CreateHTTPCredentialsGetterWithFirebase(fbClient)
 		contact.RegisterService(e, psqlDB, email.SendWithPostfix())
+		booking2.RegisterService(e, credGetter, psqlDB)
 		mail := mail.NewService(mail.Deps{
 			Templates: emailTemplates,
 			Client:    mail.NewPostFixClient(),
@@ -88,27 +91,29 @@ func main() {
 		})
 		err = echoHTTP.StartEchoServer(e, echoHTTP.EchoServerDeps{
 			//CredentialsGetter: echo.FakeCredentialsGetter, //http.FirebaseCredentialsGetter(fbClient),
-			CredentialsGetter: auth.FirebaseHTTP(fbClient),
+			CredentialsGetter: credGetter,
 			AccountUsecases:   newAccountUsecases(repo),
 			PatientUsecases:   newPatientUsecases(repo),
 			BookingUsecases:   newBookingUsecases(paris, repo, mail),
 			BillingUsecases:   newBillingUsecases(repo, mail, pdf),
 		})
 	} else {
+		credGetter := auth.CreateHTTPCredentialsGetterWithMock(deiz.Credentials{
+			UserID: 7, Role: deiz.ClinicianRole,
+		})
 		contact.RegisterService(e, psqlDB, email.SendWithGmail())
+		booking2.RegisterService(e, credGetter, psqlDB)
 		mail := mail.NewService(mail.Deps{
 			Templates: emailTemplates,
 			Client:    mail.NewGmailClient(),
 			Intl:      intl,
 		})
 		err = echoHTTP.StartEchoServer(e, echoHTTP.EchoServerDeps{
-			CredentialsGetter: auth.MockHTTP(deiz.Credentials{
-				UserID: 7, Role: deiz.ClinicianRole,
-			}),
-			AccountUsecases: newAccountUsecases(repo),
-			PatientUsecases: newPatientUsecases(repo),
-			BookingUsecases: newBookingUsecases(paris, repo, mail),
-			BillingUsecases: newBillingUsecases(repo, mail, pdf),
+			CredentialsGetter: credGetter,
+			AccountUsecases:   newAccountUsecases(repo),
+			PatientUsecases:   newPatientUsecases(repo),
+			BookingUsecases:   newBookingUsecases(paris, repo, mail),
+			BillingUsecases:   newBillingUsecases(repo, mail, pdf),
 		})
 	}
 

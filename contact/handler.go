@@ -2,6 +2,7 @@ package contact
 
 import (
 	"github.com/audrenbdb/deiz/email"
+	"github.com/audrenbdb/deiz/psql"
 	"github.com/labstack/echo"
 	"net/http"
 )
@@ -50,8 +51,9 @@ func echoHandlePostGetInTouchForm(send sendGetInTouchForm) echo.HandlerFunc {
 	}
 }
 
-func RegisterService(e *echo.Echo, db psqlDB, send email.Send) {
-	sendContactForm := sendContactFormFn(psqlGetClinicianByID(db), send)
+func RegisterService(e *echo.Echo, db psql.PGX, send email.Send) {
+	repo := psqlRepo{db: db}
+	sendContactForm := sendContactFormFn(repo.createGetClinicianByIDFunc(), send)
 	sendGetInTouchForm := sendGetInTouchFormFn(send)
 
 	e.POST("/api/forms/contact-forms", echoHandlePostContactForm(sendContactForm))

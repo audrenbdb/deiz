@@ -21,22 +21,28 @@ func getCredentialsFromFirebaseToken(ctx context.Context, client *firebaseAuth.C
 	if err != nil {
 		return deiz.Credentials{UserID: 0, Role: 0}
 	}
-	claims := token.Claims
-	role, ok := claims["role"].(float64)
-	if !ok {
-		return deiz.Credentials{}
-	}
-	userID, ok := claims["userId"].(float64)
-	if !ok {
-		return deiz.Credentials{}
-	}
+	return getCredentialsFromTokenClaims(token.Claims)
+}
+
+func getCredentialsFromTokenClaims(claims map[string]interface{}) deiz.Credentials {
+	role := parseIntClaim(claims["role"])
+	userID := parseIntClaim(claims["userId"])
 	return deiz.Credentials{
-		Role:   deiz.Role(int(role)),
-		UserID: int(userID),
+		Role:   deiz.Role(role),
+		UserID: userID,
 	}
 }
 
-func FirebaseHTTP(client *firebaseAuth.Client) CredentialsFromHttpRequest {
+func parseIntClaim(val interface{}) int {
+	floatVal, ok := val.(float64)
+	if !ok {
+		return 0
+	}
+	return int(floatVal)
+
+}
+
+func CreateHTTPCredentialsGetterWithFirebase(client *firebaseAuth.Client) GetCredentialsFromHttpRequest {
 	return func(r *http.Request) deiz.Credentials {
 		tokenID := getBearerTokenFromHTTPHeader(r.Header)
 		if tokenID != "" {
@@ -46,10 +52,10 @@ func FirebaseHTTP(client *firebaseAuth.Client) CredentialsFromHttpRequest {
 	}
 }
 
-func MockHTTP(cred deiz.Credentials) CredentialsFromHttpRequest {
+func CreateHTTPCredentialsGetterWithMock(cred deiz.Credentials) GetCredentialsFromHttpRequest {
 	return func(r *http.Request) deiz.Credentials {
 		return cred
 	}
 }
 
-type CredentialsFromHttpRequest = func(r *http.Request) deiz.Credentials
+type GetCredentialsFromHttpRequest = func(r *http.Request) deiz.Credentials

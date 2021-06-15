@@ -20,14 +20,15 @@ type Booking struct {
 	Confirmed   bool      `json:"confirmed"`
 	Note        string    `json:"note"`
 	Price       int64     `json:"price"`
+	Timezone    string    `json:"timezone"`
 	//Title of the booking
 	//Can either be :
 	//"block", "appointment", "event"
 	BookingType BookingType `json:"bookingType"`
-	//AvailabilityType to status how is the public available to book
+	//MeetingMode to status how is the public available to book
 	//Can either be remote / in office / at patient home
-	AvailabilityType MeetingMode       `json:"availabilityType"`
-	Recurrence       BookingRecurrence `json:"recurrence"`
+	MeetingMode MeetingMode       `json:"meetingMode"`
+	Recurrence  BookingRecurrence `json:"recurrence"`
 }
 
 type BookingType uint8
@@ -54,7 +55,7 @@ type Notification struct {
 func (b *Booking) setAsEvent() {
 	b.Patient.ID = 0
 	b.Price = 0
-	b.AvailabilityType = AtExternalAddress
+	b.MeetingMode = AtExternalAddress
 }
 
 func (b *Booking) IsValid(clinicianID int) bool {

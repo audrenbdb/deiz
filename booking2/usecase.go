@@ -3,48 +3,9 @@ package booking2
 import (
 	"context"
 	"fmt"
+	"github.com/audrenbdb/deiz"
 	"sort"
 	"time"
-)
-
-type booking struct {
-	ID          int         `json:"id"`
-	Description string      `json:"description"`
-	Start       time.Time   `json:"start"`
-	End         time.Time   `json:"end"`
-	Patient     person      `json:"patient"`
-	Clinician   person      `json:"clinician"`
-	Confirmed   bool        `json:"confirmed"`
-	Timezone    string      `json:"timezone"`
-	Recurrence  recurrence  `json:"recurrence"`
-	Address     string      `json:"address"`
-	MeetingMode meetingMode `json:"meetingMode"`
-	Type        bookingType `json:"bookingType"`
-}
-
-type person struct {
-	ID      int    `json:"id"`
-	Name    string `json:"name"`
-	Surname string `json:"surname"`
-	Phone   string `json:"phone"`
-	Email   string `json:"email"`
-}
-
-type recurrence uint8
-
-type bookingType uint8
-
-const (
-	blockedBooking bookingType = iota
-	appointmentBooking
-	eventBooking
-)
-
-const (
-	nonRecurrent recurrence = iota
-	dailyRecurrent
-	weeklyRecurrent
-	monthlyRecurrent
 )
 
 type officeHours struct {
@@ -90,13 +51,13 @@ func (a address) toString() string {
 }
 
 //getClinicianWeek retrieves list of week bookings and available time slots
-type getClinicianWeek = func(ctx context.Context, from time.Time, bookingDuration time.Duration, clinicianID int) ([]booking, error)
+type getClinicianWeek = func(ctx context.Context, from time.Time, bookingDuration time.Duration, clinicianID int) ([]deiz.Booking, error)
 
 func createGetClinicianWeekFunc(
 	getClinicianBookingsInWeek getClinicianBookingsInWeek,
 	getOfficeHoursInWeek getOfficeHoursInWeek,
 ) getClinicianWeek {
-	return func(ctx context.Context, weekStart time.Time, bookingDuration time.Duration, clinicianID int) ([]booking, error) {
+	return func(ctx context.Context, weekStart time.Time, bookingDuration time.Duration, clinicianID int) ([]deiz.Booking, error) {
 		w := getWeekTimeRangeFromStartDate(weekStart)
 		existingBookings, err := getClinicianBookingsInWeek(ctx, w, clinicianID)
 		if err != nil {
@@ -111,8 +72,8 @@ func createGetClinicianWeekFunc(
 	}
 }
 
-func getFreeBookingSlotsInWeek(existingBookings []booking, officeHours []officeHours, slotDuration time.Duration) []booking {
-	freeBookingSlots := []booking{}
+func getFreeBookingSlotsInWeek(existingBookings []deiz.Booking, officeHours []officeHours, slotDuration time.Duration) []deiz.Booking {
+	freeBookingSlots := []deiz.Booking{}
 	for _, h := range officeHours {
 		freeBookingSlots = append(freeBookingSlots,
 			splitOfficeHoursInFreeBookingSlots(h, existingBookings, slotDuration)...)
@@ -120,12 +81,12 @@ func getFreeBookingSlotsInWeek(existingBookings []booking, officeHours []officeH
 	return freeBookingSlots
 }
 
-func splitOfficeHoursInFreeBookingSlots(h officeHours, existingBookings []booking, slotDuration time.Duration) []booking {
-	freeBookingSlots := []booking{}
+func splitOfficeHoursInFreeBookingSlots(h officeHours, existingBookings []deiz.Booking, slotDuration time.Duration) []deiz.Booking {
+	freeBookingSlots := []deiz.Booking{}
 	availability := timeRange{h.start, h.end}
 	for isEnoughTimeAvailableForSlot(slotDuration, availability) {
 		nextSlot := getNextSlotAvailableInTimeRange(availability, slotDuration, existingBookings)
-		freeBookingSlots = append(freeBookingSlots, booking{
+		freeBookingSlots = append(freeBookingSlots, deiz.Booking{
 			Start:       nextSlot.start,
 			End:         nextSlot.end,
 			Address:     h.address,
@@ -136,7 +97,7 @@ func splitOfficeHoursInFreeBookingSlots(h officeHours, existingBookings []bookin
 	return freeBookingSlots
 }
 
-func getNextSlotAvailableInTimeRange(r timeRange, duration time.Duration, existingBookings []booking) timeRange {
+func getNextSlotAvailableInTimeRange(r timeRange, duration time.Duration, existingBookings []deiz.Booking) timeRange {
 	slot := timeRange{start: r.start, end: r.start.Add(duration)}
 	for _, b := range existingBookings {
 		if timeRangesOverlaps(slot, timeRange{b.Start, b.End}) {
@@ -147,7 +108,7 @@ func getNextSlotAvailableInTimeRange(r timeRange, duration time.Duration, existi
 	return slot
 }
 
-func sortBookingsByDate(bookings []booking) {
+func sortBookingsByDate(bookings []deiz.Booking) {
 	sort.SliceStable(bookings, func(i, j int) bool {
 		return bookings[i].Start.Before(bookings[j].Start)
 	})
@@ -162,13 +123,13 @@ func durationInMnBetweenTwoDates(d1, d2 time.Time) int {
 }
 
 //getClinicianBookingsInWeek retrieves all bookings withing a given week
-type getClinicianBookingsInWeek = func(ctx context.Context, w timeRange, clinicianID int) ([]booking, error)
+type getClinicianBookingsInWeek = func(ctx context.Context, w timeRange, clinicianID int) ([]deiz.Booking, error)
 
 func createGetClinicianBookingsInWeek(
 	getClinicianNonRecurrentBookingsInTimeRange getClinicianNonRecurrentBookingsInTimeRange,
 	getClinicianRecurrentBookingsInTimeRange getClinicianRecurrentBookingsInTimeRange,
 ) getClinicianBookingsInWeek {
-	return func(ctx context.Context, w timeRange, clinicianID int) ([]booking, error) {
+	return func(ctx context.Context, w timeRange, clinicianID int) ([]deiz.Booking, error) {
 		nonRecurrentBookings, err := getClinicianNonRecurrentBookingsInTimeRange(ctx, w, clinicianID)
 		if err != nil {
 			return nil, err
@@ -183,12 +144,12 @@ func createGetClinicianBookingsInWeek(
 	}
 }
 
-type getClinicianRecurrentBookingsInTimeRange = func(ctx context.Context, tr timeRange, clinicianID int) ([]booking, error)
+type getClinicianRecurrentBookingsInTimeRange = func(ctx context.Context, tr timeRange, clinicianID int) ([]deiz.Booking, error)
 
 func createGetClinicianRecurrentBookingsInTimeRange(
 	getClinicianRecurrentBookings getClinicianRecurrentBookings,
 ) getClinicianRecurrentBookingsInTimeRange {
-	return func(ctx context.Context, tr timeRange, clinicianID int) ([]booking, error) {
+	return func(ctx context.Context, tr timeRange, clinicianID int) ([]deiz.Booking, error) {
 		recurrentBookings, err := getClinicianRecurrentBookings(ctx, clinicianID)
 		if err != nil {
 			return nil, err
@@ -200,14 +161,14 @@ func createGetClinicianRecurrentBookingsInTimeRange(
 	}
 }
 
-func setRecurrentBookingTimeRange(b *booking, anchor time.Time) {
+func setRecurrentBookingTimeRange(b *deiz.Booking, anchor time.Time) {
 	trCfg := getTimeRangeCfgFromBooking(b)
 	tr := getFirstTimeRangeMatchingTimeRangeCfg(anchor, trCfg)
 	b.Start = tr.start
 	b.End = tr.end
 }
 
-func getTimeRangeCfgFromBooking(b *booking) timeRangeCfg {
+func getTimeRangeCfgFromBooking(b *deiz.Booking) timeRangeCfg {
 	var trCfg timeRangeCfg
 	loc := parseTimezone(b.Timezone)
 	startInLocal := b.Start.In(loc)
@@ -235,11 +196,11 @@ func getTotalMinutesFromDay(d time.Time) int {
 }
 
 //getNonRecurrentBookingsInTimeRange retrieves a list of non recurrent bookings in time range
-type getClinicianNonRecurrentBookingsInTimeRange = func(ctx context.Context, tr timeRange, clinicianID int) ([]booking, error)
+type getClinicianNonRecurrentBookingsInTimeRange = func(ctx context.Context, tr timeRange, clinicianID int) ([]deiz.Booking, error)
 
 func createGetClinicianNonRecurrentBookingsInTimeRangeFunc(
 	getClinicianBookingsInTimeRange getClinicianBookingsInTimeRange) getClinicianNonRecurrentBookingsInTimeRange {
-	return func(ctx context.Context, tr timeRange, clinicianID int) ([]booking, error) {
+	return func(ctx context.Context, tr timeRange, clinicianID int) ([]deiz.Booking, error) {
 		bookings, err := getClinicianBookingsInTimeRange(ctx, tr, clinicianID)
 		if err != nil {
 			return nil, err
@@ -248,10 +209,10 @@ func createGetClinicianNonRecurrentBookingsInTimeRangeFunc(
 	}
 }
 
-func filterNonRecurrentBookings(bookings []booking) []booking {
-	var nonRecurrentBookings []booking
+func filterNonRecurrentBookings(bookings []deiz.Booking) []deiz.Booking {
+	var nonRecurrentBookings []deiz.Booking
 	for _, b := range bookings {
-		if b.Recurrence == nonRecurrent {
+		if b.Recurrence == deiz.NoRecurrence {
 			nonRecurrentBookings = append(nonRecurrentBookings, b)
 		}
 	}

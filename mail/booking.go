@@ -135,6 +135,6 @@ func (m *Mailer) getBookingEmailDetails(b *deiz.Booking, with string) bookingEma
 		GMapsLink:        gmaps.CreateLink(b.Address),
 		CancelLink:       buildCancelURL(b.DeleteID).String(),
 		Address:          b.Address,
-		AvailabilityType: int(b.AvailabilityType),
+		AvailabilityType: int(b.MeetingMode),
 	}
 }

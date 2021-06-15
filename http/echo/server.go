@@ -23,7 +23,7 @@ type EchoServerDeps struct {
 	BookingUsecases   usecase.BookingUsecases
 	BillingUsecases   usecase.BillingUsecases
 	ContactService    ContactService
-	CredentialsGetter auth.CredentialsFromHttpRequest
+	CredentialsGetter auth.GetCredentialsFromHttpRequest
 }
 
 func StartEchoServer(deps EchoServerDeps) error {

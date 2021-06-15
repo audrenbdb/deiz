@@ -3,7 +3,7 @@ package echo
 import (
 	"github.com/audrenbdb/deiz"
 	"github.com/audrenbdb/deiz/usecase"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
 )
@@ -125,7 +125,7 @@ func handleGetFreeBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		duration, err := getMotiveDurationFromParam(c)
+		duration, err := getBookingDurationFromParam(c)
 
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
@@ -146,7 +146,7 @@ func handleGetBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		duration, err := getMotiveDurationFromParam(c)
+		duration, err := getBookingDurationFromParam(c)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
@@ -158,8 +158,8 @@ func handleGetBookingSlots(getter usecase.CalendarReader) echo.HandlerFunc {
 	}
 }
 
-func getMotiveDurationFromParam(c echo.Context) (int, error) {
-	return getURLIntegerQueryParam(c, "motiveDuration")
+func getBookingDurationFromParam(c echo.Context) (int, error) {
+	return getURLIntegerQueryParam(c, "bookingDuration")
 }
 
 func handlePostBlockedBookingSlots(blocker usecase.BookingSlotBlocker) echo.HandlerFunc {

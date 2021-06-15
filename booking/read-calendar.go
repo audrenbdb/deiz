@@ -43,33 +43,42 @@ func (r *ReadCalendarUsecase) getBookingSlots(ctx context.Context, start time.Ti
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to get bookings in given timerange: %s", err)
 	}
-	recurrentBookings, err := r.BookingsGetter.GetClinicianWeeklyRecurrentBookings(ctx, clinicianID)
+	recurrentBookings, err := r.getRecurrentBookingsInTimeRange(ctx, clinicianID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to get existing recurrent bookings: %s", err)
 	}
-	for _, rb := range recurrentBookings {
-		rbStart := rb.Start.In(r.Loc)
-		rbEnd := rb.End.In(r.Loc)
-		tr := convertCalEventToTimeRange(timeRange{
-			start: start,
-			end:   end,
-		}, calEvent{
-			weekday: int(rbStart.Weekday()),
-			startMn: rbStart.Hour()*60 + rbStart.Minute(),
-			endMn:   rbEnd.Hour()*60 + rbEnd.Minute(),
-			loc:     r.Loc,
-		}, false)
-		if !tr.isNull() {
-			rb.Start = tr.start
-			rb.End = tr.end
-			existingBookings = append(existingBookings, rb)
-		}
-	}
+	existingBookings = append(existingBookings, recurrentBookings...)
 	freeBookingSlots, err := r.getFreeBookingSlots(ctx, timeRange{start, end}, deiz.SortBookingByDate(existingBookings), defaultDuration, clinicianID)
 	if err != nil {
 		return nil, nil, fmt.Errorf("unable to get free booking slots: %s", err)
 	}
 	return existingBookings, freeBookingSlots, nil
+}
+
+func (r *ReadCalendarUsecase) getRecurrentBookingsInTimeRange(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
+	recurrentBookings, err := r.BookingsGetter.GetClinicianWeeklyRecurrentBookings(ctx, clinicianID)
+	if err != nil {
+		return nil, err
+	}
+	for _, b := range recurrentBookings {
+		r.setRecurrentBookingInTimeRange(&b)
+	}
+	return recurrentBookings, nil
+}
+
+func (r *ReadCalendarUsecase) setRecurrentBookingInTimeRange(b *deiz.Booking) {
+	bookingTr := timeRange{
+		start: b.Start.In(r.Loc),
+		end:   b.End.In(r.Loc),
+	}
+	tr := convertCalEventToTimeRange(bookingTr, calEvent{
+		weekday: int(bookingTr.start.Weekday()),
+		startMn: bookingTr.start.Hour()*60 + bookingTr.start.Minute(),
+		endMn:   bookingTr.end.Hour()*60 + bookingTr.end.Minute(),
+		loc:     r.Loc,
+	}, false)
+	b.Start = tr.start
+	b.End = tr.end
 }
 
 func (r *ReadCalendarUsecase) getFreeBookingSlots(ctx context.Context, timeRange timeRange, existingBookings []deiz.Booking, defaultDuration int, clinicianID int) ([]deiz.Booking, error) {
@@ -88,11 +97,11 @@ func (r *ReadCalendarUsecase) getFreeBookingSlots(ctx context.Context, timeRange
 
 func splitAvailabilityInFreeBookingSlots(availability officeHoursAvailability, existingBookings []deiz.Booking, defaultDuration int, freeBookings []deiz.Booking) []deiz.Booking {
 	nextFreeBooking := deiz.Booking{
-		BookingType:      deiz.AppointmentBooking,
-		Start:            availability.availableTimeRange.start,
-		End:              availability.availableTimeRange.start.Add(time.Minute * time.Duration(defaultDuration)),
-		Address:          availability.hours.Address.ToString(),
-		AvailabilityType: availability.hours.AvailabilityType,
+		BookingType: deiz.AppointmentBooking,
+		Start:       availability.availableTimeRange.start,
+		End:         availability.availableTimeRange.start.Add(time.Minute * time.Duration(defaultDuration)),
+		Address:     availability.hours.Address.ToString(),
+		MeetingMode: availability.hours.MeetingMode,
 	}
 	//make sure next free booking time range do not overlaps with existing bookings
 	for _, booking := range existingBookings {

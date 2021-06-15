@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const bookingSelect = `SELECT b.id, COALESCE(b.description, ''), b.delete_id, lower(b.during), upper(b.during), b.booking_type_id, COALESCE(b.availability_id, 0),
+const bookingSelect = `SELECT b.id, COALESCE(b.description, ''), b.delete_id, lower(b.during), upper(b.during), b.booking_type_id, COALESCE(b.meeting_mode_id, 0),
 	c.id, c.surname, c.name, c.phone, c.email,
 	COALESCE(p.id, 0), COALESCE(p.surname, ''), COALESCE(p.name, ''), COALESCE(p.phone, ''), COALESCE(p.email, ''),
 	COALESCE(b.address, ''), COALESCE(b.price, 0),
@@ -18,7 +18,7 @@ const bookingSelect = `SELECT b.id, COALESCE(b.description, ''), b.delete_id, lo
 
 func scanBookingRow(row pgx.Row) (deiz.Booking, error) {
 	var b deiz.Booking
-	err := row.Scan(&b.ID, &b.Description, &b.DeleteID, &b.Start, &b.End, &b.BookingType, &b.AvailabilityType,
+	err := row.Scan(&b.ID, &b.Description, &b.DeleteID, &b.Start, &b.End, &b.BookingType, &b.MeetingMode,
 		&b.Clinician.ID, &b.Clinician.Surname, &b.Clinician.Name, &b.Clinician.Phone, &b.Clinician.Email,
 		&b.Patient.ID, &b.Patient.Surname, &b.Patient.Name, &b.Patient.Phone, &b.Patient.Email,
 		&b.Address, &b.Price,
@@ -56,10 +56,10 @@ func (r *Repo) DeleteBooking(ctx context.Context, bookingID int, clinicianID int
 }
 
 func (r *Repo) CreateBooking(ctx context.Context, b *deiz.Booking) error {
-	const query = `INSERT INTO clinician_booking(address, price, description, booking_type_id, availability_id, clinician_person_id, patient_id, during, paid, note, confirmed, recurrence_id)
+	const query = `INSERT INTO clinician_booking(address, price, description, booking_type_id, meeting_mode_id, clinician_person_id, patient_id, during, paid, note, confirmed, recurrence_id)
 	VALUES(NULLIF($1, ''), $2, NULLIF($3, ''), $4, NULLIF($5, 0), $6, NULLIF($7, 0), tsrange($8, $9, '()'), $10, NULLIF($11, ''), $12, $13)
 	RETURNING id, delete_id`
-	row := r.conn.QueryRow(ctx, query, b.Address, b.Price, b.Description, b.BookingType, b.AvailabilityType, b.Clinician.ID, b.Patient.ID, b.Start, b.End, b.Paid, b.Note, b.Confirmed, b.Recurrence)
+	row := r.conn.QueryRow(ctx, query, b.Address, b.Price, b.Description, b.BookingType, b.MeetingMode, b.Clinician.ID, b.Patient.ID, b.Start, b.End, b.Paid, b.Note, b.Confirmed, b.Recurrence)
 	err := row.Scan(&b.ID, &b.DeleteID)
 	if err != nil {
 		return err
@@ -129,9 +129,9 @@ func (r *Repo) GetPatientBookings(ctx context.Context, clinicianID int, patientI
 func (r *Repo) UpdateBooking(ctx context.Context, b *deiz.Booking) error {
 	const query = `UPDATE clinician_booking 
 	SET address = NULLIF($1, ''), price = COALESCE($2, 0), description = NULLIF($3, ''), booking_type_id = $4, clinician_person_id = $5, patient_id = $6,
-	during = tsrange($7, $8, '()'), paid = $9, note = NULLIF($10, ''), confirmed = $11, availability_id = $12, recurrence_id = $13 WHERE id = $14`
+	during = tsrange($7, $8, '()'), paid = $9, note = NULLIF($10, ''), confirmed = $11, meeting_mode_id = $12, recurrence_id = $13 WHERE id = $14`
 	cmdTag, err := r.conn.Exec(ctx, query, b.Address, b.Price, b.Description, b.BookingType, b.Clinician.ID, b.Patient.ID,
-		b.Start, b.End, b.Paid, b.Note, b.Confirmed, b.AvailabilityType, b.Recurrence, b.ID)
+		b.Start, b.End, b.Paid, b.Note, b.Confirmed, b.MeetingMode, b.Recurrence, b.ID)
 	if err != nil {
 		return err
 	}
@@ -141,24 +141,8 @@ func (r *Repo) UpdateBooking(ctx context.Context, b *deiz.Booking) error {
 	return nil
 }
 
-/*
-func (r *Repo) IsBookingSlotAvailable(ctx context.Context, from, to time.Time, clinicianID int) (bool, error) {
-	const query = `SELECT EXISTS(
-		SELECT 1 FROM clinician_booking b
-		WHERE clinician_person_id = $1
-		AND $2 < upper(b.during) AND lower(b.during) < $3 AND b.patient_id IS NOT NULL)`
-	var slotTaken bool
-	row := r.conn.QueryRow(ctx, query, clinicianID, from, to)
-	err := row.Scan(&slotTaken)
-	if err != nil {
-		return false, err
-	}
-	return !slotTaken, nil
-}
-*/
-
 func (r *Repo) DeleteBlockedBookingPrior(ctx context.Context, d time.Time) error {
-	const query = `DELETE FROM clinician_booking WHERE availability_id = 0 AND upper(during) < $1`
+	const query = `DELETE FROM clinician_booking WHERE booking_type_id = 0 AND upper(during) < $1`
 	_, err := r.conn.Exec(ctx, query, d)
 	return err
 }

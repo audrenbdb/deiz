@@ -10,7 +10,7 @@ type Booking struct {
 	//Description is an optional parameters to attach description details
 	//Usually comes with an event that one wishes to describe such as its motive.
 	Description string    `json:"description"`
-	DeleteID    string    `json:"deleteId"`
+	DeleteID    string    `json:"-"`
 	Start       time.Time `json:"start"`
 	End         time.Time `json:"end"`
 	Clinician   Clinician `json:"clinician"`
@@ -24,10 +24,10 @@ type Booking struct {
 	//Can either be :
 	//"block", "appointment", "event"
 	BookingType BookingType `json:"bookingType"`
-	//AvailabilityType to status how is the public available to book
+	//MeetingMode to status how is the public available to book
 	//Can either be remote / in office / at patient home
-	AvailabilityType AvailabilityType  `json:"availabilityType"`
-	Recurrence       BookingRecurrence `json:"recurrence"`
+	MeetingMode MeetingMode       `json:"meetingMode"`
+	Recurrence  BookingRecurrence `json:"recurrence"`
 }
 
 type BookingType uint8
@@ -54,7 +54,7 @@ type Notification struct {
 func (b *Booking) setAsEvent() {
 	b.Patient.ID = 0
 	b.Price = 0
-	b.AvailabilityType = AtExternalAddress
+	b.MeetingMode = AtExternalAddress
 }
 
 func (b *Booking) IsValid(clinicianID int) bool {

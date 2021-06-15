@@ -3,7 +3,7 @@ package echo
 import (
 	"context"
 	"github.com/audrenbdb/deiz"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"net/http"
 )
 

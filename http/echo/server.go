@@ -4,8 +4,8 @@ import (
 	"github.com/audrenbdb/deiz"
 	"github.com/audrenbdb/deiz/auth"
 	"github.com/audrenbdb/deiz/usecase"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"strconv"
 	"time"
 )
@@ -32,8 +32,6 @@ func StartEchoServer(deps EchoServerDeps) error {
 	//adminMW := roleMW(credentialsGetter, 3)
 
 	e := echo.New()
-	e.Use(middleware.CORS())
-	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{Level: 5}))
 
 	e.POST("/api/registrations", handlePostRegistration(deps.AccountUsecases.LoginAllower))
 
@@ -95,6 +93,11 @@ func StartEchoServer(deps EchoServerDeps) error {
 	e.POST("/api/public/contact-form", handlePostContactFormToClinician(deps.ContactService))
 	e.POST("/api/public/get-in-touch-form", handlePostGetInTouchForm(deps.ContactService))
 
+	e.Use(
+		middleware.CORS(),
+		middleware.RateLimiter(middleware.NewRateLimiterMemoryStore(20)),
+		middleware.GzipWithConfig(middleware.GzipConfig{Level: 5}),
+	)
 	return e.Start(":8080")
 }
 

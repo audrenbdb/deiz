@@ -2,7 +2,7 @@ package echo
 
 import (
 	"github.com/audrenbdb/deiz/usecase"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"net/http"
 )
 

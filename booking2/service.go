@@ -32,11 +32,13 @@ func registerPsqlRepo(db psql.PGX) *repo {
 	}
 }
 
-func RegisterService(e *echo.Echo, auth auth.GetCredentialsFromHttpRequest, db psql.PGX) {
+func (e *echoServer)
+
+func RegisterService(e *echo.Echo, getCredentials auth.GetCredentialsFromHttpRequest, db psql.PGX) {
 	repo := registerPsqlRepo(db)
-	h := echoHandler{}
-	handleGetClinicianCalendar := h.handleGetClinicianWeek(auth, registerGetClinicianWeekUsecase(repo))
+	h := echoServer{}
+	handleGetClinicianCalendar := h.handleGetClinicianWeek(getCredentials, registerGetClinicianWeekUsecase(repo))
 	handleGetClinicianBookings := h.handleGetClinicianBookings(handleGetClinicianCalendar)
 
-	e.GET("/api/bookings", h.handleGetBookings(auth, handleGetClinicianBookings))
+	e.GET("/api/bookings", h.handleGetBookings(getCredentials, handleGetClinicianBookings))
 }

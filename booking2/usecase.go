@@ -90,7 +90,7 @@ func splitOfficeHoursInFreeBookingSlots(h officeHours, existingBookings []deiz.B
 			Start:       nextSlot.start,
 			End:         nextSlot.end,
 			Address:     h.address,
-			MeetingMode: h.meetingMode,
+			MeetingMode: deiz.MeetingMode(0),
 		})
 		availability.start = nextSlot.end
 	}

@@ -2,12 +2,13 @@ package booking2
 
 import (
 	"context"
+	"github.com/audrenbdb/deiz"
 	"github.com/audrenbdb/deiz/psql"
 	"github.com/jackc/pgx/v4"
 )
 
-type getClinicianBookingsInTimeRange = func(ctx context.Context, tr timeRange, clinicianID int) ([]booking, error)
-type getClinicianRecurrentBookings = func(ctx context.Context, clinicianID int) ([]booking, error)
+type getClinicianBookingsInTimeRange = func(ctx context.Context, tr timeRange, clinicianID int) ([]deiz.Booking, error)
+type getClinicianRecurrentBookings = func(ctx context.Context, clinicianID int) ([]deiz.Booking, error)
 type getClinicianOfficeHours = func(ctx context.Context, clinicianID int) ([]officeHours, error)
 
 type psqlRepo struct {
@@ -74,7 +75,7 @@ const psqlBookingSelect = `SELECT b.id, COALESCE(b.description, ''), lower(b.dur
 	LEFT JOIN patient p ON b.patient_id = p.id
 	LEFT JOIN person c ON b.clinician_person_id = c.id`
 
-func (r *psqlRepo) queryBookings(ctx context.Context, queryConditions string, args ...interface{}) ([]booking, error) {
+func (r *psqlRepo) queryBookings(ctx context.Context, queryConditions string, args ...interface{}) ([]deiz.Booking, error) {
 	rows, err := r.db.Query(ctx, psqlBookingSelect+` `+queryConditions, args...)
 	defer rows.Close()
 	if err != nil {
@@ -83,8 +84,8 @@ func (r *psqlRepo) queryBookings(ctx context.Context, queryConditions string, ar
 	return r.scanBookingRows(rows)
 }
 
-func (r *psqlRepo) scanBookingRows(rows pgx.Rows) ([]booking, error) {
-	bookings := []booking{}
+func (r *psqlRepo) scanBookingRows(rows pgx.Rows) ([]deiz.Booking, error) {
+	bookings := []deiz.Booking{}
 	for rows.Next() {
 		b, err := r.scanSingleBookingRow(rows)
 		if err != nil {
@@ -95,23 +96,23 @@ func (r *psqlRepo) scanBookingRows(rows pgx.Rows) ([]booking, error) {
 	return bookings, nil
 }
 
-func (r *psqlRepo) scanSingleBookingRow(row pgx.Row) (b booking, err error) {
+func (r *psqlRepo) scanSingleBookingRow(row pgx.Row) (b deiz.Booking, err error) {
 	return b, row.Scan(&b.ID, &b.Description, &b.Start, &b.End, &b.Timezone,
-		&b.Type, &b.MeetingMode,
+		&b.BookingType, &b.MeetingMode,
 		&b.Clinician.ID, &b.Clinician.Surname, &b.Clinician.Name, &b.Clinician.Phone, &b.Clinician.Email,
 		&b.Patient.ID, &b.Patient.Surname, &b.Patient.Name, &b.Patient.Phone, &b.Patient.Email,
 		&b.Address, &b.Confirmed, &b.Recurrence)
 }
 
 func (r *psqlRepo) createGetClinicianBookingsInTimeRangeFunc() getClinicianBookingsInTimeRange {
-	return func(ctx context.Context, tr timeRange, clinicianID int) ([]booking, error) {
+	return func(ctx context.Context, tr timeRange, clinicianID int) ([]deiz.Booking, error) {
 		queryConditions := `WHERE b.clinician_person_id = $1 AND $2 <= upper(b.during) AND lower(b.during) <= $3`
 		return r.queryBookings(ctx, queryConditions, clinicianID, tr.start, tr.end)
 	}
 }
 
 func (r *psqlRepo) createGetClinicianRecurrentBookingsFunc() getClinicianRecurrentBookings {
-	return func(ctx context.Context, clinicianID int) ([]booking, error) {
+	return func(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
 		queryConditions := `WHERE b.clinician_person_id = $1 AND b.recurrence_id = 2`
 		return r.queryBookings(ctx, queryConditions, clinicianID)
 	}

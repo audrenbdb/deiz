@@ -9,53 +9,63 @@ import (
 	"time"
 )
 
-type echoServer struct {
+type echoHandler struct {
 	router         *echo.Echo
-	getCredentials auth.GetCredentialsFromHttpRequest
+	getCredentials auth.GetCredentialsFromHTTPRequest
 }
 
-func NewEchoHandler(router *echo.Echo, getCredentials auth.GetCredentialsFromHttpRequest) *echoServer {
-	return &echoServer{getCredentials: getCredentials}
+func NewEchoHandler(router *echo.Echo, getCredentials auth.GetCredentialsFromHTTPRequest) *echoHandler {
+	return &echoHandler{router: router, getCredentials: getCredentials}
 }
 
-func (e *echoServer) handleGetBookings(
-	handleGetClinicianBookings echo.HandlerFunc,
+func (h *echoHandler) HandleGetBookings(
+	clinicianGetBookings echo.HandlerFunc,
+	patientGetBookings echo.HandlerFunc,
 ) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cred := e.getCredentials(c.Request())
+		cred := h.getCredentials(c.Request())
 		switch cred.Role {
 		case deiz.ClinicianRole:
-			return handleGetClinicianBookings(c)
+			return clinicianGetBookings(c)
+		case deiz.PatientRole:
+			return patientGetBookings(c)
 		}
+		return echo.NewHTTPError(http.StatusUnauthorized)
+	}
+}
+
+func (h *echoHandler) HandlePatientGetBookings() echo.HandlerFunc {
+	return func(c echo.Context) error {
 		return nil
 	}
 }
 
-func (e *echoServer) handleGetClinicianBookings(
-	handleGetClinicianWeek echo.HandlerFunc,
+func (h *echoHandler) HandleClinicianGetBookings(
+	getClinicianCalendar echo.HandlerFunc,
+	getClinicianUnpaidBookings echo.HandlerFunc,
 ) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		request := c.QueryParam("request")
 		switch request {
-		case "week":
-			return handleGetClinicianWeek(c)
+		case "calendar":
+			return getClinicianCalendar(c)
 		case "unpaid":
-			return nil
+			return getClinicianUnpaidBookings(c)
 		}
-		return nil
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid parameters")
 	}
 }
 
-func (e *echoServer) handleGetClinicianWeek(
-	getClinicianWeek getClinicianWeek,
+func (h *echoHandler) handleGetClinicianCalendar(
+	getClinicianCalendar getClinicianCalendar,
 ) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cred := e.getCredentials(c.Request())
-		params, err := e.parseQueryWeekParams(c)
+		cred := h.getCredentials(c.Request())
+		params, err := h.parseQueryCalendarParams(c)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, err.Error())
 		}
-		weekBookings, err := getClinicianWeek(c.Request().Context(),
+		weekBookings, err := getClinicianCalendar(c.Request().Context(),
 			params.from, params.bookingDuration, cred.UserID)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, err.Error())
@@ -64,27 +74,27 @@ func (e *echoServer) handleGetClinicianWeek(
 	}
 }
 
-type queryWeekParams struct {
+type queryCalendarParams struct {
 	from            time.Time
 	bookingDuration time.Duration
 }
 
-func (e *echoServer) parseQueryWeekParams(c echo.Context) (queryWeekParams, error) {
-	duration, err := e.getIntegerQueryParam(c, "bookingDuration")
+func (h *echoHandler) parseQueryCalendarParams(c echo.Context) (queryCalendarParams, error) {
+	duration, err := h.getIntegerQueryParam(c, "bookingDuration")
 	if err != nil {
-		return queryWeekParams{}, err
+		return queryCalendarParams{}, err
 	}
-	from, err := e.getTimeFromUnixURLParam(c, "from")
+	from, err := h.getTimeFromUnixURLParam(c, "from")
 	if err != nil {
-		return queryWeekParams{}, err
+		return queryCalendarParams{}, err
 	}
-	return queryWeekParams{
+	return queryCalendarParams{
 		bookingDuration: time.Minute * time.Duration(duration),
 		from:            from,
 	}, nil
 }
 
-func (e *echoServer) getTimeFromUnixURLParam(c echo.Context, paramName string) (time.Time, error) {
+func (h *echoHandler) getTimeFromUnixURLParam(c echo.Context, paramName string) (time.Time, error) {
 	i, err := strconv.ParseInt(c.QueryParam(paramName), 10, 64)
 	if err != nil {
 		return time.Time{}, err
@@ -92,29 +102,29 @@ func (e *echoServer) getTimeFromUnixURLParam(c echo.Context, paramName string) (
 	return time.Unix(i, 0).UTC(), nil
 }
 
-func (e *echoServer) getIntegerQueryParam(c echo.Context, paramName string) (int, error) {
+func (h *echoHandler) getIntegerQueryParam(c echo.Context, paramName string) (int, error) {
 	return strconv.Atoi(c.QueryParam(paramName))
 }
 
-func (e *echoServer) handleGetUnpaidBookings(c echo.Context, cred deiz.Credentials) error {
+func (h *echoHandler) handleGetUnpaidBookings(c echo.Context, cred deiz.Credentials) error {
 	return nil
 }
 
-func (e *echoServer) handlePostBookings(auth auth.GetCredentialsFromHttpRequest) echo.HandlerFunc {
+func (h *echoHandler) handlePostBookings(auth auth.GetCredentialsFromHTTPRequest) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		//cred := auth(c.Request())
 		return nil
 	}
 }
 
-func (e *echoServer) handlePatchBookings(auth auth.GetCredentialsFromHttpRequest) echo.HandlerFunc {
+func (h *echoHandler) handlePatchBookings(auth auth.GetCredentialsFromHTTPRequest) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		//cred := auth(c.Request())
 		return nil
 	}
 }
 
-func (e *echoServer) handleDeleteBookings(auth auth.GetCredentialsFromHttpRequest) echo.HandlerFunc {
+func (h *echoHandler) handleDeleteBookings(auth auth.GetCredentialsFromHTTPRequest) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		//cred := auth(c.Request())
 		return nil

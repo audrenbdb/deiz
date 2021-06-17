@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-type getClinicianBookingsInTimeRange = func(ctx context.Context, tr timeRange, clinicianID int) ([]deiz.Booking, error)
+type getClinicianNonRecurrentBookingsInTimeRange = func(ctx context.Context, tr timeRange, clinicianID int) ([]deiz.Booking, error)
 type getClinicianRecurrentBookings = func(ctx context.Context, clinicianID int) ([]deiz.Booking, error)
 type getClinicianOfficeHours = func(ctx context.Context, clinicianID int) ([]officeHours, error)
 
@@ -15,11 +15,7 @@ type psqlRepo struct {
 	db psql.PGX
 }
 
-func newPsqlRepo(db psql.PGX) *psqlRepo {
-	return &psqlRepo{db: db}
-}
-
-func (r *psqlRepo) createGetClinicianOfficeHoursFunc() getClinicianOfficeHours {
+func (r *psqlRepo) makeGetClinicianOfficeHours() getClinicianOfficeHours {
 	return func(ctx context.Context, clinicianID int) ([]officeHours, error) {
 		return r.queryOfficeHours(ctx, `WHERE h.person_id = $1`, clinicianID)
 	}
@@ -104,14 +100,14 @@ func (r *psqlRepo) scanSingleBookingRow(row pgx.Row) (b deiz.Booking, err error)
 		&b.Address, &b.Confirmed, &b.Recurrence)
 }
 
-func (r *psqlRepo) createGetClinicianBookingsInTimeRangeFunc() getClinicianBookingsInTimeRange {
+func (r *psqlRepo) makeGetClinicianNonRecurrentBookingsInTimeRange() getClinicianNonRecurrentBookingsInTimeRange {
 	return func(ctx context.Context, tr timeRange, clinicianID int) ([]deiz.Booking, error) {
-		queryConditions := `WHERE b.clinician_person_id = $1 AND $2 <= upper(b.during) AND lower(b.during) <= $3`
+		queryConditions := `WHERE b.clinician_person_id = $1 AND $2 <= upper(b.during) AND lower(b.during) <= $3 AND b.recurrence_id != 2`
 		return r.queryBookings(ctx, queryConditions, clinicianID, tr.start, tr.end)
 	}
 }
 
-func (r *psqlRepo) createGetClinicianRecurrentBookingsFunc() getClinicianRecurrentBookings {
+func (r *psqlRepo) makeGetClinicianRecurrentBookings() getClinicianRecurrentBookings {
 	return func(ctx context.Context, clinicianID int) ([]deiz.Booking, error) {
 		queryConditions := `WHERE b.clinician_person_id = $1 AND b.recurrence_id = 2`
 		return r.queryBookings(ctx, queryConditions, clinicianID)
